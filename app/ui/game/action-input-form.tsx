@@ -5,10 +5,7 @@ import { Textarea } from "@nextui-org/input";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 
-import generateNextScene, {
-  Errors,
-  Response
-} from "@/app/lib/generate-next-scene";
+import generateNextScene, { Errors } from "@/app/lib/generate-next-scene";
 
 export default function ActionInputForm() {
   const [state, setState] = useState<Errors | undefined>({});
