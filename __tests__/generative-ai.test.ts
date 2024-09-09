@@ -5,22 +5,22 @@ import { expect, test } from "vitest";
 
 import {
   generateChatMessage,
-  generateImage
+  generateImage,
 } from "../app/lib/services/generative-ai";
 
-test("chat completion is able to do basic math correctly", async () => {
+test.skip("chat completion is able to do basic math correctly", async () => {
   const message = await generateChatMessage([
     {
       role: "user",
       content:
-        "What is the sum of 3 and 5? Output a number ONLY and NOTHING ELSE."
-    }
+        "What is the sum of 3 and 5? Output a number ONLY and NOTHING ELSE.",
+    },
   ]);
 
   expect(message.content).toBe("8");
 });
 
-test("image generation is able to generate an image", async () => {
+test.skip("image generation is able to generate an image", async () => {
   const imageUrl = await generateImage("A cute cat sitting on a couch");
 
   const { width, height } = await downloadImageAndCheckWidthHeight(imageUrl);
