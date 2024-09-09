@@ -14,48 +14,52 @@ export default function LoginForm() {
     setIsPasswordVisible(!isPasswordVisible);
 
   return (
-    <Card className="p-3">
+    <Card className="p-3 w-full">
       <CardBody>
-        <h1 className="text-2xl text-center font-bold">Login</h1>
-        <Spacer y={4} />
-        <p className="font-bold pl-1">Email</p>
-        <Spacer y={4} />
-        <Input
-          isClearable
-          color="primary"
-          defaultValue="junior@nextui.org"
-          placeholder="Enter your email"
-          type="email"
-          variant="bordered"
-          onClear={() => console.log("input cleared")}
-        />
-        <Spacer y={4} />
-        <p className="font-bold pl-1">Password</p>
-        <Spacer y={4} />
-        <Input
-          color="primary"
-          endContent={
-            <button
-              aria-label="toggle password visibility"
-              className="focus:outline-none"
-              type="button"
-              onClick={togglePasswordVisibility}
-            >
-              {isPasswordVisible ? (
-                <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-              ) : (
-                <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-              )}
-            </button>
-          }
-          placeholder="Enter your password"
-          type={isPasswordVisible ? "text" : "password"}
-          variant="bordered"
-        />
-        <Spacer y={4} />
-        <Button color="primary" type="submit">
-          Login
-        </Button>
+        <form>
+          <h1 className="text-2xl text-center font-bold">Login</h1>
+          <Spacer y={4} />
+          <p className="font-bold pl-1">Email</p>
+          <Spacer y={4} />
+          <Input
+            isClearable
+            color="primary"
+            defaultValue="junior@nextui.org"
+            name="email"
+            placeholder="Enter your email"
+            type="email"
+            variant="bordered"
+            onClear={() => console.log("input cleared")}
+          />
+          <Spacer y={4} />
+          <p className="font-bold pl-1">Password</p>
+          <Spacer y={4} />
+          <Input
+            color="primary"
+            endContent={
+              <button
+                aria-label="toggle password visibility"
+                className="focus:outline-none"
+                type="button"
+                onClick={togglePasswordVisibility}
+              >
+                {isPasswordVisible ? (
+                  <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                ) : (
+                  <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                )}
+              </button>
+            }
+            name="password"
+            placeholder="Enter your password"
+            type={isPasswordVisible ? "text" : "password"}
+            variant="bordered"
+          />
+          <Spacer y={4} />
+          <Button className="w-full" color="primary" type="submit">
+            Login
+          </Button>
+        </form>
       </CardBody>
     </Card>
   );
