@@ -11,6 +11,7 @@
 	},
 	"dependencies": {
 		"@nextui-org/button": "2.0.37",
+		"@nextui-org/card": "^2.0.33",
 		"@nextui-org/code": "2.0.32",
 		"@nextui-org/image": "^2.0.31",
 		"@nextui-org/input": "2.2.4",
@@ -27,6 +28,7 @@
 		"@react-aria/visually-hidden": "3.8.15",
 		"clsx": "2.1.1",
 		"framer-motion": "~11.5.4",
+		"html-react-parser": "^5.1.15",
 		"intl-messageformat": "^10.5.14",
 		"next": "14.2.8",
 		"next-themes": "^0.3.0",
