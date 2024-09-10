@@ -83,20 +83,43 @@ export async function retrieveScene(
 }
 
 // Create a new session for a user
+/**
+  `sessionId` in metadata is ignored; a new ID is always generated.
+  `action` in initialScene is ignored; it is always an empty string.
+
+  Atomicity is guaranteed.
+ */
 export async function createNewSession(
   userId: string,
   metadata: GameSessionMetadata,
+  initialScene: Scene,
 ): Promise<string> {
   if (!(await doesUserExist(userId))) {
     throw new Error("User not found.");
   }
 
   const newSessionId = uuidv4();
+  const initialSceneId = uuidv4();
 
-  await sql`
+  // TODO: does this ACTUALLY ensure atomicity? (this was proposed by ChatGPT)
+  await sql`BEGIN;`;
+
+  try {
+    await sql`
     INSERT INTO game_sessions_table (session_id, user_id, session_name)
-    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName})
+    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName});
   `;
+
+    await sql`
+    INSERT INTO scenes_table (scene_id, session_id, text, image_url, action, scene_order)
+    VALUES (${initialSceneId}, ${newSessionId}, ${initialScene.text}, ${initialScene.imageUrl}, ${""}, ${0});
+  `;
+
+    await sql`COMMIT;`;
+  } catch (error) {
+    await sql`ROLLBACK;`;
+    throw error; // Optionally handle or rethrow the error
+  }
 
   return newSessionId;
 }

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { v4 as uuidv4 } from "uuid";
 
+import sql from "../app/lib/services/sql";
+
 import {
   createNewUser,
   createNewSession,
@@ -9,11 +11,20 @@ import {
   getUserById,
   getSessionLength,
   getUserGameSessions,
-} from "../app/lib/data/apis";
-import sql from "../app/lib/services/sql";
+} from "@/app/lib/data/apis";
 
 const testUserEmail: string = "testuser@example.com";
 const testUserPassword: string = "password123";
+
+const dummySceneText = "dummy scene text";
+const dummySceneImageUrl = "dummy scene image url";
+const dummySceneAction = "dummy scene action";
+
+const dummyInitialScene = {
+  text: dummySceneText,
+  imageUrl: dummySceneImageUrl,
+  action: dummySceneAction,
+};
 
 describe("Database Functions", () => {
   // Create some initial variables for tests
@@ -69,48 +80,72 @@ describe("Database Functions", () => {
   });
 
   it("should create a new session for a user", async () => {
-    sessionId = await createNewSession(userId, {
-      sessionName: "Test Session",
-      sessionId: "",
-    });
+    sessionId = await createNewSession(
+      userId,
+      {
+        sessionName: "Test Session",
+        sessionId: "",
+      },
+      {
+        text: dummySceneText,
+        action: dummySceneAction,
+        imageUrl: dummySceneImageUrl,
+      },
+    );
     expect(sessionId).toBeDefined();
 
     const sessions = await getUserGameSessions(userId);
 
     expect(sessions.length).toBe(1);
     expect(sessions[0].sessionName).toBe("Test Session");
+
+    expect(await getSessionLength(sessionId)).toBe(1);
+
+    const initialScene = await retrieveScene(sessionId, 0);
+
+    expect(initialScene.text).toBe(dummySceneText);
+    expect(initialScene.imageUrl).toBe(dummySceneImageUrl);
+    expect(initialScene.action).toBe("");
   });
 
   it("should throw an error if creating a session for a non-existing user", async () => {
     const nonExistentUserId = uuidv4();
 
     await expect(
-      createNewSession(nonExistentUserId, {
-        sessionName: "Session",
-        sessionId: "",
-      }),
+      createNewSession(
+        nonExistentUserId,
+        {
+          sessionName: "Session",
+          sessionId: "",
+        },
+        dummyInitialScene,
+      ),
     ).rejects.toThrow("User not found.");
   });
 
   it("should add a scene to a session", async () => {
-    sessionId = await createNewSession(userId, {
-      sessionName: "Test Session",
-      sessionId: "",
-    });
+    sessionId = await createNewSession(
+      userId,
+      {
+        sessionName: "Test Session",
+        sessionId: "",
+      },
+      dummyInitialScene,
+    );
 
     await addSceneToSession(sessionId, {
-      text: "First Scene",
+      text: "Second Scene",
       imageUrl: "",
       action: "",
     });
 
     const sessionLength = await getSessionLength(sessionId);
 
-    expect(sessionLength).toBe(1);
+    expect(sessionLength).toBe(2);
 
-    const scene = await retrieveScene(sessionId, 0);
+    const scene = await retrieveScene(sessionId, 1);
 
-    expect(scene.text).toBe("First Scene");
+    expect(scene.text).toBe("Second Scene");
   });
 
   it("should throw an error if session does not exist when adding a scene", async () => {
@@ -126,10 +161,14 @@ describe("Database Functions", () => {
   });
 
   it("should retrieve the correct session length", async () => {
-    sessionId = await createNewSession(userId, {
-      sessionName: "Test Session",
-      sessionId: "",
-    });
+    sessionId = await createNewSession(
+      userId,
+      {
+        sessionName: "Test Session",
+        sessionId: "",
+      },
+      dummyInitialScene,
+    );
 
     await addSceneToSession(sessionId, {
       text: "Scene 1",
@@ -144,7 +183,7 @@ describe("Database Functions", () => {
 
     const sessionLength = await getSessionLength(sessionId);
 
-    expect(sessionLength).toBe(2);
+    expect(sessionLength).toBe(3);
   });
 
   it("should throw an error if retrieving a scene from a non-existing session", async () => {
