@@ -4,7 +4,11 @@ import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 
 import sql from "../services/sql";
-import { GameSessionMetadata, Scene } from "../data/data-models";
+import {
+  GameSessionMetadata,
+  Scene,
+  UserCredentials,
+} from "../data/data-models";
 import {
   GameSessionMetadataTableType,
   UserCredentialsTableType,
@@ -186,4 +190,22 @@ export async function getUserById(
 
   // Return the user credentials
   return userResult.rows[0];
+}
+
+export async function getUserFromEmail(
+  email: string,
+): Promise<UserCredentials | undefined> {
+  try {
+    // delay
+    const user =
+      await sql<UserCredentialsTableType>`SELECT * FROM user_credentials_table WHERE email=${email}`;
+
+    return {
+      userId: user.rows[0].user_id,
+      email: user.rows[0].email,
+      hashedPassword: user.rows[0].hashed_password,
+    };
+  } catch (error) {
+    throw new Error(`Failed to fetch user: ${error}`);
+  }
 }

@@ -7,16 +7,35 @@ import React from "react";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 
+import { authenticate } from "@/app/lib/actions";
+
 export default function LoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const [errorState, setErrorState] = React.useState<string | undefined>(
+    undefined,
+  );
+  const [isPending, setIsPending] = React.useState(false);
 
   const togglePasswordVisibility = () =>
     setIsPasswordVisible(!isPasswordVisible);
 
+  const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    setIsPending(true);
+    setErrorState(undefined);
+
+    const response = await authenticate(formData);
+
+    setErrorState(response);
+    setIsPending(false);
+  };
+
   return (
     <Card className="p-3 w-full">
       <CardBody>
-        <form>
+        <form onSubmit={formAction}>
           <h1 className="text-2xl text-center font-bold">Login</h1>
           <Spacer y={4} />
           <p className="font-bold pl-1">Email</p>
@@ -27,9 +46,7 @@ export default function LoginForm() {
             defaultValue="junior@nextui.org"
             name="email"
             placeholder="Enter your email"
-            type="email"
             variant="bordered"
-            onClear={() => console.log("input cleared")}
           />
           <Spacer y={4} />
           <p className="font-bold pl-1">Password</p>
@@ -56,9 +73,15 @@ export default function LoginForm() {
             variant="bordered"
           />
           <Spacer y={4} />
-          <Button className="w-full" color="primary" type="submit">
+          <Button
+            className="w-full"
+            color="primary"
+            disabled={isPending}
+            type="submit"
+          >
             Login
           </Button>
+          {errorState && <p className="text-red-500">{errorState}</p>}
         </form>
       </CardBody>
     </Card>
