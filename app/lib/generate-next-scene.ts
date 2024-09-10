@@ -14,7 +14,7 @@ const FormSchema = z.object({
   action: z.string().min(1, "Action must be non-empty!"),
 });
 
-export default async function generateNextScene(
+export async function generateNextScene(
   formData: FormData,
 ): Promise<Response> {
   // Validate form fields using zod

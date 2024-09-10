@@ -9,7 +9,7 @@ import {
   getUserById,
   getSessionLength,
   getUserGameSessions,
-} from "../app/lib/data/actions";
+} from "../app/lib/data/apis";
 import sql from "../app/lib/services/sql";
 
 const testUserEmail: string = "testuser@example.com";
@@ -22,10 +22,35 @@ describe("Database Functions", () => {
 
   // Reset the database state before each test
   beforeEach(async () => {
+    // seed the database
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_credentials_table (
+      user_id UUID PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      hashed_password VARCHAR(255) NOT NULL
+    )`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS scenes_table (
+      scene_id UUID PRIMARY KEY,
+      session_id UUID NOT NULL,
+      text TEXT NOT NULL,
+      image_url TEXT,
+      action TEXT,
+      scene_order INT NOT NULL
+    )`;
+
+    await sql`CREATE TABLE IF NOT EXISTS game_sessions_table (
+      session_id UUID PRIMARY KEY,
+      user_id UUID NOT NULL,
+      session_name VARCHAR(255) NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES user_credentials_table (user_id) ON DELETE CASCADE
+    )`;
+
     // Clean up the test database (ensure you are using a test database)
-    await sql`DELETE FROM scenes_test`;
-    await sql`DELETE FROM game_sessions_test`;
-    await sql`DELETE FROM user_credentials_test`;
+    await sql`DELETE FROM scenes_table`;
+    await sql`DELETE FROM game_sessions_table`;
+    await sql`DELETE FROM user_credentials_table`;
 
     // Create a new user for testing
     userId = await createNewUser(testUserEmail, testUserPassword);

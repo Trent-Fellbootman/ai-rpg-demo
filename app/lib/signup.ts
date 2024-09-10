@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 
+import { createNewUser } from "@/app/lib/data/apis";
+
 const FormSchema = z.object({
   email: z.string().email("Email must be valid!"),
   password: z.string().min(6, "Password must be at least 6 characters long!"),
@@ -15,9 +17,9 @@ export type Errors = {
   message?: string;
 };
 
-export type Response = Errors | undefined;
+export type Response = Errors | null;
 
-export default async function signup(formData: FormData): Promise<Response> {
+export async function signup(formData: FormData): Promise<Response> {
   // Validate form fields using zod
   const result = FormSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -29,7 +31,8 @@ export default async function signup(formData: FormData): Promise<Response> {
     return { message: "Passwords do not match!" };
   }
 
-  // TODO: signup the user
+  // signup the user
+  await createNewUser(result.data.email, result.data.password);
 
-  return {};
+  return null;
 }

@@ -10,6 +10,7 @@
 		"test": "vitest"
 	},
 	"dependencies": {
+		"@neondatabase/serverless": "^0.9.5",
 		"@nextui-org/button": "2.0.37",
 		"@nextui-org/card": "^2.0.33",
 		"@nextui-org/code": "2.0.32",
@@ -69,6 +70,7 @@
 		"tailwind-variants": "0.2.1",
 		"tailwindcss": "3.4.10",
 		"typescript": "5.5.4",
+		"vite-tsconfig-paths": "^5.0.1",
 		"vitest": "^2.0.5"
 	}
 }

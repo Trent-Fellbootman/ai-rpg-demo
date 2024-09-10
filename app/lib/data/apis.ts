@@ -11,17 +11,11 @@ import {
   SceneTableType,
 } from "../data/table-definitions";
 
-import {
-  gameSessionsTableName,
-  scenesTableName,
-  userCredentialsTableName,
-} from "./constants";
-
 // Function to check if a user exists
 export async function doesUserExist(userId: string): Promise<boolean> {
   const userCheck = await sql<UserCredentialsTableType>`
     SELECT user_id
-    FROM user_credentials_test
+    FROM user_credentials_table
     WHERE user_id = ${userId}
   `;
 
@@ -32,7 +26,7 @@ export async function doesUserExist(userId: string): Promise<boolean> {
 export async function addSceneToSession(sessionId: string, scene: Scene) {
   const sessionCheck = await sql<GameSessionMetadataTableType>`
     SELECT session_id
-    FROM game_sessions_test
+    FROM game_sessions_table
     WHERE session_id = ${sessionId}
   `;
 
@@ -42,7 +36,7 @@ export async function addSceneToSession(sessionId: string, scene: Scene) {
 
   const orderResult = await sql<{ max_order: number }>`
     SELECT MAX(scene_order) as max_order
-    FROM scenes_test
+    FROM scenes_table
     WHERE session_id = ${sessionId}
   `;
 
@@ -53,7 +47,7 @@ export async function addSceneToSession(sessionId: string, scene: Scene) {
   const newSceneId = uuidv4();
 
   await sql`
-    INSERT INTO scenes_test (scene_id, session_id, text, image_url, action, scene_order)
+    INSERT INTO scenes_table (scene_id, session_id, text, image_url, action, scene_order)
     VALUES (${newSceneId}, ${sessionId}, ${scene.text}, ${scene.imageUrl}, ${scene.action}, ${newOrder})
   `;
 
@@ -67,7 +61,7 @@ export async function retrieveScene(
   // Retrieve the scene based on session ID and scene order
   const sceneResult = await sql<SceneTableType>`
   SELECT text, image_url, action
-  FROM scenes_test
+  FROM scenes_table
   WHERE session_id = ${sessionId} AND scene_order = ${index}`;
 
   if (sceneResult.rowCount === 0) {
@@ -96,7 +90,7 @@ export async function createNewSession(
   const newSessionId = uuidv4();
 
   await sql`
-    INSERT INTO game_sessions_test (session_id, user_id, session_name)
+    INSERT INTO game_sessions_table (session_id, user_id, session_name)
     VALUES (${newSessionId}, ${userId}, ${metadata.sessionName})
   `;
 
@@ -110,7 +104,7 @@ export async function createNewUser(
 ): Promise<string> {
   const emailCheck = await sql<UserCredentialsTableType>`
     SELECT email
-    FROM user_credentials_test
+    FROM user_credentials_table
     WHERE email = ${email}
   `;
 
@@ -122,7 +116,7 @@ export async function createNewUser(
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await sql`
-    INSERT INTO user_credentials_test (user_id, email, hashed_password)
+    INSERT INTO user_credentials_table (user_id, email, hashed_password)
     VALUES (${newUserId}, ${email}, ${hashedPassword})
   `;
 
@@ -139,7 +133,7 @@ export async function getUserGameSessions(
 
   const sessionsResult = await sql<GameSessionMetadataTableType>`
     SELECT session_id, session_name
-    FROM game_sessions_test
+    FROM game_sessions_table
     WHERE user_id = ${userId}
   `;
 
@@ -154,7 +148,7 @@ export async function getSessionLength(sessionId: string): Promise<number> {
   // Check if the session exists
   const sessionCheck = await sql<GameSessionMetadataTableType>`
     SELECT session_id
-    FROM game_sessions_test
+    FROM game_sessions_table
     WHERE session_id = ${sessionId}
   `;
 
@@ -165,7 +159,7 @@ export async function getSessionLength(sessionId: string): Promise<number> {
   // Retrieve the maximum scene order
   const orderResult = await sql<{ max_order: number }>`
     SELECT MAX(scene_order) as max_order
-    FROM scenes_test
+    FROM scenes_table
     WHERE session_id = ${sessionId}
   `;
 
@@ -181,7 +175,7 @@ export async function getUserById(
   // Query the database to retrieve user information based on user ID
   const userResult = await sql<UserCredentialsTableType>`
     SELECT user_id, email, hashed_password
-    FROM user_credentials_test
+    FROM user_credentials_table
     WHERE user_id = ${userId}
   `;
 
