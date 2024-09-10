@@ -1,19 +1,26 @@
 import OpenAI from "openai";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { ZodObject } from "zod";
 
 // FIXME: remove the option in production builds
 const openai = new OpenAI();
 
-export type ChatMessage = {
+export interface ChatMessage<ContentType> {
   role: "user" | "assistant" | "system";
-  content: string;
-};
+  content: ContentType;
+}
 
 export async function generateChatMessage(
-  messages: ChatMessage[],
-): Promise<ChatMessage> {
-  const response = await openai.chat.completions.create({
+  messages: ChatMessage<string>[],
+  responseFormat: ZodObject<any> | undefined = undefined,
+): Promise<ChatMessage<string | { [p: string]: any } | null>> {
+  const response = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     messages: messages,
+    response_format:
+      responseFormat === undefined
+        ? undefined
+        : zodResponseFormat(responseFormat, "structured-output"),
   });
 
   const message = response.choices[0].message;
@@ -23,7 +30,7 @@ export async function generateChatMessage(
   } else {
     return {
       role: message.role,
-      content: message.content,
+      content: responseFormat === undefined ? message.content : message.parsed,
     };
   }
 }

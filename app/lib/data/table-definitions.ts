@@ -17,4 +17,5 @@ export type GameSessionMetadataTableType = {
   session_id: string;
   user_id: string;
   session_name: string;
+  initial_setup: string;
 };
