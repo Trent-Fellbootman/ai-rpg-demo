@@ -7,9 +7,16 @@ import { Button } from "@nextui-org/button";
 
 import { Errors, generateNextScene } from "@/app/lib/generate-next-scene";
 
-export default function ActionInputForm() {
+export default function ActionInputForm({
+  userId,
+  sessionId,
+}: {
+  userId: string;
+  sessionId: string;
+}) {
   const [errorState, setErrorState] = useState<Errors | undefined>({});
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
+  const [action, setAction] = useState<string>(""); // State for the input value
 
   const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -18,9 +25,13 @@ export default function ActionInputForm() {
     setErrorState(undefined);
 
     const formData = new FormData(event.currentTarget);
-    const response = await generateNextScene(formData);
+    const response = await generateNextScene(userId, sessionId, formData);
 
-    setErrorState(response.errors);
+    if (!response) {
+      setAction(""); // Clear the input field after successful action
+    }
+
+    setErrorState(response);
     setIsProcessingAction(false);
   };
 
@@ -34,8 +45,12 @@ export default function ActionInputForm() {
             minRows={2}
             name="action"
             placeholder="Describe what you would like to do"
+            value={action} // Bind value to state
+            onChange={(e) => setAction(e.target.value)} // Update state on input change
           />
-          {errorState && <p className="text-red-500">{errorState.action}</p>}
+          {errorState?.fieldErrors && (
+            <p className="text-red-500">{errorState.fieldErrors.action}</p>
+          )}
         </div>
         <Spacer x={1} />
         <Button color="primary" isLoading={isProcessingAction} type="submit">

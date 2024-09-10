@@ -2,7 +2,10 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ZodObject, infer as ZodInfer } from "zod";
 
-// FIXME: remove the option in production builds
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "generative-ai" });
+
 const openai = new OpenAI();
 
 export interface ChatMessage<ContentType> {
@@ -16,6 +19,8 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
 ): Promise<
   ChatMessage<T extends ZodObject<any> ? ZodInfer<T> : string | null>
 > {
+  log.debug(messages, "Calling OpenAI API to generate chat message");
+
   const response = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     messages: messages,
@@ -26,6 +31,8 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
   });
 
   const message = response.choices[0].message;
+
+  log.debug(message, "Received chat message response from OpenAI API");
 
   if (message.content === null) {
     throw new Error("Generated message content was null");
@@ -43,6 +50,11 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
  * @param description the description of the image
  */
 export async function generateImage(description: string): Promise<string> {
+  log.debug(
+    { description: description },
+    "Calling OpenAI API to generate image",
+  );
+
   const response = await openai.images.generate({
     model: "dall-e-3",
     prompt: description,

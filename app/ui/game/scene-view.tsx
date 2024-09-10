@@ -6,6 +6,7 @@ import parse from "html-react-parser";
 import ActionInputForm from "@/app/ui/game/action-input-form";
 import { getCurrentUser } from "@/app/lib/utils";
 import { getSessionLength, retrieveScene } from "@/app/lib/data/apis";
+import ActionDisplayView from "@/app/ui/game/action-display-view";
 
 export default async function SceneView({
   sessionId,
@@ -18,12 +19,14 @@ export default async function SceneView({
 
   const parsedIndex =
     sceneIndex === "last"
-      ? (await getSessionLength(sessionId as string)) - 1
-      : parseInt(sceneIndex as string);
+      ? (await getSessionLength(sessionId)) - 1
+      : parseInt(sceneIndex);
+
+  const isLastScene = parsedIndex === (await getSessionLength(sessionId)) - 1;
 
   // TODO: retrieve session metadata as well
   const [scene] = await Promise.all([
-    retrieveScene(user.userId, sessionId as string, parsedIndex),
+    retrieveScene(user.userId, sessionId, parsedIndex),
   ]);
 
   return (
@@ -45,7 +48,15 @@ export default async function SceneView({
         <CardBody>{parse(scene.text)}</CardBody>
       </Card>
       <Spacer y={2} />
-      <ActionInputForm />
+      {isLastScene ? (
+        <ActionInputForm sessionId={sessionId} userId={user.userId} />
+      ) : (
+        <ActionDisplayView
+          action={scene.action}
+          sceneIndex={parsedIndex}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 }
