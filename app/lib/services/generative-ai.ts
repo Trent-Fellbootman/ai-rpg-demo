@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
-import { ZodObject } from "zod";
+import { ZodObject, infer as ZodInfer } from "zod";
 
 // FIXME: remove the option in production builds
 const openai = new OpenAI();
@@ -10,10 +10,12 @@ export interface ChatMessage<ContentType> {
   content: ContentType;
 }
 
-export async function generateChatMessage(
+export async function generateChatMessage<T extends ZodObject<any> | undefined>(
   messages: ChatMessage<string>[],
-  responseFormat: ZodObject<any> | undefined = undefined,
-): Promise<ChatMessage<string | { [p: string]: any } | null>> {
+  responseFormat: T = undefined as T,
+): Promise<
+  ChatMessage<T extends ZodObject<any> ? ZodInfer<T> : string | null>
+> {
   const response = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     messages: messages,
@@ -31,7 +33,7 @@ export async function generateChatMessage(
     return {
       role: message.role,
       content: responseFormat === undefined ? message.content : message.parsed,
-    };
+    } as ChatMessage<T extends ZodObject<any> ? ZodInfer<T> : string | null>;
   }
 }
 

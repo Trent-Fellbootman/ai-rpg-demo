@@ -43,7 +43,7 @@ describe("Generative AI", () => {
     };
 
     expect(message.content).toEqual(expectedOutput);
-  });
+  }, 30000);
 
   it.skip("image generation is able to generate an image", async () => {
     const imageUrl = await generateImage("A cute cat sitting on a couch");
