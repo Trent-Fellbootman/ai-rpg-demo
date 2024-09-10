@@ -106,8 +106,8 @@ export async function createNewSession(
 
   try {
     await sql`
-    INSERT INTO game_sessions_table (session_id, user_id, session_name)
-    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName});
+    INSERT INTO game_sessions_table (session_id, user_id, session_name, initial_setup)
+    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName}, ${metadata.backStory});
   `;
 
     await sql`
@@ -168,6 +168,7 @@ export async function getUserGameSessions(
     sessionId: row.session_id,
     userId: row.user_id,
     sessionName: row.session_name,
+    backStory: row.initial_setup,
   }));
 }
 
@@ -222,6 +223,9 @@ export async function getUserFromEmail(
     // delay
     const user =
       await sql<UserCredentialsTableType>`SELECT * FROM user_credentials_table WHERE email=${email}`;
+
+    console.log(`email: ${email}`)
+    console.log(`user: ${user.rows[0]}`)
 
     return {
       userId: user.rows[0].user_id,

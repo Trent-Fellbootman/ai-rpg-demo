@@ -19,6 +19,15 @@ const testUserPassword: string = "password123";
 const dummySceneText = "dummy scene text";
 const dummySceneImageUrl = "dummy scene image url";
 const dummySceneAction = "dummy scene action";
+const dummySessionName = "dummy session name";
+const dummyBackStory = "dummy back story";
+const dummySessionId = "dummy session ID";
+
+const dummySessionMetadata = {
+  sessionName: dummySessionName,
+  sessionId: dummySessionId,
+  backStory: dummyBackStory,
+};
 
 const dummyInitialScene = {
   text: dummySceneText,
@@ -33,6 +42,11 @@ describe("Database Functions", () => {
 
   // Reset the database state before each test
   beforeEach(async () => {
+    // Clean up the test database (ensure you are using a test database)
+    await sql`DROP TABLE IF EXISTS scenes_table`;
+    await sql`DROP TABLE IF EXISTS game_sessions_table`;
+    await sql`DROP TABLE IF EXISTS user_credentials_table`;
+
     // seed the database
     await sql`
       CREATE TABLE IF NOT EXISTS user_credentials_table (
@@ -54,14 +68,9 @@ describe("Database Functions", () => {
     await sql`CREATE TABLE IF NOT EXISTS game_sessions_table (
       session_id UUID PRIMARY KEY,
       user_id UUID NOT NULL,
-      session_name VARCHAR(255) NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES user_credentials_table (user_id) ON DELETE CASCADE
+      session_name TEXT NOT NULL,
+      initial_setup TEXT NOT NULL
     )`;
-
-    // Clean up the test database (ensure you are using a test database)
-    await sql`DELETE FROM scenes_table`;
-    await sql`DELETE FROM game_sessions_table`;
-    await sql`DELETE FROM user_credentials_table`;
 
     // Create a new user for testing
     userId = await createNewUser(testUserEmail, testUserPassword);
@@ -82,22 +91,15 @@ describe("Database Functions", () => {
   it("should create a new session for a user", async () => {
     sessionId = await createNewSession(
       userId,
-      {
-        sessionName: "Test Session",
-        sessionId: "",
-      },
-      {
-        text: dummySceneText,
-        action: dummySceneAction,
-        imageUrl: dummySceneImageUrl,
-      },
+      dummySessionMetadata,
+      dummyInitialScene,
     );
     expect(sessionId).toBeDefined();
 
     const sessions = await getUserGameSessions(userId);
 
     expect(sessions.length).toBe(1);
-    expect(sessions[0].sessionName).toBe("Test Session");
+    expect(sessions[0].sessionName).toBe(dummySessionMetadata.sessionName);
 
     expect(await getSessionLength(sessionId)).toBe(1);
 
@@ -114,10 +116,7 @@ describe("Database Functions", () => {
     await expect(
       createNewSession(
         nonExistentUserId,
-        {
-          sessionName: "Session",
-          sessionId: "",
-        },
+        dummySessionMetadata,
         dummyInitialScene,
       ),
     ).rejects.toThrow("User not found.");
@@ -126,10 +125,7 @@ describe("Database Functions", () => {
   it("should add a scene to a session", async () => {
     sessionId = await createNewSession(
       userId,
-      {
-        sessionName: "Test Session",
-        sessionId: "",
-      },
+      dummySessionMetadata,
       dummyInitialScene,
     );
 
@@ -163,10 +159,7 @@ describe("Database Functions", () => {
   it("should retrieve the correct session length", async () => {
     sessionId = await createNewSession(
       userId,
-      {
-        sessionName: "Test Session",
-        sessionId: "",
-      },
+      dummySessionMetadata,
       dummyInitialScene,
     );
 

@@ -13,4 +13,5 @@ export type Scene = {
 export type GameSessionMetadata = {
   sessionId: string;
   sessionName: string;
+  backStory: string;
 };

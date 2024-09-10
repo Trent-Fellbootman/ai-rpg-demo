@@ -1,18 +1,11 @@
 import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
 
-import { auth } from "@/auth";
-import { getUserFromEmail, getUserGameSessions } from "@/app/lib/data/apis";
+import { getUserGameSessions } from "@/app/lib/data/apis";
+import { getCurrentUser } from "@/app/lib/utils";
 
 export default async function GameCardsView() {
-  const session = await auth();
-
-  if (!session) {
-    return <p className="text-red-500">Failed to authenticate user</p>;
-  }
-
-  const email = session!.user!.email!;
-  const userId = (await getUserFromEmail(email))!.userId;
+  const userId = (await getCurrentUser()).userId;
 
   const userSessions = await getUserGameSessions(userId);
 
