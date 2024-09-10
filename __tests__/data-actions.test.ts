@@ -14,6 +14,10 @@ import {
   getSessionLength,
   getUserGameSessions,
   getUserFromEmail,
+  doesUserExist,
+  doesSessionExist,
+  addGeneratedSceneToSession,
+  getScenes,
 } from "@/app/lib/data/apis";
 
 const testUserEmail: string = "testuser@example.com";
@@ -211,5 +215,90 @@ describe("Database Functions", () => {
         0,
       ),
     ).rejects.toThrow("Session not found for the user.");
+  });
+
+  it("should return true if user exists", async () => {
+    const exists = await doesUserExist(userId);
+
+    expect(exists).toBe(true);
+  });
+
+  it("should return false if user does not exist", async () => {
+    const exists = await doesUserExist(uuidv4());
+
+    expect(exists).toBe(false);
+  });
+
+  it("should return true if session exists", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+    const exists = await doesSessionExist(sessionId);
+
+    expect(exists).toBe(true);
+  });
+
+  it("should return false if session does not exist", async () => {
+    const exists = await doesSessionExist(uuidv4());
+
+    expect(exists).toBe(false);
+  });
+
+  it("should add a generated scene to session", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    const generatedScene = {
+      text: "Generated Scene",
+      imageUrl: "generated scene image url",
+      imageDescription: "generated scene image description",
+      action: "",
+    };
+
+    await addGeneratedSceneToSession(
+      sessionId,
+      "previous action",
+      generatedScene,
+    );
+
+    const sessionLength = await getSessionLength(sessionId);
+
+    expect(sessionLength).toBe(2);
+
+    const initialScene = await retrieveScene(userId, sessionId, 0);
+
+    expect(initialScene.action).toBe("previous action");
+
+    const scene = await retrieveScene(userId, sessionId, 1);
+
+    const expectedScene = { ...generatedScene, action: "" };
+
+    expect(scene).toEqual(expectedScene);
+  });
+
+  it("should retrieve all scenes in a session", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    await addSceneToSession(sessionId, {
+      text: "Scene 1",
+      imageUrl: "",
+      imageDescription: "",
+      action: "",
+    });
+
+    const scenes = await getScenes(sessionId);
+
+    expect(scenes.length).toBe(2);
+    expect(scenes[0].text).toBe(dummyInitialScene.text);
+    expect(scenes[1].text).toBe("Scene 1");
   });
 });

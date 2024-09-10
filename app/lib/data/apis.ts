@@ -16,6 +16,7 @@ import {
 } from "../data/table-definitions";
 
 // Function to check if a user exists
+// TODO: unit test this function
 export async function doesUserExist(userId: string): Promise<boolean> {
   const userCheck = await sql<UserCredentialsTableType>`
     SELECT user_id
@@ -28,13 +29,7 @@ export async function doesUserExist(userId: string): Promise<boolean> {
 
 // Add a scene to a session
 export async function addSceneToSession(sessionId: string, scene: Scene) {
-  const sessionCheck = await sql<GameSessionMetadataTableType>`
-    SELECT session_id
-    FROM game_sessions_table
-    WHERE session_id = ${sessionId}
-  `;
-
-  if (sessionCheck.rowCount === 0) {
+  if (!(await doesSessionExist(sessionId))) {
     throw new Error("Session not found.");
   }
 
@@ -54,6 +49,66 @@ export async function addSceneToSession(sessionId: string, scene: Scene) {
     INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
     VALUES (${newSceneId}, ${sessionId}, ${scene.text}, ${scene.imageUrl}, ${scene.imageDescription}, ${scene.action}, ${newOrder})
   `;
+}
+
+// TODO: unit test this function
+export async function doesSessionExist(sessionId: string) {
+  const sessionCheck = await sql<GameSessionMetadataTableType>`
+    SELECT session_id
+    FROM game_sessions_table
+    WHERE session_id = ${sessionId}
+  `;
+
+  return sessionCheck.rowCount !== null && sessionCheck.rowCount > 0;
+}
+
+/**
+ * `newScene.action` is always ignored and set to an empty string.
+ * `action` refers to the "previous action" that was taken.
+ * @param sessionId
+ * @param action
+ * @param newScene
+ */
+// TODO: unit test this function
+export async function addGeneratedSceneToSession(
+  sessionId: string,
+  action: string,
+  newScene: Scene,
+) {
+  if (!(await doesSessionExist(sessionId))) {
+    throw new Error("Session not found.");
+  }
+
+  const orderResult = await sql<{ max_order: number }>`
+    SELECT MAX(scene_order) as max_order
+    FROM scenes_table
+    WHERE session_id = ${sessionId}
+  `;
+
+  const newOrder =
+    orderResult.rows[0].max_order !== null
+      ? orderResult.rows[0].max_order + 1
+      : 0;
+  const newSceneId = uuidv4();
+
+  // set the action field in the last scene and insert the new scene in an atomic manner
+  await sql`BEGIN;`;
+  try {
+    await sql`
+      UPDATE scenes_table
+      SET action = ${action}
+      WHERE session_id = ${sessionId}
+      AND scene_order = ${newOrder - 1}
+    `;
+    await sql`
+      INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
+      VALUES (${newSceneId}, ${sessionId}, ${newScene.text}, ${newScene.imageUrl}, ${newScene.imageDescription}, ${""}, ${newOrder})
+    `;
+    await sql`COMMIT;`;
+  } catch (error) {
+    await sql`ROLLBACK;`;
+    throw error; // Optionally handle or rethrow the error
+  }
 }
 
 export async function retrieveScene(
