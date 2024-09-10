@@ -59,9 +59,21 @@ export async function addSceneToSession(sessionId: string, scene: Scene) {
 }
 
 export async function retrieveScene(
+  userId: string,
   sessionId: string,
   index: number,
 ): Promise<Scene> {
+  // check if the session belongs to the user and reject if it doesn't
+  const sessionCheck = await sql<GameSessionMetadataTableType>`
+    SELECT session_id
+    FROM game_sessions_table
+    WHERE session_id = ${sessionId} AND user_id = ${userId}
+  `;
+
+  if (sessionCheck.rowCount === 0) {
+    throw new Error("Session not found for the user.");
+  }
+
   // Retrieve the scene based on session ID and scene order
   const sceneResult = await sql<SceneTableType>`
   SELECT text, image_url, action
@@ -69,8 +81,6 @@ export async function retrieveScene(
   WHERE session_id = ${sessionId} AND scene_order = ${index}`;
 
   if (sceneResult.rowCount === 0) {
-    console.log("Scene not found.");
-
     throw new Error("Scene not found.");
   }
 

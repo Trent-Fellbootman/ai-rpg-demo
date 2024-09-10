@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 
 import sql from "../app/lib/services/sql";
 
+// TODO: check that user cannot access sessions not belonging to him/her.
+
 import {
   createNewUser,
   createNewSession,
@@ -11,6 +13,7 @@ import {
   getUserById,
   getSessionLength,
   getUserGameSessions,
+  getUserFromEmail,
 } from "@/app/lib/data/apis";
 
 const testUserEmail: string = "testuser@example.com";
@@ -110,7 +113,7 @@ describe("Database Functions", () => {
 
     expect(await getSessionLength(sessionId)).toBe(1);
 
-    const initialScene = await retrieveScene(sessionId, 0);
+    const initialScene = await retrieveScene(userId, sessionId, 0);
 
     expect(initialScene.text).toBe(dummySceneText);
     expect(initialScene.imageUrl).toBe(dummySceneImageUrl);
@@ -146,7 +149,7 @@ describe("Database Functions", () => {
 
     expect(sessionLength).toBe(2);
 
-    const scene = await retrieveScene(sessionId, 1);
+    const scene = await retrieveScene(userId, sessionId, 1);
 
     expect(scene.text).toBe("Second Scene");
   });
@@ -189,8 +192,12 @@ describe("Database Functions", () => {
   it("should throw an error if retrieving a scene from a non-existing session", async () => {
     const nonExistentSessionId = uuidv4();
 
-    await expect(retrieveScene(nonExistentSessionId, 0)).rejects.toThrow(
-      "Scene not found.",
-    );
+    await expect(
+      retrieveScene(
+        (await getUserFromEmail(testUserEmail))!.userId!,
+        nonExistentSessionId,
+        0,
+      ),
+    ).rejects.toThrow("Session not found for the user.");
   });
 });
