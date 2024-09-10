@@ -27,7 +27,12 @@ export const { auth, signIn, signOut } = NextAuth({
             user.hashedPassword,
           );
 
-          if (passwordsMatch) return user;
+          if (passwordsMatch) {
+            return {
+              email: user.email,
+              id: user.userId,
+            };
+          }
         }
 
         return null;

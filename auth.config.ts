@@ -8,7 +8,10 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnRestrictedPage = nextUrl.pathname.startsWith("/play");
+      const isOnRestrictedPage =
+        nextUrl.pathname.startsWith("/play") ||
+        nextUrl.pathname.startsWith("/dashboard") ||
+        nextUrl.pathname.startsWith("/game");
 
       if (isOnRestrictedPage) {
         return isLoggedIn;
