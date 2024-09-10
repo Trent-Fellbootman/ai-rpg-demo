@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 
 import { authConfig } from "./auth.config";
 
-import { getUserFromEmail } from "@/app/lib/data/apis";
+import { doesUserExist, getUserFromEmail } from "@/app/lib/data/apis";
 
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -18,6 +18,7 @@ export const { auth, signIn, signOut } = NextAuth({
 
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
+
           const user = await getUserFromEmail(email);
 
           if (!user) return null;

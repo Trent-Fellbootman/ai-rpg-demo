@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { v4 as uuidv4 } from "uuid";
 
 import sql from "../app/lib/services/sql";
@@ -75,6 +75,13 @@ describe("Database Functions", () => {
     // Create a new user for testing
     userId = await createNewUser(testUserEmail, testUserPassword);
     expect(userId).toBeDefined();
+  });
+
+  afterAll(async () => {
+    // clear all tables
+    await sql`DELETE FROM scenes_table`;
+    await sql`DELETE FROM game_sessions_table`;
+    await sql`DELETE FROM user_credentials_table`;
   });
 
   it("should create a new user and retrieve it", async () => {

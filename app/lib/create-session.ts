@@ -82,6 +82,7 @@ Use your wildest imaginations to make the game fun
     user.userId,
     {
       sessionName: result.data.name,
+      backStory: result.data.back_story,
       sessionId: "",
     },
     {

@@ -218,14 +218,15 @@ export async function getUserById(
 
 export async function getUserFromEmail(
   email: string,
-): Promise<UserCredentials | undefined> {
+): Promise<UserCredentials | null> {
   try {
     // delay
     const user =
       await sql<UserCredentialsTableType>`SELECT * FROM user_credentials_table WHERE email=${email}`;
 
-    console.log(`email: ${email}`)
-    console.log(`user: ${user.rows[0]}`)
+    if (user.rowCount === 0) {
+      return null;
+    }
 
     return {
       userId: user.rows[0].user_id,
@@ -233,6 +234,6 @@ export async function getUserFromEmail(
       hashedPassword: user.rows[0].hashed_password,
     };
   } catch (error) {
-    throw new Error(`Failed to fetch user: ${error}`);
+    throw new Error(`Internal Error: ${error}`);
   }
 }

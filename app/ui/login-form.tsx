@@ -8,6 +8,7 @@ import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 
 import { authenticate } from "@/app/lib/actions";
+import { Link } from "@nextui-org/link";
 
 export default function LoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
@@ -43,7 +44,6 @@ export default function LoginForm() {
           <Input
             isClearable
             color="primary"
-            defaultValue="junior@nextui.org"
             name="email"
             placeholder="Enter your email"
             variant="bordered"
@@ -82,6 +82,9 @@ export default function LoginForm() {
             Login
           </Button>
           {errorState && <p className="text-red-500">{errorState}</p>}
+          <div className="text-center">
+            Don&apos;t have an account? Sign up <Link href="/signup">here</Link>!
+          </div>
         </form>
       </CardBody>
     </Card>
