@@ -8,9 +8,11 @@ import { getCurrentUser } from "@/app/lib/utils";
 import { getSessionLength, retrieveScene } from "@/app/lib/data/apis";
 
 export default async function SceneView({
-  params: { sessionId, sceneIndex },
+  sessionId,
+  sceneIndex,
 }: {
-  params: { sessionId: string; sceneIndex: string };
+  sessionId: string;
+  sceneIndex: string;
 }) {
   const user = (await getCurrentUser())!;
 
@@ -25,7 +27,7 @@ export default async function SceneView({
   ]);
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <Image
         alt="Picture of the author"
         className="rounded-xl"

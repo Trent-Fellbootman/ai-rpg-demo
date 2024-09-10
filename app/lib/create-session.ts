@@ -62,6 +62,9 @@ This will be used to generate an image with AI.
 2. \`content\` - A BRIEF description of what the current situation of the player,
 e.g., "You wake up on a deserted island. There are distant groans from afar."
 This will be presented to the player who does not like reading through long texts.
+Notice that this will be rendered as HTML,
+so you have the ability to use HTML tags in your response.
+Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
@@ -94,5 +97,5 @@ Use your wildest imaginations to make the game fun
   );
 
   // redirect to new session
-  redirect(`/game/${newSessionId}`);
+  redirect(`/game/${newSessionId}/play`);
 }

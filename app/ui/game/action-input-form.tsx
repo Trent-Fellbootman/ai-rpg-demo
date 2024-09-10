@@ -1,23 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Textarea } from "@nextui-org/input";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 
-import generateNextScene, { Errors } from "@/app/lib/generate-next-scene";
+import { Errors, generateNextScene } from "@/app/lib/generate-next-scene";
 
 export default function ActionInputForm() {
-  const [state, setState] = useState<Errors | undefined>({});
+  const [errorState, setErrorState] = useState<Errors | undefined>({});
+  const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
 
-  const formAction = async (formData: FormData) => {
+  const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsProcessingAction(true);
+    setErrorState(undefined);
+
+    const formData = new FormData(event.currentTarget);
     const response = await generateNextScene(formData);
 
-    setState(response.errors);
+    setErrorState(response.errors);
+    setIsProcessingAction(false);
   };
 
   return (
-    <form action={formAction}>
+    <form onSubmit={formAction}>
       <div className="flex flex-row items-center">
         <div className="flex flex-col flex-1">
           <Textarea
@@ -27,10 +35,10 @@ export default function ActionInputForm() {
             name="action"
             placeholder="Describe what you would like to do"
           />
-          {state && <p className="text-red-500">{state.action}</p>}
+          {errorState && <p className="text-red-500">{errorState.action}</p>}
         </div>
         <Spacer x={1} />
-        <Button color="primary" type="submit">
+        <Button color="primary" isLoading={isProcessingAction} type="submit">
           Take Action
         </Button>
       </div>

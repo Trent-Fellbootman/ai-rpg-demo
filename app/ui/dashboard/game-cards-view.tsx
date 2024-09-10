@@ -20,21 +20,23 @@ export default async function GameCardsView() {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
       {userSessions.map((item, index) => (
-        <Card key={index} shadow="sm">
-          <CardBody className="overflow-visible p-0">
-            <Image
-              alt={item.sessionName}
-              className="w-full object-cover h-[140px]"
-              radius="lg"
-              shadow="sm"
-              src={""}
-              width="100%"
-            />
-          </CardBody>
-          <CardFooter className="text-small justify-between">
-            <b>{item.sessionName}</b>
-          </CardFooter>
-        </Card>
+        <a key={item.sessionId} href={`/game/${item.sessionId}/play/last`}>
+          <Card key={index} isHoverable shadow="sm">
+            <CardBody className="overflow-visible p-0">
+              <Image
+                alt={item.sessionName}
+                className="w-full object-cover h-[140px]"
+                radius="lg"
+                shadow="sm"
+                src={""}
+                width="100%"
+              />
+            </CardBody>
+            <CardFooter className="text-small justify-between">
+              <b>{item.sessionName}</b>
+            </CardFooter>
+          </Card>
+        </a>
       ))}
     </div>
   );

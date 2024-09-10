@@ -24,6 +24,9 @@ export async function generateNextScene(
     return { errors: result.error.flatten().fieldErrors };
   }
 
+  // delay
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   // TODO
   return {};
 }
