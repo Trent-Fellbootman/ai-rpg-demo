@@ -92,6 +92,7 @@ Use your wildest imaginations to make the game fun
       text: initialScene.content,
       // TODO
       imageUrl: "",
+      imageDescription: initialScene.image_description,
       action: "",
     },
   );

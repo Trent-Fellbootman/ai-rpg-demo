@@ -21,6 +21,7 @@ const testUserPassword: string = "password123";
 
 const dummySceneText = "dummy scene text";
 const dummySceneImageUrl = "dummy scene image url";
+const dummySceneImageDescription = "dummy scene image description";
 const dummySceneAction = "dummy scene action";
 const dummySessionName = "dummy session name";
 const dummyBackStory = "dummy back story";
@@ -35,6 +36,7 @@ const dummySessionMetadata = {
 const dummyInitialScene = {
   text: dummySceneText,
   imageUrl: dummySceneImageUrl,
+  imageDescription: dummySceneImageDescription,
   action: dummySceneAction,
 };
 
@@ -64,6 +66,7 @@ describe("Database Functions", () => {
       session_id UUID NOT NULL,
       text TEXT NOT NULL,
       image_url TEXT,
+      image_description TEXT,
       action TEXT,
       scene_order INT NOT NULL
     )`;
@@ -115,9 +118,12 @@ describe("Database Functions", () => {
 
     const initialScene = await retrieveScene(userId, sessionId, 0);
 
-    expect(initialScene.text).toBe(dummySceneText);
-    expect(initialScene.imageUrl).toBe(dummySceneImageUrl);
-    expect(initialScene.action).toBe("");
+    const expectedInitialScene = {
+      ...dummyInitialScene,
+      action: "",
+    };
+
+    expect(initialScene).toEqual(expectedInitialScene);
   });
 
   it("should throw an error if creating a session for a non-existing user", async () => {
@@ -139,11 +145,14 @@ describe("Database Functions", () => {
       dummyInitialScene,
     );
 
-    await addSceneToSession(sessionId, {
+    const secondScene = {
       text: "Second Scene",
-      imageUrl: "",
-      action: "",
-    });
+      imageUrl: "second scene image url",
+      imageDescription: "second scene image description",
+      action: "second scene action",
+    };
+
+    await addSceneToSession(sessionId, secondScene);
 
     const sessionLength = await getSessionLength(sessionId);
 
@@ -151,7 +160,7 @@ describe("Database Functions", () => {
 
     const scene = await retrieveScene(userId, sessionId, 1);
 
-    expect(scene.text).toBe("Second Scene");
+    expect(scene).toEqual(secondScene);
   });
 
   it("should throw an error if session does not exist when adding a scene", async () => {
@@ -161,6 +170,7 @@ describe("Database Functions", () => {
       addSceneToSession(nonExistentSessionId, {
         text: "Scene",
         imageUrl: "",
+        imageDescription: "",
         action: "",
       }),
     ).rejects.toThrow("Session not found.");
@@ -176,11 +186,13 @@ describe("Database Functions", () => {
     await addSceneToSession(sessionId, {
       text: "Scene 1",
       imageUrl: "",
+      imageDescription: "",
       action: "",
     });
     await addSceneToSession(sessionId, {
       text: "Scene 2",
       imageUrl: "",
+      imageDescription: "",
       action: "",
     });
 

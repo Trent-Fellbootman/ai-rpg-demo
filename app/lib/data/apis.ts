@@ -51,11 +51,9 @@ export async function addSceneToSession(sessionId: string, scene: Scene) {
   const newSceneId = uuidv4();
 
   await sql`
-    INSERT INTO scenes_table (scene_id, session_id, text, image_url, action, scene_order)
-    VALUES (${newSceneId}, ${sessionId}, ${scene.text}, ${scene.imageUrl}, ${scene.action}, ${newOrder})
+    INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
+    VALUES (${newSceneId}, ${sessionId}, ${scene.text}, ${scene.imageUrl}, ${scene.imageDescription}, ${scene.action}, ${newOrder})
   `;
-
-  console.log("Scene successfully added.");
 }
 
 export async function retrieveScene(
@@ -76,7 +74,7 @@ export async function retrieveScene(
 
   // Retrieve the scene based on session ID and scene order
   const sceneResult = await sql<SceneTableType>`
-  SELECT text, image_url, action
+  SELECT text, image_url, image_description, action
   FROM scenes_table
   WHERE session_id = ${sessionId} AND scene_order = ${index}`;
 
@@ -88,6 +86,7 @@ export async function retrieveScene(
   return {
     text: sceneResult.rows[0].text,
     imageUrl: sceneResult.rows[0].image_url,
+    imageDescription: sceneResult.rows[0].image_description,
     action: sceneResult.rows[0].action,
   };
 }
@@ -121,8 +120,8 @@ export async function createNewSession(
   `;
 
     await sql`
-    INSERT INTO scenes_table (scene_id, session_id, text, image_url, action, scene_order)
-    VALUES (${initialSceneId}, ${newSessionId}, ${initialScene.text}, ${initialScene.imageUrl}, ${""}, ${0});
+    INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
+    VALUES (${initialSceneId}, ${newSessionId}, ${initialScene.text}, ${initialScene.imageUrl}, ${initialScene.imageDescription}, ${""}, ${0});
   `;
 
     await sql`COMMIT;`;
@@ -180,6 +179,62 @@ export async function getUserGameSessions(
     sessionName: row.session_name,
     backStory: row.initial_setup,
   }));
+}
+
+/**
+ * Retrieves all scenes in a session, sorted by scene order (low order first).
+ * @param sessionId
+ */
+// TODO: Unit test this function
+export async function getScenes(sessionId: string): Promise<Scene[]> {
+  const scenesResult = await sql<SceneTableType>`
+    SELECT text, image_url, action
+    FROM scenes_table
+    WHERE session_id = ${sessionId}
+    ORDER BY scene_order ASC
+  `;
+
+  return scenesResult.rows.map((row) => ({
+    text: row.text,
+    imageUrl: row.image_url,
+    imageDescription: row.image_description,
+    action: row.action,
+  }));
+}
+
+export async function doesUserOwnSession(userId: string, sessionId: string) {
+  // Check if the session exists
+  const sessionCheck = await sql<GameSessionMetadataTableType>`
+    SELECT session_id, user_id
+    FROM game_sessions_table
+    WHERE session_id = ${sessionId}
+  `;
+
+  if (sessionCheck.rowCount === 0) {
+    throw new Error("Session not found.");
+  }
+
+  return sessionCheck.rows[0].user_id === userId;
+}
+
+export async function getSessionMetadata(
+  sessionId: string,
+): Promise<GameSessionMetadata> {
+  const sessionCheck = await sql<GameSessionMetadataTableType>`
+    SELECT session_id, session_name, initial_setup
+    FROM game_sessions_table
+    WHERE session_id = ${sessionId}
+  `;
+
+  if (sessionCheck.rowCount === 0) {
+    throw new Error("Session not found.");
+  }
+
+  return {
+    sessionId: sessionCheck.rows[0].session_id,
+    sessionName: sessionCheck.rows[0].session_name,
+    backStory: sessionCheck.rows[0].initial_setup,
+  };
 }
 
 export async function getSessionLength(sessionId: string): Promise<number> {
