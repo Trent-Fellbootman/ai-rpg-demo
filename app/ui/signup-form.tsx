@@ -7,7 +7,7 @@ import React from "react";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 
-import signup, { Response } from "@/app/lib/signup";
+import { Response, signup } from "@/app/lib/signup";
 
 export default function SignupForm() {
   const [isFirstPasswordVisible, setIsFirstPasswordVisible] =
@@ -22,7 +22,7 @@ export default function SignupForm() {
   const toggleSecondPasswordVisibility = () =>
     setIsSecondPasswordVisible(!isSecondPasswordVisible);
 
-  const [responseState, setResponseState] = React.useState<Response>(undefined);
+  const [responseState, setResponseState] = React.useState<Response>(null);
 
   async function formAction(formData: FormData) {
     const response = await signup(formData);
@@ -44,7 +44,6 @@ export default function SignupForm() {
             name="email"
             placeholder="Enter your email"
             variant="bordered"
-            onClear={() => console.log("input cleared")}
           />
           {responseState?.fieldErrors?.email &&
             responseState?.fieldErrors.email.map((error: string) => (

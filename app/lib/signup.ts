@@ -32,7 +32,11 @@ export async function signup(formData: FormData): Promise<Response> {
   }
 
   // signup the user
-  await createNewUser(result.data.email, result.data.password);
+  try {
+    await createNewUser(result.data.email, result.data.password);
+  } catch (error) {
+    return { message: `An error occurred: ${error}` };
+  }
 
   return null;
 }
