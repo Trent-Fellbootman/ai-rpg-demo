@@ -3,8 +3,8 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 
-import { generateChatMessage } from "@/app/lib/services/generative-ai";
-import { createNewSession } from "@/app/lib/data/apis";
+import { generateChatMessage, generateImage } from "@/app/lib/services/generative-ai";
+import { createNewSession, downloadImageToStorage } from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
 
 const FormSchema = z.object({
@@ -78,7 +78,11 @@ Use your wildest imaginations to make the game fun
 
   const initialScene = initialSceneGenerationResponse.content;
 
-  // TODO: generate image
+  // generate image
+  const imageUrl = await generateImage(initialScene.image_description);
+
+  // add image to storage
+  const imagePath = await downloadImageToStorage(imageUrl);
 
   // insert session as well as the initial scene in one transaction
   const newSessionId = await createNewSession(
@@ -90,8 +94,7 @@ Use your wildest imaginations to make the game fun
     },
     {
       text: initialScene.content,
-      // TODO
-      imageStoragePath: "",
+      imageStoragePath: imagePath,
       imageDescription: initialScene.image_description,
       action: "",
     },

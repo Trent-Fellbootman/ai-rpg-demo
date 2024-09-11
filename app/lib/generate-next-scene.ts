@@ -7,10 +7,14 @@ import { redirect } from "next/navigation";
 import {
   addGeneratedSceneToSession,
   doesUserOwnSession,
+  downloadImageToStorage,
   getScenes,
   getSessionMetadata,
 } from "@/app/lib/data/apis";
-import { generateChatMessage } from "@/app/lib/services/generative-ai";
+import {
+  generateChatMessage,
+  generateImage,
+} from "@/app/lib/services/generative-ai";
 
 type FieldErrors = {
   action?: string[];
@@ -116,11 +120,16 @@ Use your wildest imaginations to make the game fun
     }),
   );
 
+  // generate image
+  const imageUrl = await generateImage(response.content.image_description);
+
+  // add image to storage
+  const imagePath = await downloadImageToStorage(imageUrl);
+
   // update action in the current last scene and add a new scene with empty action in an atomic manner
   await addGeneratedSceneToSession(sessionId, result.data.action, {
     text: response.content.content,
-    // TODO
-    imageStoragePath: "",
+    imageStoragePath: imagePath,
     imageDescription: response.content.image_description,
     action: "",
   });

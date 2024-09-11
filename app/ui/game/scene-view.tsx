@@ -5,7 +5,11 @@ import parse from "html-react-parser";
 
 import ActionInputForm from "@/app/ui/game/action-input-form";
 import { getCurrentUser } from "@/app/lib/utils";
-import { getSessionLength, retrieveScene } from "@/app/lib/data/apis";
+import {
+  createTemporaryUrl,
+  getSessionLength,
+  retrieveScene,
+} from "@/app/lib/data/apis";
 import ActionDisplayView from "@/app/ui/game/action-display-view";
 
 export default async function SceneView({
@@ -34,14 +38,14 @@ export default async function SceneView({
       <Image
         alt="Picture of the author"
         className="rounded-xl"
-        height={672}
+        height={1024}
         sizes="100vw"
-        src={scene.imageStoragePath}
+        src={await createTemporaryUrl(scene.imageStoragePath)}
         style={{
           width: "100%",
           height: "auto",
         }}
-        width={1008}
+        width={1024}
       />
       <Spacer y={2} />
       <Card>

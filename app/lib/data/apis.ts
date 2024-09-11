@@ -344,17 +344,17 @@ export async function downloadImageToStorage(
   const blob = await response.blob();
   const url = new URL(imageUrl);
   const suffix = url.pathname.split(".").pop() as string;
-  const filename = `${uuidv4()}.${suffix}`;
+  const filepath = `${uuidv4()}.${suffix}`;
 
   const { error } = await supabase.storage
     .from(imagesStorageBucketName)
-    .upload(filename, blob);
+    .upload(filepath, blob);
 
   if (error) {
     throw new Error(`Error uploading image: ${error.message}`);
   }
 
-  return filename;
+  return filepath;
 }
 
 export async function createTemporaryUrl(filename: string): Promise<string> {

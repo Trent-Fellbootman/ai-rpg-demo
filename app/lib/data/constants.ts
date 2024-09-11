@@ -1,1 +1,1 @@
-export const imagesStorageBucketName = "images-bucket";
+export const imagesStorageBucketName = "images-storage";
