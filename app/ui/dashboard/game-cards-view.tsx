@@ -1,7 +1,11 @@
 import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
 
-import { getUserGameSessions } from "@/app/lib/data/apis";
+import {
+  createTemporaryUrl,
+  getUserGameSessions,
+  retrieveScene,
+} from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
 import { getScenePagePath } from "@/app/lib/utils/path";
 
@@ -9,6 +13,14 @@ export default async function GameCardsView() {
   const userId = (await getCurrentUser()).userId;
 
   const userSessions = await getUserGameSessions(userId);
+  const sessionCoverImageUrls = await Promise.all(
+    userSessions.map(
+      async (item) =>
+        await createTemporaryUrl(
+          (await retrieveScene(userId, item.sessionId, 0)).imageStoragePath,
+        ),
+    ),
+  );
 
   if (userSessions.length === 0) {
     return (
@@ -29,7 +41,7 @@ export default async function GameCardsView() {
                 className="w-full object-cover h-[140px]"
                 radius="lg"
                 shadow="sm"
-                src={""}
+                src={sessionCoverImageUrls[index]}
                 width="100%"
               />
             </CardBody>
