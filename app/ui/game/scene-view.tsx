@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
 import { Card, CardBody } from "@nextui-org/card";
 import parse from "html-react-parser";
