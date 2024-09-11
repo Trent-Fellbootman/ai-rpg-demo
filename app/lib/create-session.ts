@@ -101,5 +101,5 @@ Use your wildest imaginations to make the game fun
   );
 
   // redirect to new session
-  redirect(`/game/${newSessionId}/play/last`);
+  redirect(`/games/${newSessionId}/play/last`);
 }

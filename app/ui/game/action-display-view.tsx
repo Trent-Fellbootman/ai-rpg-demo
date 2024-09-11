@@ -28,7 +28,7 @@ export default async function ActionDisplayView({
       <Button
         as={Link}
         color="primary"
-        href={`/game/${sessionId}/play/${sceneIndex + 1}`}
+        href={`/games/${sessionId}/play/${sceneIndex + 1}`}
       >
         Next Scene
       </Button>

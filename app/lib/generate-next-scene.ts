@@ -134,6 +134,6 @@ Use your wildest imaginations to make the game fun
     action: "",
   });
 
-  revalidatePath(`/game/${sessionId}/play/last`);
-  redirect(`/game/${sessionId}/play/last`);
+  revalidatePath(`/games/${sessionId}/play/last`);
+  redirect(`/games/${sessionId}/play/last`);
 }
