@@ -3,6 +3,8 @@
 import { z } from "zod";
 
 import { createNewUser } from "@/app/lib/data/apis";
+import { redirect } from "next/navigation";
+import { constants } from "@/app/lib/utils/path";
 
 const FormSchema = z.object({
   email: z.string().email("Email must be valid!"),
@@ -38,5 +40,5 @@ export async function signup(formData: FormData): Promise<Response> {
     return { message: `An error occurred: ${error}` };
   }
 
-  return null;
+  redirect(constants.loginPagePath);
 }

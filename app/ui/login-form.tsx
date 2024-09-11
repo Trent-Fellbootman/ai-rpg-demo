@@ -6,9 +6,10 @@ import { EyeSlashFilledIcon, EyeFilledIcon } from "@nextui-org/shared-icons";
 import React from "react";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
+import { Link } from "@nextui-org/link";
 
 import { authenticate } from "@/app/lib/actions";
-import { Link } from "@nextui-org/link";
+import { constants } from "@/app/lib/utils/path";
 
 export default function LoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
@@ -83,7 +84,8 @@ export default function LoginForm() {
           </Button>
           {errorState && <p className="text-red-500">{errorState}</p>}
           <div className="text-center">
-            Don&apos;t have an account? Sign up <Link href="/signup">here</Link>!
+            Don&apos;t have an account? Sign up{" "}
+            <Link href={constants.signupPagePath}>here</Link>!
           </div>
         </form>
       </CardBody>

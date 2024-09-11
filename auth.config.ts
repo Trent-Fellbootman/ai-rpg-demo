@@ -4,8 +4,8 @@ import { constants } from "@/app/lib/utils/path";
 
 export const authConfig = {
   pages: {
-    signIn: "/login",
-    newUser: "/signup",
+    signIn: constants.loginPagePath,
+    newUser: constants.signupPagePath,
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
