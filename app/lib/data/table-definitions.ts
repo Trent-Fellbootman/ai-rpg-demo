@@ -8,7 +8,7 @@ export type SceneTableType = {
   scene_id: string;
   session_id: string;
   text: string;
-  image_url: string;
+  image_storage_path: string;
   image_description: string;
   action: string;
   order: number;

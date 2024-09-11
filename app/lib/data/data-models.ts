@@ -6,7 +6,7 @@ export type UserCredentials = {
 
 export type Scene = {
   text: string;
-  imageUrl: string;
+  imageStoragePath: string;
   imageDescription: string;
   action: string;
 };

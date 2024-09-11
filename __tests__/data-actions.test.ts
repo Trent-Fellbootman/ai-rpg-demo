@@ -8,7 +8,6 @@ import sql from "../app/lib/services/sql";
 import {
   createNewUser,
   createNewSession,
-  addSceneToSession,
   retrieveScene,
   getUserById,
   getSessionLength,
@@ -24,7 +23,7 @@ const testUserEmail: string = "testuser@example.com";
 const testUserPassword: string = "password123";
 
 const dummySceneText = "dummy scene text";
-const dummySceneImageUrl = "dummy scene image url";
+const dummySceneImageStoragePath = "dummy scene image storage path";
 const dummySceneImageDescription = "dummy scene image description";
 const dummySceneAction = "dummy scene action";
 const dummySessionName = "dummy session name";
@@ -39,7 +38,7 @@ const dummySessionMetadata = {
 
 const dummyInitialScene = {
   text: dummySceneText,
-  imageUrl: dummySceneImageUrl,
+  imageStoragePath: dummySceneImageStoragePath,
   imageDescription: dummySceneImageDescription,
   action: dummySceneAction,
 };
@@ -69,7 +68,7 @@ describe("Database Functions", () => {
       scene_id UUID PRIMARY KEY,
       session_id UUID NOT NULL,
       text TEXT NOT NULL,
-      image_url TEXT,
+      image_storage_path TEXT,
       image_description TEXT,
       action TEXT,
       scene_order INT NOT NULL
@@ -151,12 +150,12 @@ describe("Database Functions", () => {
 
     const secondScene = {
       text: "Second Scene",
-      imageUrl: "second scene image url",
+      imageStoragePath: "second scene image url",
       imageDescription: "second scene image description",
       action: "second scene action",
     };
 
-    await addSceneToSession(sessionId, secondScene);
+    await addGeneratedSceneToSession(sessionId, dummySceneAction, secondScene);
 
     const sessionLength = await getSessionLength(sessionId);
 
@@ -164,16 +163,16 @@ describe("Database Functions", () => {
 
     const scene = await retrieveScene(userId, sessionId, 1);
 
-    expect(scene).toEqual(secondScene);
+    expect(scene).toEqual({ ...secondScene, action: "" });
   });
 
   it("should throw an error if session does not exist when adding a scene", async () => {
     const nonExistentSessionId = uuidv4();
 
     await expect(
-      addSceneToSession(nonExistentSessionId, {
+      addGeneratedSceneToSession(nonExistentSessionId, dummySceneAction, {
         text: "Scene",
-        imageUrl: "",
+        imageStoragePath: "",
         imageDescription: "",
         action: "",
       }),
@@ -187,15 +186,15 @@ describe("Database Functions", () => {
       dummyInitialScene,
     );
 
-    await addSceneToSession(sessionId, {
+    await addGeneratedSceneToSession(sessionId, dummySceneAction, {
       text: "Scene 1",
-      imageUrl: "",
+      imageStoragePath: "",
       imageDescription: "",
       action: "",
     });
-    await addSceneToSession(sessionId, {
+    await addGeneratedSceneToSession(sessionId, dummySceneAction, {
       text: "Scene 2",
-      imageUrl: "",
+      imageStoragePath: "",
       imageDescription: "",
       action: "",
     });
@@ -255,7 +254,7 @@ describe("Database Functions", () => {
 
     const generatedScene = {
       text: "Generated Scene",
-      imageUrl: "generated scene image url",
+      imageStoragePath: "generated scene image url",
       imageDescription: "generated scene image description",
       action: "",
     };
@@ -288,9 +287,9 @@ describe("Database Functions", () => {
       dummyInitialScene,
     );
 
-    await addSceneToSession(sessionId, {
+    await addGeneratedSceneToSession(sessionId, dummySceneAction, {
       text: "Scene 1",
-      imageUrl: "",
+      imageStoragePath: "",
       imageDescription: "",
       action: "",
     });

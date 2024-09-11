@@ -120,7 +120,7 @@ Use your wildest imaginations to make the game fun
   await addGeneratedSceneToSession(sessionId, result.data.action, {
     text: response.content.content,
     // TODO
-    imageUrl: "",
+    imageStoragePath: "",
     imageDescription: response.content.image_description,
     action: "",
   });

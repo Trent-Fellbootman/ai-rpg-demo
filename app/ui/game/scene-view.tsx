@@ -36,7 +36,7 @@ export default async function SceneView({
         className="rounded-xl"
         height={672}
         sizes="100vw"
-        src={scene.imageUrl}
+        src={scene.imageStoragePath}
         style={{
           width: "100%",
           height: "auto",

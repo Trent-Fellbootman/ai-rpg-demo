@@ -27,30 +27,6 @@ export async function doesUserExist(userId: string): Promise<boolean> {
   return userCheck.rowCount !== null && userCheck.rowCount > 0;
 }
 
-// Add a scene to a session
-export async function addSceneToSession(sessionId: string, scene: Scene) {
-  if (!(await doesSessionExist(sessionId))) {
-    throw new Error("Session not found.");
-  }
-
-  const orderResult = await sql<{ max_order: number }>`
-    SELECT MAX(scene_order) as max_order
-    FROM scenes_table
-    WHERE session_id = ${sessionId}
-  `;
-
-  const newOrder =
-    orderResult.rows[0].max_order !== null
-      ? orderResult.rows[0].max_order + 1
-      : 0;
-  const newSceneId = uuidv4();
-
-  await sql`
-    INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
-    VALUES (${newSceneId}, ${sessionId}, ${scene.text}, ${scene.imageUrl}, ${scene.imageDescription}, ${scene.action}, ${newOrder})
-  `;
-}
-
 // TODO: unit test this function
 export async function doesSessionExist(sessionId: string) {
   const sessionCheck = await sql<GameSessionMetadataTableType>`
@@ -69,7 +45,6 @@ export async function doesSessionExist(sessionId: string) {
  * @param action
  * @param newScene
  */
-// TODO: unit test this function
 export async function addGeneratedSceneToSession(
   sessionId: string,
   action: string,
@@ -101,8 +76,8 @@ export async function addGeneratedSceneToSession(
       AND scene_order = ${newOrder - 1}
     `;
     await sql`
-      INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
-      VALUES (${newSceneId}, ${sessionId}, ${newScene.text}, ${newScene.imageUrl}, ${newScene.imageDescription}, ${""}, ${newOrder})
+      INSERT INTO scenes_table (scene_id, session_id, text, image_storage_path, image_description, action, scene_order)
+      VALUES (${newSceneId}, ${sessionId}, ${newScene.text}, ${newScene.imageStoragePath}, ${newScene.imageDescription}, ${""}, ${newOrder})
     `;
     await sql`COMMIT;`;
   } catch (error) {
@@ -129,7 +104,7 @@ export async function retrieveScene(
 
   // Retrieve the scene based on session ID and scene order
   const sceneResult = await sql<SceneTableType>`
-  SELECT text, image_url, image_description, action
+  SELECT text, image_storage_path, image_description, action
   FROM scenes_table
   WHERE session_id = ${sessionId} AND scene_order = ${index}`;
 
@@ -140,7 +115,7 @@ export async function retrieveScene(
   // Construct the Scene object
   return {
     text: sceneResult.rows[0].text,
-    imageUrl: sceneResult.rows[0].image_url,
+    imageStoragePath: sceneResult.rows[0].image_storage_path,
     imageDescription: sceneResult.rows[0].image_description,
     action: sceneResult.rows[0].action,
   };
@@ -175,8 +150,8 @@ export async function createNewSession(
   `;
 
     await sql`
-    INSERT INTO scenes_table (scene_id, session_id, text, image_url, image_description, action, scene_order)
-    VALUES (${initialSceneId}, ${newSessionId}, ${initialScene.text}, ${initialScene.imageUrl}, ${initialScene.imageDescription}, ${""}, ${0});
+    INSERT INTO scenes_table (scene_id, session_id, text, image_storage_path, image_description, action, scene_order)
+    VALUES (${initialSceneId}, ${newSessionId}, ${initialScene.text}, ${initialScene.imageStoragePath}, ${initialScene.imageDescription}, ${""}, ${0});
   `;
 
     await sql`COMMIT;`;
@@ -240,10 +215,9 @@ export async function getUserGameSessions(
  * Retrieves all scenes in a session, sorted by scene order (low order first).
  * @param sessionId
  */
-// TODO: Unit test this function
 export async function getScenes(sessionId: string): Promise<Scene[]> {
   const scenesResult = await sql<SceneTableType>`
-    SELECT text, image_url, action
+    SELECT text, image_storage_path, action
     FROM scenes_table
     WHERE session_id = ${sessionId}
     ORDER BY scene_order ASC
@@ -251,7 +225,7 @@ export async function getScenes(sessionId: string): Promise<Scene[]> {
 
   return scenesResult.rows.map((row) => ({
     text: row.text,
-    imageUrl: row.image_url,
+    imageStoragePath: row.image_storage_path,
     imageDescription: row.image_description,
     action: row.action,
   }));
