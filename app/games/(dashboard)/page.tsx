@@ -7,7 +7,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="flex justify-end">
-        <Button as={Link} color="primary" href="/game/new">
+        <Button as={Link} color="primary" href="/games/new">
           New Session
         </Button>
       </div>
