@@ -15,25 +15,37 @@ export default async function ActionDisplayView({
   sessionId: string;
   sceneIndex: number;
 }) {
+  const isFirstScene = sceneIndex === 0;
+
   return (
     <div className="flex flex-row items-center">
       <Textarea
         isReadOnly
         defaultValue={action}
         label="Action"
-        maxRows={5}
-        minRows={2}
+        maxRows={6}
+        minRows={3}
         name="action"
         placeholder="Describe what you would like to do"
       />
       <Spacer x={1} />
-      <Button
-        as={Link}
-        color="primary"
-        href={getScenePagePath(sessionId, sceneIndex + 1)}
-      >
-        Next Scene
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          as={Link}
+          color="primary"
+          href={getScenePagePath(sessionId, sceneIndex + 1)}
+        >
+          Next Scene
+        </Button>
+        <Button
+          as={Link}
+          color="secondary"
+          href={getScenePagePath(sessionId, sceneIndex - 1)}
+          isDisabled={isFirstScene}
+        >
+          Previous Scene
+        </Button>
+      </div>
     </div>
   );
 }

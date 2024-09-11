@@ -53,7 +53,11 @@ export default async function SceneView({
       </Card>
       <Spacer y={2} />
       {isLastScene ? (
-        <ActionInputForm sessionId={sessionId} userId={user.userId} />
+        <ActionInputForm
+          sceneIndex={parsedIndex}
+          sessionId={sessionId}
+          userId={user.userId}
+        />
       ) : (
         <ActionDisplayView
           action={scene.action}

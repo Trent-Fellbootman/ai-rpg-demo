@@ -4,16 +4,22 @@ import React, { useState } from "react";
 import { Textarea } from "@nextui-org/input";
 import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
+import { Link } from "@nextui-org/link";
 
 import { Errors, generateNextScene } from "@/app/lib/generate-next-scene";
+import { getScenePagePath } from "@/app/lib/utils/path";
 
 export default function ActionInputForm({
   userId,
   sessionId,
+  sceneIndex,
 }: {
   userId: string;
   sessionId: string;
+  sceneIndex: number;
 }) {
+  const isFirstScene = sceneIndex === 0;
+
   const [errorState, setErrorState] = useState<Errors | undefined>({});
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
   const [action, setAction] = useState<string>(""); // State for the input value
@@ -41,8 +47,8 @@ export default function ActionInputForm({
         <div className="flex flex-col flex-1">
           <Textarea
             label="Action"
-            maxRows={5}
-            minRows={2}
+            maxRows={6}
+            minRows={3}
             name="action"
             placeholder="Describe what you would like to do"
             value={action} // Bind value to state
@@ -53,9 +59,19 @@ export default function ActionInputForm({
           )}
         </div>
         <Spacer x={1} />
-        <Button color="primary" isLoading={isProcessingAction} type="submit">
-          Take Action
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button color="primary" isLoading={isProcessingAction} type="submit">
+            Take Action
+          </Button>
+          <Button
+            as={Link}
+            color="secondary"
+            href={getScenePagePath(sessionId, sceneIndex - 1)}
+            isDisabled={isFirstScene}
+          >
+            Previous Scene
+          </Button>
+        </div>
       </div>
     </form>
   );
