@@ -7,15 +7,6 @@ import { constants } from "@/app/lib/utils/path";
 export default function DashboardPage() {
   return (
     <div>
-      <div className="flex justify-end">
-        <Button
-          as={Link}
-          color="primary"
-          href={`${constants.gamePagesRootPath}/new`}
-        >
-          New Session
-        </Button>
-      </div>
       <GameCardsView />
     </div>
   );

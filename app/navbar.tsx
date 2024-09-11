@@ -11,10 +11,12 @@ import { Link } from "@nextui-org/link";
 import { link as linkStyles } from "@nextui-org/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
+import { Button } from "@nextui-org/button";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/app/ui/utils/theme-switch";
 import { Logo } from "@/app/ui/utils/logo";
+import { constants } from "@/app/lib/utils/path";
 
 export const Navbar = () => {
   return (
@@ -53,6 +55,9 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
+        <Button as={Link} color="primary" href={constants.newSessionPagePath}>
+          New Session
+        </Button>
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
         </NavbarItem>

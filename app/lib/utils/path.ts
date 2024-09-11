@@ -3,6 +3,7 @@ export const constants = {
   signupPagePath: "/signup",
   gamePagesRootPath: "/games",
   dashboardPagePath: "/games",
+  newSessionPagePath: "/games/new",
 };
 
 /**
