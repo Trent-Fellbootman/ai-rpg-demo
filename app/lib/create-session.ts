@@ -3,9 +3,13 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 
-import { generateChatMessage, generateImage } from "@/app/lib/services/generative-ai";
+import {
+  generateChatMessage,
+  generateImage,
+} from "@/app/lib/services/generative-ai";
 import { createNewSession, downloadImageToStorage } from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
+import { getScenePagePath } from "@/app/lib/utils/path";
 
 const FormSchema = z.object({
   name: z.string().min(1, "Name must be non-empty!"),
@@ -101,5 +105,5 @@ Use your wildest imaginations to make the game fun
   );
 
   // redirect to new session
-  redirect(`/games/${newSessionId}/play/last`);
+  redirect(getScenePagePath(newSessionId, null));
 }

@@ -15,6 +15,7 @@ import {
   generateChatMessage,
   generateImage,
 } from "@/app/lib/services/generative-ai";
+import { getScenePagePath } from "@/app/lib/utils/path";
 
 type FieldErrors = {
   action?: string[];
@@ -134,6 +135,8 @@ Use your wildest imaginations to make the game fun
     action: "",
   });
 
-  revalidatePath(`/games/${sessionId}/play/last`);
-  redirect(`/games/${sessionId}/play/last`);
+  const scenePagePath = getScenePagePath(sessionId, null);
+
+  revalidatePath(scenePagePath);
+  redirect(scenePagePath);
 }

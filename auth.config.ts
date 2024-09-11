@@ -1,5 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 
+import { constants } from "@/app/lib/utils/path";
+
 export const authConfig = {
   pages: {
     signIn: "/login",
@@ -8,12 +10,14 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnRestrictedPage = nextUrl.pathname.startsWith("/games");
+      const isOnRestrictedPage = nextUrl.pathname.startsWith(
+        constants.gamePagesRootPath,
+      );
 
       if (isOnRestrictedPage) {
         return isLoggedIn;
       } else if (isLoggedIn) {
-        return Response.redirect(new URL("/games", nextUrl));
+        return Response.redirect(new URL(constants.dashboardPagePath, nextUrl));
       }
 
       return true;

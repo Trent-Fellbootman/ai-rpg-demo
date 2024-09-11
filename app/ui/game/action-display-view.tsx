@@ -4,6 +4,8 @@ import { Button } from "@nextui-org/button";
 import React from "react";
 import { Link } from "@nextui-org/link";
 
+import { getScenePagePath } from "@/app/lib/utils/path";
+
 export default async function ActionDisplayView({
   action,
   sessionId,
@@ -28,7 +30,7 @@ export default async function ActionDisplayView({
       <Button
         as={Link}
         color="primary"
-        href={`/games/${sessionId}/play/${sceneIndex + 1}`}
+        href={getScenePagePath(sessionId, sceneIndex + 1)}
       >
         Next Scene
       </Button>
