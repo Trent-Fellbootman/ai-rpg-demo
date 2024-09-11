@@ -1,5 +1,21 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterAll } from "vitest";
+
+vi.mock("next/headers", () => ({
+  cookies: () => ({
+    getAll: async () => null,
+    setAll: async (
+      cookies: { name: string; value: string; options: any }[],
+    ) => {},
+  }),
+}));
+
+vi.mock("../app/lib/data/constants", () => ({
+  imagesStorageBucketName: "images-storage-test",
+}));
+
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
+import sharp from "sharp";
 
 import sql from "../app/lib/services/sql";
 
@@ -17,7 +33,11 @@ import {
   doesSessionExist,
   addGeneratedSceneToSession,
   getScenes,
+  downloadImageToStorage,
+  createTemporaryUrl,
 } from "@/app/lib/data/apis";
+import { createClient } from "@/app/lib/utils/supabase-server";
+import { imagesStorageBucketName } from "@/app/lib/data/constants";
 
 const testUserEmail: string = "testuser@example.com";
 const testUserPassword: string = "password123";
@@ -81,10 +101,22 @@ describe("Database Functions", () => {
       initial_setup TEXT NOT NULL
     )`;
 
+    const supabase = createClient();
+
+    // delete any existing images in the bucket
+    const { data, error } = await supabase.storage.from("images_bucket").list();
+
+    if (error) {
+      throw new Error(`Error listing images: ${error.message}`);
+    }
+    for (const image of data) {
+      await supabase.storage.from("images_bucket").remove([image.name]);
+    }
+
     // Create a new user for testing
     userId = await createNewUser(testUserEmail, testUserPassword);
     expect(userId).toBeDefined();
-  });
+  }, 30000);
 
   afterAll(async () => {
     // clear all tables
@@ -300,4 +332,26 @@ describe("Database Functions", () => {
     expect(scenes[0].text).toBe(dummyInitialScene.text);
     expect(scenes[1].text).toBe("Scene 1");
   });
+
+  it("downloads image to storage and creates a URL", async () => {
+    console.log(`imagesStorageBucketName: ${imagesStorageBucketName}`);
+
+    const filename = await downloadImageToStorage(
+      "https://i.imgur.com/CzXTtJV.jpg",
+    );
+
+    expect(filename).toMatch(
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.jpg$/,
+    );
+
+    const url = await createTemporaryUrl(filename);
+
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const imageBuffer = Buffer.from(response.data, "binary");
+    const image = sharp(imageBuffer);
+    const metadata = await image.metadata();
+
+    expect(metadata.width).toBeGreaterThan(0);
+    expect(metadata.height).toBeGreaterThan(0);
+  }, 30000);
 });

@@ -14,6 +14,9 @@ import {
   UserCredentialsTableType,
   SceneTableType,
 } from "../data/table-definitions";
+import { createClient } from "../utils/supabase-server";
+
+import { imagesStorageBucketName } from "@/app/lib/data/constants";
 
 // Function to check if a user exists
 // TODO: unit test this function
@@ -330,4 +333,40 @@ export async function getUserFromEmail(
   } catch (error) {
     throw new Error(`Internal Error: ${error}`);
   }
+}
+
+export async function downloadImageToStorage(
+  imageUrl: string,
+): Promise<string> {
+  const supabase = createClient();
+
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  const url = new URL(imageUrl);
+  const suffix = url.pathname.split(".").pop() as string;
+  const filename = `${uuidv4()}.${suffix}`;
+
+  const { error } = await supabase.storage
+    .from(imagesStorageBucketName)
+    .upload(filename, blob);
+
+  if (error) {
+    throw new Error(`Error uploading image: ${error.message}`);
+  }
+
+  return filename;
+}
+
+export async function createTemporaryUrl(filename: string): Promise<string> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.storage
+    .from(imagesStorageBucketName)
+    .createSignedUrl(filename, 3600);
+
+  if (error) {
+    throw new Error(`Error creating image URL: ${error.message}`);
+  }
+
+  return data.signedUrl;
 }
