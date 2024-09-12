@@ -16,8 +16,10 @@ import {
 } from "../data/table-definitions";
 import { createClient } from "../utils/supabase-server";
 
-
 import { imagesStorageBucketName } from "@/app-config";
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "data-apis" });
 
 // Function to check if a user exists
 // TODO: unit test this function
@@ -340,13 +342,24 @@ export async function getUserFromEmail(
 export async function downloadImageToStorage(
   imageUrl: string,
 ): Promise<string> {
+  log.debug("Started downloading image to storage");
+
+  log.debug("Creating supabase client");
+
   const supabase = createClient();
+
+  log.debug(`Fetching image content from ${imageUrl}`);
 
   const response = await fetch(imageUrl);
   const blob = await response.blob();
+
+  log.debug("Parsing metadata");
+
   const url = new URL(imageUrl);
   const suffix = url.pathname.split(".").pop() as string;
   const filepath = `${uuidv4()}.${suffix}`;
+
+  log.debug(`Uploading downloaded image to storage; filename: ${filepath}`);
 
   const { error } = await supabase.storage
     .from(imagesStorageBucketName)
@@ -355,6 +368,8 @@ export async function downloadImageToStorage(
   if (error) {
     throw new Error(`Error uploading image: ${error.message}`);
   }
+
+  log.debug("Finished downloading image to storage");
 
   return filepath;
 }
