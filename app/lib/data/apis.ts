@@ -127,6 +127,7 @@ export async function retrieveScene(
 // Create a new session for a user
 /**
   `sessionId` in metadata is ignored; a new ID is always generated.
+  `is_locked` in metadata is ignored; it is always false.
   `action` in initialScene is ignored; it is always an empty string.
 
   Atomicity is guaranteed.
@@ -148,8 +149,8 @@ export async function createNewSession(
 
   try {
     await sql`
-    INSERT INTO game_sessions_table (session_id, user_id, session_name, initial_setup)
-    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName}, ${metadata.backStory});
+    INSERT INTO game_sessions_table (session_id, user_id, session_name, initial_setup, is_locked)
+    VALUES (${newSessionId}, ${userId}, ${metadata.sessionName}, ${metadata.backStory}, ${false});
   `;
 
     await sql`
@@ -369,4 +370,39 @@ export async function createTemporaryUrl(filename: string): Promise<string> {
   }
 
   return data.signedUrl;
+}
+
+/**
+ * Returns true if the session was successfully locked.
+ * @param sessionId
+ */
+export async function tryLockSession(sessionId: string): Promise<boolean> {
+  const data = await sql`
+    UPDATE game_sessions_table
+    SET is_locked = true
+    WHERE session_id = ${sessionId} AND is_locked = false
+    RETURNING is_locked;
+  `;
+
+  return data.rowCount !== null && data.rowCount > 0;
+}
+
+/**
+ * Unlocks the session if it was previously locked.
+ * If the session was not locked or was not found, an error is thrown.
+ * @param sessionId
+ */
+export async function unlockSession(sessionId: string) {
+  // the update only happens if is_locked was previously true
+  const data = await sql`
+    UPDATE game_sessions_table
+    SET is_locked = false
+    WHERE session_id = ${sessionId} AND is_locked = true
+    RETURNING is_locked;
+  `;
+
+  // if no rows were updated, then the session was not locked or was not found
+  if (!(data.rowCount && data.rowCount > 0)) {
+    throw new Error("Session not found or not locked.");
+  }
 }

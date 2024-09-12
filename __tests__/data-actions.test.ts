@@ -35,6 +35,8 @@ import {
   getScenes,
   downloadImageToStorage,
   createTemporaryUrl,
+  tryLockSession,
+  unlockSession,
 } from "@/app/lib/data/apis";
 import { createClient } from "@/app/lib/utils/supabase-server";
 import { imagesStorageBucketName } from "@/app/lib/data/constants";
@@ -98,7 +100,8 @@ describe("Database Functions", () => {
       session_id UUID PRIMARY KEY,
       user_id UUID NOT NULL,
       session_name TEXT NOT NULL,
-      initial_setup TEXT NOT NULL
+      initial_setup TEXT NOT NULL,
+      is_locked BOOLEAN DEFAULT FALSE
     )`;
 
     const supabase = createClient();
@@ -354,4 +357,46 @@ describe("Database Functions", () => {
     expect(metadata.width).toBeGreaterThan(0);
     expect(metadata.height).toBeGreaterThan(0);
   }, 30000);
+
+  it("a session cannot be locked twice", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    const lockedSuccessfully = await tryLockSession(sessionId);
+
+    expect(lockedSuccessfully).toBe(true);
+    const lockedAgain = await tryLockSession(sessionId);
+
+    expect(lockedAgain).toBe(false);
+  });
+
+  it("a session can be locked again after unlocking", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    await tryLockSession(sessionId);
+    await unlockSession(sessionId);
+
+    const lockedAgain = await tryLockSession(sessionId);
+
+    expect(lockedAgain).toBe(true);
+  });
+
+  it("a session cannot be unlocked if it is not locked", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    await expect(unlockSession(sessionId)).rejects.toThrow(
+      "Session not found or not locked.",
+    );
+  });
 });

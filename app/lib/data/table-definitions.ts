@@ -19,4 +19,5 @@ export type GameSessionMetadataTableType = {
   user_id: string;
   session_name: string;
   initial_setup: string;
+  is_locked: boolean;
 };
