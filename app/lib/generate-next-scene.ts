@@ -150,12 +150,18 @@ export async function updateSceneDatabase(
   previousAction: string,
   nextScene: NextSceneGenerationResponse,
 ) {
+  log.debug("Writing previous action & next scene to database");
+
   const databaseUpdateStart = performance.now();
+
+  log.debug("Saving image to storage");
 
   // add image to storage
   const imagePath = await downloadImageToStorage(nextScene.imageUrl);
 
   const imageStorageUpdateEnd = performance.now();
+
+  log.debug("Image saved; updating SQL database");
 
   // update action in the current last scene and add a new scene with empty action in an atomic manner
   await addGeneratedSceneToSession(sessionId, previousAction, {
