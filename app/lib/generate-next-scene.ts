@@ -44,6 +44,8 @@ export async function generateNextSceneAction(
   sessionId: string,
   formData: FormData,
 ): Promise<GenerateNextSceneActionResponse> {
+  log.debug("Started generating next scene action");
+
   const start = performance.now();
 
   // Validate form fields using zod
@@ -64,9 +66,13 @@ export async function generateNextSceneAction(
 
   const authorizationCheckEnd = performance.now();
 
+  log.debug("Finished authorization check; trying to acquire session lock");
+
   // lock the session before retrieving inputs
   await lockSession(sessionId);
   const lockSessionEnd = performance.now();
+
+  log.debug("Session lock acquired; retrieving input data from database");
 
   // retrieve all the scenes in the session
   const [sessionMetadata, scenes] = await Promise.all([
@@ -75,6 +81,8 @@ export async function generateNextSceneAction(
   ]);
 
   const inputDataRetrievalEnd = performance.now();
+
+  log.debug("Input data retrieved; generating next scene data");
 
   const nextSceneGenerationResult = await (async () => {
     try {
@@ -108,6 +116,8 @@ export async function generateNextSceneAction(
 
   const nextSceneDataGenerationEnd = performance.now();
 
+  log.debug("Next scene data generated; updating database");
+
   // deliberately do not await to make this run in the background
   void (async () => {
     await updateSceneDatabase(
@@ -115,8 +125,13 @@ export async function generateNextSceneAction(
       formParseResult.data.action,
       nextScene,
     );
+
+    log.debug("Database update complete; unlocking session");
+
     // unlock session after database update is complete
     await unlockSession(sessionId);
+
+    log.debug("Session unlocked; next scene generation action completed");
   })();
 
   log.debug(`Finished generating next scene (but did not update database).
