@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { performance } from "next/dist/compiled/@edge-runtime/primitives";
 
 import {
   addGeneratedSceneToSession,
@@ -16,6 +17,9 @@ import {
   generateImage,
 } from "@/app/lib/services/generative-ai";
 import { getScenePagePath } from "@/app/lib/utils/path";
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "generative-ai" });
 
 type FieldErrors = {
   action?: string[];
@@ -35,11 +39,15 @@ export async function generateNextScene(
   sessionId: string,
   formData: FormData,
 ): Promise<Errors | undefined> {
-  // Validate form fields using zod
-  const result = FormSchema.safeParse(Object.fromEntries(formData.entries()));
+  const start = performance.now();
 
-  if (!result.success) {
-    return { fieldErrors: result.error.flatten().fieldErrors };
+  // Validate form fields using zod
+  const formParseResult = FormSchema.safeParse(
+    Object.fromEntries(formData.entries()),
+  );
+
+  if (!formParseResult.success) {
+    return { fieldErrors: formParseResult.error.flatten().fieldErrors };
   }
 
   // check that the user owns the session
@@ -47,11 +55,15 @@ export async function generateNextScene(
     throw new Error("User does not own session.");
   }
 
+  const authorizationCheckEnd = performance.now();
+
   // retrieve all the scenes in the session
   const [sessionMetadata, scenes] = await Promise.all([
     getSessionMetadata(sessionId),
     getScenes(sessionId),
   ]);
+
+  const inputDataRetrievalEnd = performance.now();
 
   // combine the scenes into a string
   const scenesText = scenes
@@ -82,7 +94,11 @@ The player is playing the game from a first-person perspective.
 The game is "turn-based". Each turn, the player describes the action he/she wants to take,
 and a new scene is generated.
 
-Here's the backstory of the game world: ${sessionMetadata.backStory}
+Here's the backstory of the game world:
+
+<backstory>
+${sessionMetadata.backStory}
+</backstory>
 
 Here are what happened so far:
 
@@ -93,7 +109,7 @@ ${scenesText}
 Now, here's the action that the player wants to take:
 
 <action>
-${result.data.action}
+${formParseResult.data.action}
 </action>
 
 Please use your imagination to generate the next scene.
@@ -108,32 +124,64 @@ This will be presented to the player who does not like reading through long text
 Notice that this will be rendered as HTML,
 so you have the ability to use HTML tags in your response.
 Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+NOTICE: The player will be able to see the image, so ONLY include things that the player cannot see (e.g., sounds);
+DO NOT paraphrase \`image_description\`.
+In this way, the \`content\` field should be very short.
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
-("realistic simulation" is not the goal; fun is).`,
+("realistic simulation" is not the goal; fun is).
+
+JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
       },
     ],
-    z.object({
-      content: z.string(),
-      image_description: z.string(),
-    }),
+    undefined,
   );
 
+  const responseContentParseResult = z
+    .object({
+      content: z.string(),
+      image_description: z.string(),
+    })
+    .safeParse(JSON.parse(response.content));
+
+  if (!responseContentParseResult.success) {
+    throw new Error(
+      `Error parsing response content: ${responseContentParseResult.error}`,
+    );
+  }
+
+  const parsedResponseContent = responseContentParseResult.data;
+
+  const textualDataGenerationEnd = performance.now();
+
   // generate image
-  const imageUrl = await generateImage(response.content.image_description);
+  const imageUrl = await generateImage(parsedResponseContent.image_description);
+
+  const imageDataGenerationEnd = performance.now();
 
   // add image to storage
   const imagePath = await downloadImageToStorage(imageUrl);
 
   // update action in the current last scene and add a new scene with empty action in an atomic manner
-  await addGeneratedSceneToSession(sessionId, result.data.action, {
-    text: response.content.content,
+  await addGeneratedSceneToSession(sessionId, formParseResult.data.action, {
+    text: parsedResponseContent.content,
     imageStoragePath: imagePath,
-    imageDescription: response.content.image_description,
+    imageDescription: parsedResponseContent.image_description,
     action: "",
   });
+
+  const databaseUpdateEnd = performance.now();
+
+  log.debug(`Finished next scene generation. Statistics:
+- Authorization check: ${authorizationCheckEnd - start}ms
+- Input data retrieval: ${inputDataRetrievalEnd - authorizationCheckEnd}ms
+- Textual data generation: ${textualDataGenerationEnd - inputDataRetrievalEnd}ms
+- Image data generation: ${imageDataGenerationEnd - textualDataGenerationEnd}ms
+- Database update: ${databaseUpdateEnd - imageDataGenerationEnd}ms
+- Total: ${databaseUpdateEnd - start}ms
+  `);
 
   const scenePagePath = getScenePagePath(sessionId, null);
 
