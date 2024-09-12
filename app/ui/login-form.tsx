@@ -77,7 +77,7 @@ export default function LoginForm() {
           <Button
             className="w-full"
             color="primary"
-            disabled={isPending}
+            isLoading={isPending}
             type="submit"
           >
             Login

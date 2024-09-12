@@ -24,16 +24,25 @@ export default function SignupForm() {
 
   const [responseState, setResponseState] = React.useState<Response>(null);
 
-  async function formAction(formData: FormData) {
+  const [inProgress, setInProgress] = React.useState<boolean>(false);
+
+  async function formAction(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    setInProgress(true);
+    setResponseState(null);
+
     const response = await signup(formData);
 
     setResponseState(response);
+    setInProgress(false);
   }
 
   return (
     <Card className="p-3 w-full">
       <CardBody>
-        <form action={formAction}>
+        <form onSubmit={formAction}>
           <h1 className="text-2xl text-center font-bold">Signup</h1>
           <Spacer y={4} />
           <p className="font-bold pl-1">Email</p>
@@ -117,7 +126,12 @@ export default function SignupForm() {
             </p>
           )}
           <Spacer y={4} />
-          <Button className="w-full" color="primary" type="submit">
+          <Button
+            className="w-full"
+            color="primary"
+            isLoading={inProgress}
+            type="submit"
+          >
             Signup
           </Button>
         </form>
