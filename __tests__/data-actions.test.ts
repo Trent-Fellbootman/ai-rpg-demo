@@ -72,6 +72,22 @@ describe("Database Functions", () => {
   let userId: string;
   let sessionId: string;
 
+  const supabase = createClient();
+
+  const clearImagesStorage = async () => {
+    // delete any existing images in the bucket
+    const { data, error } = await supabase.storage
+      .from(imagesStorageBucketName)
+      .list();
+
+    if (error) {
+      throw new Error(`Error listing images: ${error.message}`);
+    }
+    for (const image of data) {
+      await supabase.storage.from(imagesStorageBucketName).remove([image.name]);
+    }
+  };
+
   // Reset the database state before each test
   beforeEach(async () => {
     // Clean up the test database (ensure you are using a test database)
@@ -106,29 +122,12 @@ describe("Database Functions", () => {
       is_locked BOOLEAN DEFAULT FALSE
     )`;
 
-    const supabase = createClient();
-
-    // delete any existing images in the bucket
-    const { data, error } = await supabase.storage.from("images_bucket").list();
-
-    if (error) {
-      throw new Error(`Error listing images: ${error.message}`);
-    }
-    for (const image of data) {
-      await supabase.storage.from("images_bucket").remove([image.name]);
-    }
+    await clearImagesStorage();
 
     // Create a new user for testing
     userId = await createNewUser(testUserEmail, testUserPassword);
     expect(userId).toBeDefined();
   }, 30000);
-
-  afterAll(async () => {
-    // clear all tables
-    await sql`DELETE FROM scenes_table`;
-    await sql`DELETE FROM game_sessions_table`;
-    await sql`DELETE FROM user_credentials_table`;
-  });
 
   it("should create a new user and retrieve it", async () => {
     const user = await getUserById(userId);
@@ -339,8 +338,6 @@ describe("Database Functions", () => {
   });
 
   it("downloads image to storage and creates a URL", async () => {
-    console.log(`imagesStorageBucketName: ${imagesStorageBucketName}`);
-
     const filename = await downloadImageToStorage(
       "https://i.imgur.com/CzXTtJV.jpg",
     );
@@ -451,5 +448,15 @@ describe("Database Functions", () => {
     await expect(lockSession(sessionId, 100, 1_000)).rejects.toThrow(
       "Timed out waiting to lock session",
     );
+  });
+
+  afterAll(async () => {
+    // clear all tables
+    await sql`DELETE FROM scenes_table`;
+    await sql`DELETE FROM game_sessions_table`;
+    await sql`DELETE FROM user_credentials_table`;
+
+    // clear images storage
+    await clearImagesStorage();
   });
 });
