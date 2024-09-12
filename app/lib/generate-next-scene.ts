@@ -18,6 +18,7 @@ import {
 } from "@/app/lib/services/generative-ai";
 import { getScenePagePath } from "@/app/lib/utils/path";
 import { logger } from "@/app/lib/logger";
+import { Scene } from "@/app/lib/data/data-models";
 
 const log = logger.child({ module: "generative-ai" });
 
@@ -34,7 +35,7 @@ const FormSchema = z.object({
   action: z.string().min(1, "Action must be non-empty!"),
 });
 
-export async function generateNextScene(
+export async function generateNextSceneAction(
   userId: string,
   sessionId: string,
   formData: FormData,
@@ -65,10 +66,82 @@ export async function generateNextScene(
 
   const inputDataRetrievalEnd = performance.now();
 
+  const nextScene = await generateNextSceneData(
+    sessionMetadata.backStory,
+    scenes,
+    formParseResult.data.action,
+  );
+
+  const nextSceneDataGenerationEnd = performance.now();
+
+  await updateSceneDatabase(sessionId, formParseResult.data.action, nextScene);
+
+  const databaseUpdateEnd = performance.now();
+
+  log.debug(`Finished generating next scene. Statistics:
+- Authorization check: ${authorizationCheckEnd - start}ms
+- Input data retrieval: ${inputDataRetrievalEnd - authorizationCheckEnd}ms
+- Next scene data generation: ${nextSceneDataGenerationEnd - inputDataRetrievalEnd}ms
+- Database update: ${databaseUpdateEnd - nextSceneDataGenerationEnd}ms
+- Total: ${databaseUpdateEnd - start}ms`);
+
+  const scenePagePath = getScenePagePath(sessionId, null);
+
+  revalidatePath(scenePagePath);
+  redirect(scenePagePath);
+}
+
+export async function updateSceneDatabase(
+  sessionId: string,
+  previousAction: string,
+  nextScene: NextSceneGenerationResponse,
+) {
+  const databaseUpdateStart = performance.now();
+
+  // add image to storage
+  const imagePath = await downloadImageToStorage(nextScene.imageUrl);
+
+  const imageStorageUpdateEnd = performance.now();
+
+  // update action in the current last scene and add a new scene with empty action in an atomic manner
+  await addGeneratedSceneToSession(sessionId, previousAction, {
+    text: nextScene.text,
+    imageStoragePath: imagePath,
+    imageDescription: nextScene.imageDescription,
+    action: "",
+  });
+
+  const SQLDatabaseUpdateEnd = performance.now();
+
+  log.debug(`Finished writing previous action & next scene to database. Statistics:
+- Image storage update: ${imageStorageUpdateEnd - databaseUpdateStart}ms
+- SQL Database update: ${SQLDatabaseUpdateEnd - imageStorageUpdateEnd}ms
+- Total: ${SQLDatabaseUpdateEnd - databaseUpdateStart}ms`);
+}
+
+export type NextSceneGenerationResponse = {
+  imageUrl: string;
+  imageDescription: string;
+  text: string;
+};
+
+/**
+ * Only generates the data; does not update database.
+ * @param backStory
+ * @param scenes
+ * @param action
+ */
+export async function generateNextSceneData(
+  backStory: string,
+  scenes: Scene[],
+  action: string,
+): Promise<NextSceneGenerationResponse> {
+  const generationStart = performance.now();
+
   // combine the scenes into a string
   const scenesText = scenes
     .map(
-      ({ text }, i) => `
+      ({ text }, _) => `
 <scene>
 <image-description>
 </image-description>
@@ -97,7 +170,7 @@ and a new scene is generated.
 Here's the backstory of the game world:
 
 <backstory>
-${sessionMetadata.backStory}
+${backStory}
 </backstory>
 
 Here are what happened so far:
@@ -109,7 +182,7 @@ ${scenesText}
 Now, here's the action that the player wants to take:
 
 <action>
-${formParseResult.data.action}
+${action}
 </action>
 
 Please use your imagination to generate the next scene.
@@ -161,30 +234,14 @@ JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
 
   const imageDataGenerationEnd = performance.now();
 
-  // add image to storage
-  const imagePath = await downloadImageToStorage(imageUrl);
-
-  // update action in the current last scene and add a new scene with empty action in an atomic manner
-  await addGeneratedSceneToSession(sessionId, formParseResult.data.action, {
-    text: parsedResponseContent.content,
-    imageStoragePath: imagePath,
-    imageDescription: parsedResponseContent.image_description,
-    action: "",
-  });
-
-  const databaseUpdateEnd = performance.now();
-
-  log.debug(`Finished next scene generation. Statistics:
-- Authorization check: ${authorizationCheckEnd - start}ms
-- Input data retrieval: ${inputDataRetrievalEnd - authorizationCheckEnd}ms
-- Textual data generation: ${textualDataGenerationEnd - inputDataRetrievalEnd}ms
+  log.debug(`Finished generating next scene. Statistics:
+- Textual data generation: ${textualDataGenerationEnd - generationStart}ms
 - Image data generation: ${imageDataGenerationEnd - textualDataGenerationEnd}ms
-- Database update: ${databaseUpdateEnd - imageDataGenerationEnd}ms
-- Total: ${databaseUpdateEnd - start}ms
-  `);
+- Total: ${imageDataGenerationEnd - generationStart}ms`);
 
-  const scenePagePath = getScenePagePath(sessionId, null);
-
-  revalidatePath(scenePagePath);
-  redirect(scenePagePath);
+  return {
+    text: parsedResponseContent.content,
+    imageUrl,
+    imageDescription: parsedResponseContent.image_description,
+  };
 }

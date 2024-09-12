@@ -6,7 +6,7 @@ import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
 
-import { Errors, generateNextScene } from "@/app/lib/generate-next-scene";
+import { Errors, generateNextSceneAction } from "@/app/lib/generate-next-scene";
 import { getScenePagePath } from "@/app/lib/utils/path";
 
 export default function ActionInputForm({
@@ -31,7 +31,7 @@ export default function ActionInputForm({
     setErrorState(undefined);
 
     const formData = new FormData(event.currentTarget);
-    const response = await generateNextScene(userId, sessionId, formData);
+    const response = await generateNextSceneAction(userId, sessionId, formData);
 
     if (!response) {
       setAction(""); // Clear the input field after successful action
