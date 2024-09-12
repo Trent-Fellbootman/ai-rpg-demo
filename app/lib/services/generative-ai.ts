@@ -109,7 +109,9 @@ export async function generateImage(description: string): Promise<string> {
 
   const end = performance.now();
 
+  const imageUrl = data.images[0].url;
+
   log.debug(`Received image from AIML API; it took ${end - start}ms`);
 
-  return data.images[0].url;
+  return imageUrl;
 }

@@ -70,6 +70,9 @@ export default function ActionInputForm({
               {responseState.errors.fieldErrors.action}
             </p>
           )}
+          {responseState?.errors?.message && (
+            <p className="text-red-500">{responseState.errors.message}</p>
+          )}
         </div>
         <Spacer x={1} />
         <div className="flex flex-col gap-2">

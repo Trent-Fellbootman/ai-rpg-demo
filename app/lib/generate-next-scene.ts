@@ -76,11 +76,35 @@ export async function generateNextSceneAction(
 
   const inputDataRetrievalEnd = performance.now();
 
-  const nextScene = await generateNextSceneData(
-    sessionMetadata.backStory,
-    scenes,
-    formParseResult.data.action,
-  );
+  const nextSceneGenerationResult = await (async () => {
+    try {
+      const nextScene = await generateNextSceneData(
+        sessionMetadata.backStory,
+        scenes,
+        formParseResult.data.action,
+      );
+
+      return { nextScene };
+    } catch (error) {
+      return {
+        error,
+      };
+    }
+  })();
+
+  if (!nextSceneGenerationResult.nextScene) {
+    // an error occurred during next scene generation
+    // release session lock and return error
+    await unlockSession(sessionId);
+
+    return {
+      errors: {
+        message: `An error occurred when generating the next scene: ${nextSceneGenerationResult.error}`,
+      },
+    };
+  }
+
+  const nextScene = nextSceneGenerationResult.nextScene;
 
   const nextSceneDataGenerationEnd = performance.now();
 
