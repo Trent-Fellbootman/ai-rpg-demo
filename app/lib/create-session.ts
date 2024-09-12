@@ -10,6 +10,9 @@ import {
 import { createNewSession, downloadImageToStorage } from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
 import { getScenePagePath } from "@/app/lib/utils/path";
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "generative-ai" });
 
 const FormSchema = z.object({
   name: z.string().min(1, "Name must be non-empty!"),
@@ -31,6 +34,8 @@ const InitialSceneGenerationResponseSchema = z.object({
 export async function createSession(
   formData: FormData,
 ): Promise<Errors | undefined> {
+  const authorizationStart = performance.now();
+
   const user = await getCurrentUser();
 
   // Validate form fields using zod
@@ -40,7 +45,62 @@ export async function createSession(
     return { fieldErrors: result.error.flatten().fieldErrors };
   }
 
-  const backStory = result.data.back_story;
+  const authorizationEnd = performance.now();
+
+  const initialSceneGenerationResponse = await generateSessionData(
+    result.data.name,
+    result.data.back_story,
+  );
+
+  const sessionDataGenerationEnd = performance.now();
+
+  // add image to storage
+  const imagePath = await downloadImageToStorage(
+    initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
+  );
+
+  // insert session as well as the initial scene in one transaction
+  const newSessionId = await createNewSession(
+    user.userId,
+    {
+      sessionName: initialSceneGenerationResponse.sessionName,
+      backStory: initialSceneGenerationResponse.sessionBackStory,
+      sessionId: "",
+    },
+    {
+      text: initialSceneGenerationResponse.firstSceneText,
+      imageStoragePath: imagePath,
+      imageDescription:
+        initialSceneGenerationResponse.firstSceneImageDescription,
+      action: "",
+    },
+  );
+
+  const databaseUpdateEnd = performance.now();
+
+  log.debug(`Finished creating new session. Statistics:
+- Authorization: ${authorizationEnd - authorizationStart}ms
+- Session data generation: ${sessionDataGenerationEnd - authorizationEnd}ms
+- Database update: ${databaseUpdateEnd - sessionDataGenerationEnd}ms
+- Total: ${databaseUpdateEnd - authorizationStart}ms`);
+
+  // redirect to new session
+  redirect(getScenePagePath(newSessionId, null));
+}
+
+export type SessionDataGenerationResponse = {
+  sessionName: string;
+  sessionBackStory: string;
+  temporaryFirstSceneImageUrl: string;
+  firstSceneImageDescription: string;
+  firstSceneText: string;
+};
+
+async function generateSessionData(
+  sessionName: string,
+  sessionBackStory: string,
+): Promise<SessionDataGenerationResponse> {
+  const generationStart = performance.now();
 
   // generate initial scene
   const initialSceneGenerationResponse = await generateChatMessage(
@@ -53,7 +113,7 @@ export async function createSession(
         role: "user",
         content: `I want you to simulate what would happen in a game world.
 
-Here's the back story of the game world: ${backStory}
+Here's the back story of the game world: ${sessionBackStory}
 
 Now, imagine someone playing the game in a first-person perspective.
 
@@ -82,28 +142,24 @@ Use your wildest imaginations to make the game fun
 
   const initialScene = initialSceneGenerationResponse.content;
 
+  const textContentGenerationEnd = performance.now();
+
   // generate image
   const imageUrl = await generateImage(initialScene.image_description);
 
-  // add image to storage
-  const imagePath = await downloadImageToStorage(imageUrl);
+  const imageGenerationEnd = performance.now();
 
-  // insert session as well as the initial scene in one transaction
-  const newSessionId = await createNewSession(
-    user.userId,
-    {
-      sessionName: result.data.name,
-      backStory: result.data.back_story,
-      sessionId: "",
-    },
-    {
-      text: initialScene.content,
-      imageStoragePath: imagePath,
-      imageDescription: initialScene.image_description,
-      action: "",
-    },
-  );
+  log.debug(`Finished generating data for the new session. Statistics:
+- Text generation: ${textContentGenerationEnd - generationStart}ms
+- Image generation: ${imageGenerationEnd - textContentGenerationEnd}ms
+- Total: ${imageGenerationEnd - generationStart}ms
+`);
 
-  // redirect to new session
-  redirect(getScenePagePath(newSessionId, null));
+  return {
+    sessionName: sessionName,
+    sessionBackStory: sessionBackStory,
+    temporaryFirstSceneImageUrl: imageUrl,
+    firstSceneImageDescription: initialScene.image_description,
+    firstSceneText: initialScene.content,
+  };
 }

@@ -19,7 +19,7 @@ import {
 import { logger } from "@/app/lib/logger";
 import { Scene } from "@/app/lib/data/data-models";
 
-const log = logger.child({ module: "generative-ai" });
+const log = logger.child({ module: "generate-next-scene" });
 
 type FieldErrors = {
   action?: string[];
@@ -170,7 +170,7 @@ export type NextSceneGenerationResponse = {
  * @param scenes
  * @param action
  */
-export async function generateNextSceneData(
+async function generateNextSceneData(
   backStory: string,
   scenes: Scene[],
   action: string,
