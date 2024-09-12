@@ -126,11 +126,11 @@ export async function retrieveScene(
 
 // Create a new session for a user
 /**
-  `sessionId` in metadata is ignored; a new ID is always generated.
-  `is_locked` in metadata is ignored; it is always false.
-  `action` in initialScene is ignored; it is always an empty string.
+ `sessionId` in metadata is ignored; a new ID is always generated.
+ `is_locked` in metadata is ignored; it is always false.
+ `action` in initialScene is ignored; it is always an empty string.
 
-  Atomicity is guaranteed.
+ Atomicity is guaranteed.
  */
 export async function createNewSession(
   userId: string,
@@ -405,4 +405,45 @@ export async function unlockSession(sessionId: string) {
   if (!(data.rowCount && data.rowCount > 0)) {
     throw new Error("Session not found or not locked.");
   }
+}
+
+/**
+ * Waits until a session can be locked, then lock it.
+ * If the session cannot be locked within the timeout, an error is thrown.
+ * @param sessionId
+ * @param attemptIntervalMs The number of milliseconds to wait between attempts to lock the session.
+ * @param timeoutMs
+ */
+export async function lockSession(
+  sessionId: string,
+  attemptIntervalMs: number = 500,
+  timeoutMs: number = 60_000,
+) {
+  const repeatTryLockingUntilSuccess = async () => {
+    let lockedSuccessfully = false;
+
+    do {
+      await new Promise((resolve) => setTimeout(resolve, attemptIntervalMs));
+      lockedSuccessfully = await tryLockSession(sessionId);
+    } while (!lockedSuccessfully);
+  };
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error("Timed out waiting to lock session")),
+      timeoutMs,
+    ),
+  );
+
+  await Promise.race([repeatTryLockingUntilSuccess(), timeoutPromise]);
+}
+
+export async function isSessionLocked(sessionId: string): Promise<boolean> {
+  const data = await sql`
+    SELECT is_locked
+    FROM game_sessions_table
+    WHERE session_id = ${sessionId}
+  `;
+
+  return data.rows[0].is_locked;
 }

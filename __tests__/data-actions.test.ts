@@ -37,6 +37,8 @@ import {
   createTemporaryUrl,
   tryLockSession,
   unlockSession,
+  lockSession,
+  isSessionLocked,
 } from "@/app/lib/data/apis";
 import { createClient } from "@/app/lib/utils/supabase-server";
 import { imagesStorageBucketName } from "@/app/lib/data/constants";
@@ -397,6 +399,57 @@ describe("Database Functions", () => {
 
     await expect(unlockSession(sessionId)).rejects.toThrow(
       "Session not found or not locked.",
+    );
+  });
+
+  it("A session can be locked with `lockSession`.", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    expect(await isSessionLocked(sessionId)).toBe(false);
+
+    await lockSession(sessionId);
+
+    expect(await isSessionLocked(sessionId)).toBe(true);
+  });
+
+  it("`lockSession` will wait until the session can be locked.", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    // lock the session
+    expect(await tryLockSession(sessionId)).toBe(true);
+
+    await Promise.all([
+      (async () => {
+        // wait for 1s
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await unlockSession(sessionId);
+      })(),
+      lockSession(sessionId),
+    ]);
+
+    expect(await isSessionLocked(sessionId)).toBe(true);
+  });
+
+  it("`lockSession` will throw an error if the session cannot be locked within the timeout.", async () => {
+    sessionId = await createNewSession(
+      userId,
+      dummySessionMetadata,
+      dummyInitialScene,
+    );
+
+    // lock the session
+    expect(await tryLockSession(sessionId)).toBe(true);
+
+    await expect(lockSession(sessionId, 100, 1_000)).rejects.toThrow(
+      "Timed out waiting to lock session",
     );
   });
 });
