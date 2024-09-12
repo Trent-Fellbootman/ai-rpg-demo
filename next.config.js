@@ -1,4 +1,3 @@
-const { imagesStorageBucketName } = require("./app/lib/data/constants");
 require("dotenv").config();
 
 const supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -15,7 +14,7 @@ const nextConfig = {
         protocol: 'https',
         hostname: supabaseHost,
         port: '',
-        pathname: `/storage/v1/object/sign/${imagesStorageBucketName}/**`,
+        pathname: `/storage/v1/object/sign/${process.env.SUPABASE_IMAGES_STORAGE_BUCKET_NAME}/**`,
       },
     ]
   }

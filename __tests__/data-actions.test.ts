@@ -37,7 +37,8 @@ import {
   isSessionLocked,
 } from "@/app/lib/data/apis";
 import { createClient } from "@/app/lib/utils/supabase-server";
-import { imagesStorageBucketName } from "@/app/lib/data/constants";
+
+import { imagesStorageBucketName } from "@/app-config";
 
 const testUserEmail: string = "testuser@example.com";
 const testUserPassword: string = "password123";

@@ -16,7 +16,8 @@ import {
 } from "../data/table-definitions";
 import { createClient } from "../utils/supabase-server";
 
-import { imagesStorageBucketName } from "@/app/lib/data/constants";
+
+import { imagesStorageBucketName } from "@/app-config";
 
 // Function to check if a user exists
 // TODO: unit test this function
