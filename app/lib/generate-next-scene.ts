@@ -1,8 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { performance } from "next/dist/compiled/@edge-runtime/primitives";
 
 import {
@@ -11,12 +9,13 @@ import {
   downloadImageToStorage,
   getScenes,
   getSessionMetadata,
+  lockSession,
+  unlockSession,
 } from "@/app/lib/data/apis";
 import {
   generateChatMessage,
   generateImage,
 } from "@/app/lib/services/generative-ai";
-import { getScenePagePath } from "@/app/lib/utils/path";
 import { logger } from "@/app/lib/logger";
 import { Scene } from "@/app/lib/data/data-models";
 
@@ -31,6 +30,11 @@ export type Errors = {
   fieldErrors?: FieldErrors;
 };
 
+export type GenerateNextSceneActionResponse = {
+  errors?: Errors;
+  nextScene?: NextSceneGenerationResponse;
+};
+
 const FormSchema = z.object({
   action: z.string().min(1, "Action must be non-empty!"),
 });
@@ -39,7 +43,7 @@ export async function generateNextSceneAction(
   userId: string,
   sessionId: string,
   formData: FormData,
-): Promise<Errors | undefined> {
+): Promise<GenerateNextSceneActionResponse> {
   const start = performance.now();
 
   // Validate form fields using zod
@@ -48,7 +52,9 @@ export async function generateNextSceneAction(
   );
 
   if (!formParseResult.success) {
-    return { fieldErrors: formParseResult.error.flatten().fieldErrors };
+    return {
+      errors: { fieldErrors: formParseResult.error.flatten().fieldErrors },
+    };
   }
 
   // check that the user owns the session
@@ -57,6 +63,10 @@ export async function generateNextSceneAction(
   }
 
   const authorizationCheckEnd = performance.now();
+
+  // lock the session before retrieving inputs
+  await lockSession(sessionId);
+  const lockSessionEnd = performance.now();
 
   // retrieve all the scenes in the session
   const [sessionMetadata, scenes] = await Promise.all([
@@ -74,21 +84,26 @@ export async function generateNextSceneAction(
 
   const nextSceneDataGenerationEnd = performance.now();
 
-  await updateSceneDatabase(sessionId, formParseResult.data.action, nextScene);
+  // deliberately do not await to make this run in the background
+  void (async () => {
+    await updateSceneDatabase(
+      sessionId,
+      formParseResult.data.action,
+      nextScene,
+    );
+    // unlock session after database update is complete
+    await unlockSession(sessionId);
+  })();
 
-  const databaseUpdateEnd = performance.now();
-
-  log.debug(`Finished generating next scene. Statistics:
+  log.debug(`Finished generating next scene (but did not update database).
+Statistics:
 - Authorization check: ${authorizationCheckEnd - start}ms
-- Input data retrieval: ${inputDataRetrievalEnd - authorizationCheckEnd}ms
+- Waiting for session lock: ${lockSessionEnd - authorizationCheckEnd}ms
+- Input data retrieval: ${inputDataRetrievalEnd - lockSessionEnd}ms
 - Next scene data generation: ${nextSceneDataGenerationEnd - inputDataRetrievalEnd}ms
-- Database update: ${databaseUpdateEnd - nextSceneDataGenerationEnd}ms
-- Total: ${databaseUpdateEnd - start}ms`);
+- Total: ${nextSceneDataGenerationEnd - start}ms`);
 
-  const scenePagePath = getScenePagePath(sessionId, null);
-
-  revalidatePath(scenePagePath);
-  redirect(scenePagePath);
+  return { nextScene: nextScene };
 }
 
 export async function updateSceneDatabase(

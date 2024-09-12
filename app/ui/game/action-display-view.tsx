@@ -6,7 +6,7 @@ import { Link } from "@nextui-org/link";
 
 import { getScenePagePath } from "@/app/lib/utils/path";
 
-export default async function ActionDisplayView({
+export default function ActionDisplayView({
   action,
   sessionId,
   sceneIndex,

@@ -1,46 +1,72 @@
+"use client";
+
 import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
 import { Card, CardBody } from "@nextui-org/card";
 import parse from "html-react-parser";
+import { useEffect, useState } from "react";
+import { Spinner } from "@nextui-org/spinner";
 
+import { getSceneViewInitialData } from "@/app/lib/actions";
+import { GenerateNextSceneActionResponse } from "@/app/lib/generate-next-scene";
 import ActionInputForm from "@/app/ui/game/action-input-form";
-import { getCurrentUser } from "@/app/lib/utils";
-import {
-  createTemporaryUrl,
-  getSessionLength,
-  retrieveScene,
-} from "@/app/lib/data/apis";
 import ActionDisplayView from "@/app/ui/game/action-display-view";
 
-export default async function SceneView({
+export default function SceneView({
   sessionId,
   sceneIndex,
 }: {
   sessionId: string;
   sceneIndex: string;
 }) {
-  const user = (await getCurrentUser())!;
+  const [widgetData, setWidgetData] = useState<
+    | {
+        userId: string;
+        imageUrl: string;
+        text: string;
+        action: string;
+        currentSceneIndex: number;
+        currentSessionLength: number;
+      }
+    | undefined
+  >(undefined);
 
-  const parsedIndex =
-    sceneIndex === "last"
-      ? (await getSessionLength(sessionId)) - 1
-      : parseInt(sceneIndex);
+  useEffect(() => {
+    const initialSetData = async () => {
+      setWidgetData(await getSceneViewInitialData(sessionId, sceneIndex));
+    };
 
-  const isLastScene = parsedIndex === (await getSessionLength(sessionId)) - 1;
+    // this promise is deliberately not awaited
+    void initialSetData();
+  }, []);
 
-  // TODO: retrieve session metadata as well
-  const [scene] = await Promise.all([
-    retrieveScene(user.userId, sessionId, parsedIndex),
-  ]);
+  const onNextSceneGenerationResponse = (
+    response: GenerateNextSceneActionResponse,
+  ) => {
+    if (response.nextScene) {
+      setWidgetData({
+        userId: widgetData!.userId,
+        imageUrl: response!.nextScene!.imageUrl,
+        text: response!.nextScene!.text,
+        action: "",
+        currentSceneIndex: widgetData!.currentSceneIndex + 1,
+        currentSessionLength: widgetData!.currentSessionLength + 1,
+      });
+    }
+  };
 
-  return (
+  return widgetData === undefined ? (
+    <div className="flex items-center justify-center">
+      <Spinner />
+    </div>
+  ) : (
     <div className="max-w-3xl">
       <Image
         alt="Picture of the author"
         className="rounded-xl"
         height={1024}
         sizes="100vw"
-        src={await createTemporaryUrl(scene.imageStoragePath)}
+        src={widgetData!.imageUrl}
         style={{
           width: "100%",
           height: "auto",
@@ -49,19 +75,21 @@ export default async function SceneView({
       />
       <Spacer y={2} />
       <Card>
-        <CardBody>{parse(scene.text)}</CardBody>
+        <CardBody>{parse(widgetData!.text)}</CardBody>
       </Card>
       <Spacer y={2} />
-      {isLastScene ? (
+      {widgetData!.currentSceneIndex ===
+      widgetData!.currentSessionLength - 1 ? (
         <ActionInputForm
-          sceneIndex={parsedIndex}
+          sceneIndex={widgetData!.currentSceneIndex}
           sessionId={sessionId}
-          userId={user.userId}
+          userId={widgetData!.userId}
+          onNextSceneGenerationResponse={onNextSceneGenerationResponse}
         />
       ) : (
         <ActionDisplayView
-          action={scene.action}
-          sceneIndex={parsedIndex}
+          action={widgetData!.action}
+          sceneIndex={widgetData!.currentSceneIndex}
           sessionId={sessionId}
         />
       )}

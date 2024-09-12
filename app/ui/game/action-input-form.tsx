@@ -6,21 +6,30 @@ import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
 
-import { Errors, generateNextSceneAction } from "@/app/lib/generate-next-scene";
+import {
+  generateNextSceneAction,
+  GenerateNextSceneActionResponse,
+} from "@/app/lib/generate-next-scene";
 import { getScenePagePath } from "@/app/lib/utils/path";
 
 export default function ActionInputForm({
   userId,
   sessionId,
   sceneIndex,
+  onNextSceneGenerationResponse,
 }: {
   userId: string;
   sessionId: string;
   sceneIndex: number;
+  onNextSceneGenerationResponse?: (
+    response: GenerateNextSceneActionResponse,
+  ) => void;
 }) {
   const isFirstScene = sceneIndex === 0;
 
-  const [errorState, setErrorState] = useState<Errors | undefined>({});
+  const [responseState, setResponseState] = useState<
+    GenerateNextSceneActionResponse | undefined
+  >(undefined);
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
   const [action, setAction] = useState<string>(""); // State for the input value
 
@@ -28,17 +37,19 @@ export default function ActionInputForm({
     event.preventDefault();
 
     setIsProcessingAction(true);
-    setErrorState(undefined);
+    setResponseState(undefined);
 
     const formData = new FormData(event.currentTarget);
     const response = await generateNextSceneAction(userId, sessionId, formData);
 
-    if (!response) {
+    if (response.nextScene) {
       setAction(""); // Clear the input field after successful action
     }
 
-    setErrorState(response);
+    setResponseState(response);
     setIsProcessingAction(false);
+
+    onNextSceneGenerationResponse?.(response);
   };
 
   return (
@@ -54,8 +65,10 @@ export default function ActionInputForm({
             value={action} // Bind value to state
             onChange={(e) => setAction(e.target.value)} // Update state on input change
           />
-          {errorState?.fieldErrors && (
-            <p className="text-red-500">{errorState.fieldErrors.action}</p>
+          {responseState?.errors?.fieldErrors && (
+            <p className="text-red-500">
+              {responseState.errors.fieldErrors.action}
+            </p>
           )}
         </div>
         <Spacer x={1} />
