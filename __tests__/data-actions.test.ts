@@ -9,10 +9,6 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-vi.mock("../app/lib/data/constants", () => ({
-  imagesStorageBucketName: "images-storage-test",
-}));
-
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import sharp from "sharp";
