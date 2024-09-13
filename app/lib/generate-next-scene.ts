@@ -276,7 +276,9 @@ Use your wildest imaginations to make the game fun
 
 JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.
 
-The \`content\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE USER'S ACTION INPUT.`,
+The \`content\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE USER'S ACTION INPUT.
+However, regardless of the language of the user's action input,
+\`image_description\` MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
       },
     ],
     undefined,
