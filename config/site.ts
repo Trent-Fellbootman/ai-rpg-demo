@@ -1,3 +1,5 @@
+import { constants } from "@/app/lib/utils/path";
+
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
@@ -13,6 +15,10 @@ export const siteConfig = {
     {
       label: "Dashboard",
       href: "/dashboard",
+    },
+    {
+      label: "New Session",
+      href: constants.newSessionPagePath,
     },
     {
       label: "Logout",
