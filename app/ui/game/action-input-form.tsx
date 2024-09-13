@@ -31,15 +31,21 @@ export default function ActionInputForm({
     GenerateNextSceneActionResponse | undefined
   >(undefined);
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
-  const [action, setAction] = useState<string>(""); // State for the input value
+  const [action, setAction] = useState<string>("");
 
-  const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Adjusted formAction to be callable without an event
+  const formAction = async (event?: React.FormEvent<HTMLFormElement>) => {
+    if (event) {
+      event.preventDefault();
+    }
 
     setIsProcessingAction(true);
     setResponseState(undefined);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData();
+
+    formData.set("action", action);
+
     const response = await generateNextSceneAction(userId, sessionId, formData);
 
     if (response.nextScene) {
@@ -52,6 +58,14 @@ export default function ActionInputForm({
     onNextSceneGenerationResponse?.(response);
   };
 
+  // Handle key down events in the Textarea
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey) {
+      event.preventDefault(); // Prevents adding a new line
+      formAction(); // Call the form submission function
+    }
+  };
+
   return (
     <form onSubmit={formAction}>
       <div className="flex flex-row items-center">
@@ -62,8 +76,9 @@ export default function ActionInputForm({
             minRows={3}
             name="action"
             placeholder="Describe what you would like to do"
-            value={action} // Bind value to state
-            onChange={(e) => setAction(e.target.value)} // Update state on input change
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            onKeyDown={handleKeyDown} // Attach the handler here
           />
           {responseState?.errors?.fieldErrors && (
             <p className="text-red-500">
