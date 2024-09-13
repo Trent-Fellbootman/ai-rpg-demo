@@ -15,7 +15,7 @@ import { Button } from "@nextui-org/button";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/app/ui/utils/theme-switch";
-import { Logo } from "@/app/ui/utils/logo";
+import { Logo } from "@/app/icons";
 import { constants } from "@/app/lib/utils/path";
 
 export const Navbar = () => {
