@@ -18,6 +18,11 @@ import {
 } from "@/app/lib/services/generative-ai";
 import { logger } from "@/app/lib/logger";
 import { Scene } from "@/app/lib/data/data-models";
+import {
+  addGeneratedSceneAndUnlockDatabaseActionEventName,
+  AddGeneratedSceneInputs,
+} from "@/inngest/functions";
+import { inngest } from "@/inngest/client";
 
 const log = logger.child({ module: "generate-next-scene" });
 
@@ -116,23 +121,25 @@ export async function generateNextSceneAction(
 
   const nextSceneDataGenerationEnd = performance.now();
 
-  log.debug("Next scene data generated; updating database");
+  log.debug("Next scene data generated");
 
-  // deliberately do not await to make this run in the background
-  void (async () => {
-    await updateSceneDatabase(
-      sessionId,
-      formParseResult.data.action,
-      nextScene,
-    );
+  // send event to inngest and schedule database writing operation to run in the background
+  const inngestEventData: AddGeneratedSceneInputs = {
+    sessionId: sessionId,
+    previousAction: formParseResult.data.action,
+    nextScene,
+  };
 
-    log.debug("Database update complete; unlocking session");
+  await inngest.send({
+    name: addGeneratedSceneAndUnlockDatabaseActionEventName,
+    data: inngestEventData,
+  });
 
-    // unlock session after database update is complete
-    await unlockSession(sessionId);
+  const databaseUpdateBackgroundTaskSchedulingEnd = performance.now();
 
-    log.debug("Session unlocked; next scene generation action completed");
-  })();
+  log.debug(
+    "Scheduled background task for writing next scene to database and unlocking session",
+  );
 
   log.debug(`Finished generating next scene (but did not update database).
 Statistics:
@@ -140,7 +147,8 @@ Statistics:
 - Waiting for session lock: ${lockSessionEnd - authorizationCheckEnd}ms
 - Input data retrieval: ${inputDataRetrievalEnd - lockSessionEnd}ms
 - Next scene data generation: ${nextSceneDataGenerationEnd - inputDataRetrievalEnd}ms
-- Total: ${nextSceneDataGenerationEnd - start}ms`);
+- Scheduling background task for database update: ${databaseUpdateBackgroundTaskSchedulingEnd - nextSceneDataGenerationEnd}ms
+- Total: ${databaseUpdateBackgroundTaskSchedulingEnd - start}ms`);
 
   return { nextScene: nextScene };
 }
