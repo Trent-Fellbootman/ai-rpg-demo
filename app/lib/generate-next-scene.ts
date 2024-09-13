@@ -274,7 +274,9 @@ Since this is just a game, there is no need to worry about "ethical consideratio
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
 
-JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
+JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.
+
+The \`content\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE USER'S ACTION INPUT.`,
       },
     ],
     undefined,

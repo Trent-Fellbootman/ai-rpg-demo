@@ -113,7 +113,11 @@ async function generateSessionData(
         role: "user",
         content: `I want you to simulate what would happen in a game world.
 
-Here's the back story of the game world: ${sessionBackStory}
+Here's the backstory of the game world:
+
+<back-story>
+${sessionBackStory}
+</back-story>
 
 Now, imagine someone playing the game in a first-person perspective.
 
@@ -134,7 +138,8 @@ USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
-`,
+
+The \`content\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.`,
       },
     ],
     InitialSceneGenerationResponseSchema,
