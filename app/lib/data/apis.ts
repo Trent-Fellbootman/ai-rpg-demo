@@ -374,12 +374,12 @@ export async function downloadImageToStorage(
   return filepath;
 }
 
-export async function createTemporaryUrl(filename: string): Promise<string> {
+export async function createTemporaryUrl(filepath: string): Promise<string> {
   const supabase = createClient();
 
   const { data, error } = await supabase.storage
     .from(imagesStorageBucketName)
-    .createSignedUrl(filename, 3600);
+    .createSignedUrl(filepath, 3600);
 
   if (error) {
     throw new Error(`Error creating image URL: ${error.message}`);
