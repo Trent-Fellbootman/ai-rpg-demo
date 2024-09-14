@@ -4,7 +4,7 @@ import { Button } from "@nextui-org/button";
 import React from "react";
 import { Link } from "@nextui-org/link";
 
-import { getScenePagePath } from "@/app/lib/utils/path";
+import { getScenePlayPagePath } from "@/app/lib/utils/path";
 
 export default function ActionDisplayView({
   action,
@@ -33,14 +33,14 @@ export default function ActionDisplayView({
         <Button
           as={Link}
           color="primary"
-          href={getScenePagePath(sessionId, sceneIndex + 1)}
+          href={getScenePlayPagePath(sessionId, sceneIndex + 1)}
         >
           Next Scene
         </Button>
         <Button
           as={Link}
           color="secondary"
-          href={getScenePagePath(sessionId, sceneIndex - 1)}
+          href={getScenePlayPagePath(sessionId, sceneIndex - 1)}
           isDisabled={isFirstScene}
         >
           Previous Scene

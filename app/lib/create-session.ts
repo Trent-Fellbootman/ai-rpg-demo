@@ -9,7 +9,7 @@ import {
 } from "@/app/lib/services/generative-ai";
 import { createNewSession, downloadImageToStorage } from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
-import { getScenePagePath } from "@/app/lib/utils/path";
+import { getScenePlayPagePath } from "@/app/lib/utils/path";
 import { logger } from "@/app/lib/logger";
 
 const log = logger.child({ module: "generative-ai" });
@@ -85,7 +85,7 @@ export async function createSession(
 - Total: ${databaseUpdateEnd - authorizationStart}ms`);
 
   // redirect to new session
-  redirect(getScenePagePath(newSessionId, null));
+  redirect(getScenePlayPagePath(newSessionId, null));
 }
 
 export type SessionDataGenerationResponse = {

@@ -1,5 +1,7 @@
 import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
+import { Button } from "@nextui-org/button";
+import { Link } from "@nextui-org/link";
 
 import {
   createTemporaryUrl,
@@ -7,7 +9,7 @@ import {
   retrieveScene,
 } from "@/app/lib/data/apis";
 import { getCurrentUser } from "@/app/lib/utils";
-import { getScenePagePath } from "@/app/lib/utils/path";
+import { getScenePlayPagePath, getSessionViewPath } from "@/app/lib/utils/path";
 
 export default async function GameCardsView() {
   const userId = (await getCurrentUser()).userId;
@@ -33,23 +35,43 @@ export default async function GameCardsView() {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
       {userSessions.map((item, index) => (
-        <a key={item.sessionId} href={getScenePagePath(item.sessionId, null)}>
-          <Card key={index} isHoverable shadow="sm">
-            <CardBody className="overflow-visible p-0">
-              <Image
-                alt={item.sessionName}
-                className="w-full object-cover h-[140px]"
-                radius="lg"
-                shadow="sm"
-                src={sessionCoverImageUrls[index]}
-                width="100%"
-              />
-            </CardBody>
-            <CardFooter className="text-small justify-between">
-              <b>{item.sessionName}</b>
-            </CardFooter>
-          </Card>
-        </a>
+        <Card key={index} shadow="sm">
+          <CardBody className="overflow-visible p-0">
+            <Image
+              alt={item.sessionName}
+              className="w-full object-cover h-[140px]"
+              radius="lg"
+              shadow="sm"
+              src={sessionCoverImageUrls[index]}
+              width="100%"
+            />
+          </CardBody>
+          <CardFooter className="text-small justify-between">
+            <div className="w-full">
+              <p className="font-bold">{item.sessionName}</p>
+              <div className="flex flex-row justify-end gap-1">
+                <Button
+                  as={Link}
+                  color="primary"
+                  href={getScenePlayPagePath(item.sessionId, null)}
+                  radius="full"
+                  size="sm"
+                >
+                  Play
+                </Button>
+                <Button
+                  as={Link}
+                  color="secondary"
+                  href={getSessionViewPath(item.sessionId)}
+                  radius="full"
+                  size="sm"
+                >
+                  View
+                </Button>
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
       ))}
     </div>
   );
