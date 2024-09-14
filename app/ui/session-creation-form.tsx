@@ -7,6 +7,10 @@ import React from "react";
 import { Spinner } from "@nextui-org/spinner";
 
 import { createSession, Errors } from "@/app/lib/create-session";
+import {
+  defaultStoryName,
+  defaultBackStory,
+} from "@/content/default-session-setup";
 
 export default function SessionCreationForm() {
   const [errorState, setErrorState] = React.useState<Errors | undefined>(
@@ -35,7 +39,7 @@ export default function SessionCreationForm() {
         <p className="text-large">Name</p>
         <Spacer y={2} />
         <Input
-          defaultValue="Middle School Horror"
+          defaultValue={defaultStoryName}
           label="Session Name"
           name="name"
         />
@@ -49,7 +53,7 @@ export default function SessionCreationForm() {
         <p className="text-large">Back Story</p>
         <Spacer y={2} />
         <Textarea
-          defaultValue="On a dark dark night, you find yourself in a deserted middle school..."
+          defaultValue={defaultBackStory}
           label="Back Story"
           name="back_story"
         />
