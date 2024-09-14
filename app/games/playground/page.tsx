@@ -1,4 +1,4 @@
-import { SessionDisplayView } from "@/app/ui/game/session-display-view";
+import { SessionDisplayView } from "@/app/ui/game/session-display-view/session-display-view";
 
 export default function Page() {
   return (
