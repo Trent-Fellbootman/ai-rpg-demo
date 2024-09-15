@@ -6,6 +6,7 @@ import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
 
 import "swiper/css";
+import parse from "html-react-parser";
 
 /**
  * Widget to display an entire session.
@@ -54,7 +55,7 @@ async function SceneCard({
           {/* First text bubble aligned to the left */}
           <div className="flex justify-start">
             <div className="bg-primary px-4 py-2 rounded-xl relative text-white">
-              <p>{text}</p>
+              <div className="flex flex-col space-y-1">{parse(text)}</div>
             </div>
             <Spacer x={10} />
           </div>

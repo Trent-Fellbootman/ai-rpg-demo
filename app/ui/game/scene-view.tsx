@@ -75,7 +75,11 @@ export default function SceneView({
       />
       <Spacer y={2} />
       <Card>
-        <CardBody>{parse(widgetData!.text)}</CardBody>
+        <CardBody>
+          <div className="flex flex-col space-y-1">
+            {parse(widgetData!.text)}
+          </div>
+        </CardBody>
       </Card>
       <Spacer y={2} />
       {widgetData!.currentSceneIndex ===
