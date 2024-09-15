@@ -47,7 +47,7 @@ export default async function GameCardsView() {
             />
           </CardBody>
           <CardFooter className="text-small justify-between">
-            <div className="w-full">
+            <div className="w-full flex flex-col space-y-2">
               <p className="font-bold">{item.sessionName}</p>
               <div className="flex flex-row justify-end gap-1">
                 <Button
@@ -56,6 +56,7 @@ export default async function GameCardsView() {
                   href={getScenePlayPagePath(item.sessionId, null)}
                   radius="full"
                   size="sm"
+                  variant="bordered"
                 >
                   Play
                 </Button>
@@ -65,6 +66,7 @@ export default async function GameCardsView() {
                   href={getSessionViewPath(item.sessionId)}
                   radius="full"
                   size="sm"
+                  variant="bordered"
                 >
                   View
                 </Button>
