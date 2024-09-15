@@ -1,7 +1,9 @@
-"use client";
+import SessionCreationViewClient from "@/app/ui/session-creation/session-creation-view-client";
+import { sampleSessionCreationTemplates } from "@/content/sample-session-setup";
 
-import SessionCreationForm from "@/app/ui/session-creation/session-creation-form";
+export default async function SessionCreationView() {
+  // TODO: fetch templates from the database
+  const templates = sampleSessionCreationTemplates;
 
-export default function SessionCreationView() {
-  return <SessionCreationForm />;
+  return <SessionCreationViewClient sampleSetups={templates} />;
 }

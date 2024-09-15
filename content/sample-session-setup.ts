@@ -1,5 +1,12 @@
-export const defaultStoryName = `Be With You After The Apocalypse`;
-export const defaultBackStory = `You are a female middle school student and you have a crush on a boy in your class.
+export const sampleSessionCreationTemplates: {
+  name: string;
+  description?: string;
+  backStory: string;
+}[] = [
+  {
+    name: `Be With You After The Apocalypse`,
+    description: `Rescue your crush and escape the zombie-infested school!`,
+    backStory: `You are a female middle school student and you have a crush on a boy in your class.
 But you're too shy and never confessed your emotions.
 One day, a mysterious virus stroke the entire city, turning every human into a zombie, except those who are immune
 - which happen to be you and your crush (but the player didn't know that her crush is also immune initially).
@@ -27,4 +34,10 @@ You should also mention that she has a smartphone in bed.
 
 You should try to progress the storyline
 (e.g., by making "random" events related to the storyline)
-if the actions that the player takes does not do so.`;
+if the actions that the player takes does not do so.`,
+  },
+  {
+    name: "Sample Session (no description)",
+    backStory: "Sample back story",
+  },
+];
