@@ -21,6 +21,8 @@ import {
   tryLockSession,
   unlockSession,
   deleteGameSession,
+  isSessionLocked,
+  tryLockSessionUntilAcquire,
 } from '@/app/lib/data/database-actions/game-session-actions';
 import { DatabaseError, DatabaseErrorType } from '@/app/lib/data/database-actions/error-types';
 import { getFakeImageUrl } from './utils';
@@ -265,16 +267,59 @@ describe('Game Session Actions', () => {
       }
     );
 
+    expect(await isSessionLocked(sessionId)).toBe(false);
+
     const locked = await tryLockSession(sessionId);
     expect(locked).toBe(true);
+    expect(await isSessionLocked(sessionId)).toBe(true);
 
     const lockedAgain = await tryLockSession(sessionId);
     expect(lockedAgain).toBe(false);
+    expect(await isSessionLocked(sessionId)).toBe(true);
 
     await unlockSession(sessionId);
+    expect(await isSessionLocked(sessionId)).toBe(false);
 
     const lockedAfterUnlock = await tryLockSession(sessionId);
     expect(lockedAfterUnlock).toBe(true);
+    expect(await isSessionLocked(sessionId)).toBe(true);
+  });
+
+  test.concurrent('should repeat try locking until success', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    expect(await isSessionLocked(sessionId)).toBe(false);
+    expect(await tryLockSession(sessionId)).toBe(true);
+
+    let acquired = false;
+
+    await Promise.all([
+      (async () => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        expect(acquired).toBe(false);
+        await unlockSession(sessionId);
+      })(),
+      (async () => {
+        await tryLockSessionUntilAcquire(sessionId, 100, 1_000);
+        acquired = true;
+      })(),
+    ])
+
+    expect(acquired).toBe(true);
   });
 
   test.concurrent('should delete a game session that the user owns', async () => {
