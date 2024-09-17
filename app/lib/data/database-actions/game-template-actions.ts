@@ -315,6 +315,7 @@ export async function getGameTemplateNoComments(userId: number, gameTemplateId: 
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
       id: gameTemplateId,
+      deleted: false,
       OR: [
         {
           userId: userId,

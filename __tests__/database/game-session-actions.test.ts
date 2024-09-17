@@ -1,4 +1,4 @@
-import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
+import { vi, describe, test, expect } from 'vitest';
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
@@ -27,42 +27,9 @@ import {
 import { DatabaseError, DatabaseErrorType } from '@/app/lib/data/database-actions/error-types';
 import { getFakeImageUrl } from './utils';
 
-import { PrismaClient } from '@prisma/client';
-import { createClient } from '@/app/lib/utils/supabase-server';
-import { imagesStorageBucketName } from '@/app-config';
 import {v4 as uuidv4} from 'uuid';
 
-const prisma = new PrismaClient();
-const supabase = createClient();
-
-async function deleteEverything() {
-  // delete everything
-  await prisma.scene.deleteMany({})
-  await prisma.gameSession.deleteMany({})
-  await prisma.user.deleteMany({})
-  
-  // delete any existing images in the bucket
-  const { data, error } = await supabase.storage
-  .from(imagesStorageBucketName)
-  .list();
-
-  if (error) {
-    throw new Error(`Error listing images: ${error.message}`);
-  }
-  for (const image of data) {
-    await supabase.storage.from(imagesStorageBucketName).remove([image.name]);
-  }
-}
-
 describe('Game Session Actions', () => {
-  // beforeEach(async () => {
-  //   await deleteEverything();
-  // })
-
-  // afterAll(async () => {
-  //   await deleteEverything();
-  // })
-
   test.concurrent('should create a game session with valid data', async () => {
     const email = `testuser-${uuidv4()}@example.com`;
     const hashedPassword = 'hashedpassword';
@@ -325,6 +292,8 @@ describe('Game Session Actions', () => {
   test.concurrent('should delete a game session that the user owns', async () => {
     const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
 
+    expect((await getGameSessionsByUser(userId)).length).toBe(0);
+
     const sessionId = await createGameSession(
       userId,
       'Test Game Session',
@@ -339,10 +308,11 @@ describe('Game Session Actions', () => {
       }
     );
 
+    expect((await getGameSessionsByUser(userId)).length).toBe(1);
+
     await deleteGameSession(userId, sessionId);
 
-    const hasSession = await doesUserHaveGameSession(userId, sessionId);
-    expect(hasSession).toBe(false);
+    expect((await getGameSessionsByUser(userId)).length).toBe(0);
   });
 
   test.concurrent('should throw NotFound error when getting length of non-existent session', async () => {
@@ -405,15 +375,64 @@ describe('Game Session Actions', () => {
       }
     );
 
-    await expect(getSceneBySessionAndIndex(userId, sessionId, 99)).rejects.toThrowError(DatabaseError);
+    await expect(getSceneBySessionAndIndex(userId, sessionId, 1)).rejects.toThrowError(DatabaseError);
 
     try {
-      await getSceneBySessionAndIndex(userId, sessionId, 99);
+      await getSceneBySessionAndIndex(userId, sessionId, 1);
     } catch (error) {
       expect(error).toBeInstanceOf(DatabaseError);
       const dbError = error as DatabaseError;
       expect(dbError.type).toBe(DatabaseErrorType.NotFound);
       expect(dbError.message).toBe('Scene not found in the game session at the specified index');
     }
+  });
+
+  test.concurrent('Users should only own the sessions that they own', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+    const otherUserId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    expect(await doesUserHaveGameSession(userId, sessionId)).toBe(true);
+    expect(await doesUserHaveGameSession(otherUserId, sessionId)).toBe(false);
+  })
+
+  test.concurrent('should retrieve the correct metadata of the sessions belong to a user', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    expect(await getGameSessionsByUser(userId)).toEqual([{
+      id: sessionId,
+      name: 'Test Game Session',
+      backstory: 'Once upon a time...',
+      description: 'A test game session',
+      imageUrl: expect.any(String),
+      imageDescription: 'Test image',
+    }]);
   });
 });

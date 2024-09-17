@@ -1,4 +1,4 @@
-import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
+import { vi, describe, test, expect } from 'vitest';
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
@@ -12,6 +12,7 @@ vi.mock("next/headers", () => ({
 import { createUser } from '@/app/lib/data/database-actions/user-actions';
 import {
   createGameTemplate,
+  deleteGameTemplate,
   getGameTemplateLikeCount,
   addLike,
   deleteLike,
@@ -23,46 +24,10 @@ import {
 import { DatabaseError, DatabaseErrorType } from '@/app/lib/data/database-actions/error-types';
 import { getFakeImageUrl } from './utils';
 
-import { PrismaClient } from '@prisma/client';
-import { createClient } from '@/app/lib/utils/supabase-server';
-import { imagesStorageBucketName } from '@/app-config';
 import {v4 as uuidv4} from 'uuid';
 
-const prisma = new PrismaClient();
-const supabase = createClient();
-
-async function deleteEverything() {
-  // delete everything
-  await prisma.scene.deleteMany({})
-  await prisma.gameSession.deleteMany({})
-  await prisma.gameTemplateLike.deleteMany({})
-  await prisma.comment.deleteMany({})
-  await prisma.gameTemplate.deleteMany({})
-  await prisma.user.deleteMany({})
-  
-  // delete any existing images in the bucket
-  const { data, error } = await supabase.storage
-  .from(imagesStorageBucketName)
-  .list();
-
-  if (error) {
-    throw new Error(`Error listing images: ${error.message}`);
-  }
-  for (const image of data) {
-    await supabase.storage.from(imagesStorageBucketName).remove([image.name]);
-  }
-}
-
 describe('Game Template Actions', () => {
-  // beforeEach(async () => {
-  //   await deleteEverything();
-  // })
-
-  // afterAll(async () => {
-  //   await deleteEverything();
-  // })
-
-  test.concurrent('should create a game template with valid data', async () => {
+  test.concurrent('should create and delete a game template with valid data', async () => {
     const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
 
     const newGameTemplateData = {
@@ -86,7 +51,145 @@ describe('Game Template Actions', () => {
       description: newGameTemplateData.description,
       imageUrl: expect.any(String),
     });
+  
+    await deleteGameTemplate(userId, templateId);
+
+    await expect(getGameTemplateNoComments(userId, templateId)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await getGameTemplateNoComments(userId, templateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Game template not found under user or not public');
+    }
   });
+
+  test.concurrent('users can only access public templates and delete their own templates', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+    const otherUserId = await createUser(`otheruser-${uuidv4()}@example.com`, 'hashedpassword', 'Other User');
+
+    const newPublicGameTemplateData = {
+      name: 'Public Test Template',
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: 'Public Template image',
+      backStory: 'Public This is a test backstory.',
+      description: 'Public A test template',
+      isPublic: true,
+    };
+
+    const newPrivateGameTemplateData = {
+      name: 'Private Test Template',
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: 'Private Template image',
+      backStory: 'Private This is a test backstory.',
+      description: 'Private A test template',
+      isPublic: false,
+    };
+
+    const publicTemplateId = await createGameTemplate(userId, newPublicGameTemplateData);
+    const privateTemplateId = await createGameTemplate(userId, newPrivateGameTemplateData);
+
+    expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual({
+      name: newPublicGameTemplateData.name,
+      backstroy: newPublicGameTemplateData.backStory,
+      description: newPublicGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    expect(await getGameTemplateNoComments(otherUserId, publicTemplateId)).toEqual({
+      name: newPublicGameTemplateData.name,
+      backstroy: newPublicGameTemplateData.backStory,
+      description: newPublicGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    expect(await getGameTemplateNoComments(userId, privateTemplateId)).toEqual({
+      name: newPrivateGameTemplateData.name,
+      backstroy: newPrivateGameTemplateData.backStory,
+      description: newPrivateGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    await expect(getGameTemplateNoComments(otherUserId, privateTemplateId)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await getGameTemplateNoComments(otherUserId, privateTemplateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Game template not found under user or not public');
+    }
+
+    await expect(deleteGameTemplate(otherUserId, publicTemplateId)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await deleteGameTemplate(otherUserId, publicTemplateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+      expect(dbError.message).toBe('User does not own the game template');
+    }
+
+    try {
+      await deleteGameTemplate(otherUserId, privateTemplateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+      expect(dbError.message).toBe('User does not own the game template');
+    }
+
+    // check that game template is still accessible
+    expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual({
+      name: newPublicGameTemplateData.name,
+      backstroy: newPublicGameTemplateData.backStory,
+      description: newPublicGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    expect(await getGameTemplateNoComments(otherUserId, publicTemplateId)).toEqual({
+      name: newPublicGameTemplateData.name,
+      backstroy: newPublicGameTemplateData.backStory,
+      description: newPublicGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    expect(await getGameTemplateNoComments(userId, privateTemplateId)).toEqual({
+      name: newPrivateGameTemplateData.name,
+      backstroy: newPrivateGameTemplateData.backStory,
+      description: newPrivateGameTemplateData.description,
+      imageUrl: expect.any(String),
+    });
+
+    // remove the templates
+    await deleteGameTemplate(userId, publicTemplateId);
+    await deleteGameTemplate(userId, privateTemplateId);
+
+    await expect(getGameTemplateNoComments(userId, publicTemplateId)).rejects.toThrowError(DatabaseError);
+    
+    try {
+      await getGameTemplateNoComments(userId, publicTemplateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Game template not found under user or not public');
+    }
+
+    await expect(getGameTemplateNoComments(userId, privateTemplateId)).rejects.toThrowError(DatabaseError);
+    try {
+      await getGameTemplateNoComments(userId, privateTemplateId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Game template not found under user or not public');
+    }
+  })
 
   test.concurrent('should throw Unauthorized error when creating a game template with invalid userId', async () => {
     const invalidUserId = 999999;
