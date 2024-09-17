@@ -112,7 +112,7 @@ describe('Game Template Actions', () => {
     }
   });
 
-  test.concurrent('should add a like to a public game template', async () => {
+  test.concurrent('should add and delete a like to a public game template', async () => {
     const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
 
     const templateId = await createGameTemplate(userId, {
@@ -124,10 +124,16 @@ describe('Game Template Actions', () => {
       isPublic: true,
     });
 
+    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
     await addLike(userId, templateId);
-
-    const likeCount = await getGameTemplateLikeCount(templateId);
-    expect(likeCount).toBe(1);
+    expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+    await deleteLike(userId, templateId);
+    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
+    // do `addLike` and `deleteLike` a second time to test the behavior of soft deletion
+    await addLike(userId, templateId);
+    expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+    await deleteLike(userId, templateId);
+    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
   });
 
   test.concurrent('should throw Conflict error when adding a like that already exists', async () => {
@@ -175,19 +181,16 @@ describe('Game Template Actions', () => {
     const comments = await getComments(userId, templateId);
     expect(comments.length).toBe(1);
     const comment = comments[0];
-    expect(comment).toEqual({
+    expect({username : comment.username, text: comment.text, createdAt: comment.createdAt}).toEqual({
       username: 'Test User',
       text: commentText,
       createdAt: expect.any(Date),
     });
 
-    // Assuming we have access to comment IDs for deletion
-    // Since we're not supposed to use raw Prisma APIs, we might need to adjust the code to get the comment ID
-    // For the purpose of this test, let's assume we have a function getCommentIds
-    // const commentIds = await getCommentIds(userId, templateId);
-    // await deleteComment(userId, commentIds[0]);
+    await deleteComment(userId, comment.id);
 
-    // For now, we can skip deletion if we can't get the ID without raw APIs
+    const newComments = await getComments(userId, templateId);
+    expect(newComments.length).toBe(0);
   });
 
   test.concurrent('should get a public game template without comments', async () => {

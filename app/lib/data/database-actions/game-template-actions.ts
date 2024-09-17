@@ -271,6 +271,7 @@ export async function deleteComment(userId: number, commentId: number): Promise<
  * @returns 
  */
 export async function getComments(userId: number, gameTemplateId: number): Promise<{
+  id: number,
   username: string | null,
   text: string,
   createdAt: Date,
@@ -284,6 +285,7 @@ export async function getComments(userId: number, gameTemplateId: number): Promi
       createdAt: 'desc',
     },
     select: {
+      id: true,
       user: {
         select: {
           name: true
@@ -296,6 +298,7 @@ export async function getComments(userId: number, gameTemplateId: number): Promi
 
   return comments.map((comment) => {
     return {
+      id: comment.id,
       username: comment.user.name,
       text: comment.text,
       createdAt: comment.createdAt,
