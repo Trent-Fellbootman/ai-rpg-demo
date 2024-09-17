@@ -1,0 +1,374 @@
+import { vi, describe, test, expect, beforeEach, afterAll } from 'vitest';
+
+vi.mock("next/headers", () => ({
+  cookies: () => ({
+    getAll: async () => null,
+    setAll: async (
+      cookies: { name: string; value: string; options: any }[],
+    ) => { },
+  }),
+}));
+
+import { createUser } from '@/app/lib/data/database-actions/user-actions';
+import {
+  createGameSession,
+  addSceneToSession,
+  getScenesBySession,
+  getGameSessionsByUser,
+  doesUserHaveGameSession,
+  getGameSessionLength,
+  getSceneBySessionAndIndex,
+  tryLockSession,
+  unlockSession,
+  deleteGameSession,
+} from '@/app/lib/data/database-actions/game-session-actions';
+import { DatabaseError, DatabaseErrorType } from '@/app/lib/data/database-actions/error-types';
+import { getFakeImageUrl } from './utils';
+
+import { PrismaClient } from '@prisma/client';
+import { createClient } from '@/app/lib/utils/supabase-server';
+import { imagesStorageBucketName } from '@/app-config';
+import {v4 as uuidv4} from 'uuid';
+
+const prisma = new PrismaClient();
+const supabase = createClient();
+
+async function deleteEverything() {
+  // delete everything
+  await prisma.scene.deleteMany({})
+  await prisma.gameSession.deleteMany({})
+  await prisma.user.deleteMany({})
+  
+  // delete any existing images in the bucket
+  const { data, error } = await supabase.storage
+  .from(imagesStorageBucketName)
+  .list();
+
+  if (error) {
+    throw new Error(`Error listing images: ${error.message}`);
+  }
+  for (const image of data) {
+    await supabase.storage.from(imagesStorageBucketName).remove([image.name]);
+  }
+}
+
+describe('Game Session Actions', () => {
+  // beforeEach(async () => {
+  //   await deleteEverything();
+  // })
+
+  // afterAll(async () => {
+  //   await deleteEverything();
+  // })
+
+  test.concurrent('should create a game session with valid data', async () => {
+    const email = `testuser-${uuidv4()}@example.com`;
+    const hashedPassword = 'hashedpassword';
+    const name = 'Test User';
+    const userId = await createUser(email, hashedPassword, name);
+
+    const gameSessionName = 'Test Game Session';
+    const backstory = 'Once upon a time...';
+    const description = 'A test game session';
+    const imageUrl = getFakeImageUrl(1);
+    const imageDescription = 'Test image';
+    const initialSceneData = {
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: 'Initial scene image',
+      narration: 'You are in a dark forest.',
+    };
+
+    const sessionId = await createGameSession(
+      userId,
+      gameSessionName,
+      backstory,
+      description,
+      imageUrl,
+      imageDescription,
+      initialSceneData
+    );
+
+    expect(sessionId).toBeGreaterThan(0);
+
+    // Check that the session exists and retrieve it
+    const sessions = await getGameSessionsByUser(userId);
+    expect(sessions.length).toBe(1);
+    const session = sessions[0];
+
+    expect(session).toEqual({
+      id: sessionId,
+      name: gameSessionName,
+      imageUrl: expect.any(String),
+      imageDescription,
+      backstory,
+      description,
+    });
+
+    // Get the scenes
+    const scenes = await getScenesBySession(userId, sessionId);
+    expect(scenes.length).toBe(1);
+    const scene = scenes[0];
+
+    expect(scene).toEqual({
+      imageUrl: expect.any(String),
+      imageDescription: initialSceneData.imageDescription,
+      narration: initialSceneData.narration,
+      action: null,
+    });
+  });
+
+  test.concurrent('should throw Unauthorized error when creating a game session with invalid userId', async () => {
+    const invalidUserId = 999999; // Assuming this userId does not exist
+
+    const gameSessionName = 'Test Game Session';
+    const backstory = 'Once upon a time...';
+    const description = 'A test game session';
+    const imageUrl = getFakeImageUrl(1);
+    const imageDescription = 'Test image';
+    const initialSceneData = {
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: 'Initial scene image',
+      narration: 'You are in a dark forest.',
+    };
+
+    await expect(
+      createGameSession(
+        invalidUserId,
+        gameSessionName,
+        backstory,
+        description,
+        imageUrl,
+        imageDescription,
+        initialSceneData
+      )
+    ).rejects.toThrowError(DatabaseError);
+
+    try {
+      await createGameSession(
+        invalidUserId,
+        gameSessionName,
+        backstory,
+        description,
+        imageUrl,
+        imageDescription,
+        initialSceneData
+      );
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+      expect(dbError.message).toBe('User not found');
+    }
+  });
+
+  test.concurrent('should add a scene to a session that the user owns', async () => {
+    const email = `testuser-${uuidv4()}@example.com`;
+    const userId = await createUser(email, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    const previousAction = 'Go north';
+    const newSceneData = {
+      imageUrl: getFakeImageUrl(3),
+      imageDescription: 'Second scene image',
+      narration: 'You arrive at a clearing.',
+    };
+
+    await addSceneToSession(userId, sessionId, previousAction, newSceneData);
+
+    // Get the scenes and check
+    const scenes = await getScenesBySession(userId, sessionId);
+
+    expect(scenes.length).toBe(2);
+
+    expect(scenes[0]).toEqual({
+      imageUrl: expect.any(String),
+      imageDescription: 'Initial scene image',
+      narration: 'You are in a dark forest.',
+      action: previousAction, // The first scene's action should now be set
+    });
+
+    expect(scenes[1]).toEqual({
+      imageUrl: expect.any(String),
+      imageDescription: newSceneData.imageDescription,
+      narration: newSceneData.narration,
+      action: null,
+    });
+  });
+
+  test.concurrent('should throw Unauthorized error when adding a scene to a session that the user does not own', async () => {
+    // Create first user and session
+    const userId1 = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User 1');
+
+    const sessionId = await createGameSession(
+      userId1,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    // Create second user
+    const userId2 = await createUser(`testuser${Date.now() + 1}@example.com`, 'hashedpassword', 'Test User 2');
+
+    const previousAction = 'Go north';
+    const newSceneData = {
+      imageUrl: getFakeImageUrl(3),
+      imageDescription: 'Second scene image',
+      narration: 'You arrive at a clearing.',
+    };
+
+    await expect(addSceneToSession(userId2, sessionId, previousAction, newSceneData)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await addSceneToSession(userId2, sessionId, previousAction, newSceneData);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+      expect(dbError.message).toBe('User does not own the game session');
+    }
+  });
+
+  test.concurrent('should lock and unlock a session', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    const locked = await tryLockSession(sessionId);
+    expect(locked).toBe(true);
+
+    const lockedAgain = await tryLockSession(sessionId);
+    expect(lockedAgain).toBe(false);
+
+    await unlockSession(sessionId);
+
+    const lockedAfterUnlock = await tryLockSession(sessionId);
+    expect(lockedAfterUnlock).toBe(true);
+  });
+
+  test.concurrent('should delete a game session that the user owns', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    await deleteGameSession(userId, sessionId);
+
+    const hasSession = await doesUserHaveGameSession(userId, sessionId);
+    expect(hasSession).toBe(false);
+  });
+
+  test.concurrent('should throw NotFound error when getting length of non-existent session', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+    const sessionId = 999999; // Assuming this session ID doesn't exist
+
+    await expect(getGameSessionLength(userId, sessionId)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await getGameSessionLength(userId, sessionId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Game session not found under user');
+    }
+  });
+
+  test.concurrent('should get a scene by session and index', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    const scene = await getSceneBySessionAndIndex(userId, sessionId, 0);
+
+    expect(scene).toEqual({
+      imageUrl: expect.any(String),
+      imageDescription: 'Initial scene image',
+      narration: 'You are in a dark forest.',
+      action: null,
+    });
+  });
+
+  test.concurrent('should throw NotFound error when getting a scene with invalid index', async () => {
+    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+
+    const sessionId = await createGameSession(
+      userId,
+      'Test Game Session',
+      'Once upon a time...',
+      'A test game session',
+      getFakeImageUrl(1),
+      'Test image',
+      {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: 'Initial scene image',
+        narration: 'You are in a dark forest.',
+      }
+    );
+
+    await expect(getSceneBySessionAndIndex(userId, sessionId, 99)).rejects.toThrowError(DatabaseError);
+
+    try {
+      await getSceneBySessionAndIndex(userId, sessionId, 99);
+    } catch (error) {
+      expect(error).toBeInstanceOf(DatabaseError);
+      const dbError = error as DatabaseError;
+      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+      expect(dbError.message).toBe('Scene not found in the game session at the specified index');
+    }
+  });
+});
