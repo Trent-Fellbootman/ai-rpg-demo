@@ -11,7 +11,6 @@
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.1.5",
-		"@neondatabase/serverless": "^0.9.5",
 		"@nextui-org/button": "2.0.37",
 		"@nextui-org/card": "^2.0.33",
 		"@nextui-org/code": "2.0.32",
@@ -35,7 +34,6 @@
 		"@react-aria/visually-hidden": "3.8.15",
 		"@supabase/ssr": "^0.5.1",
 		"@tailwindcss/line-clamp": "^0.4.4",
-		"@vercel/postgres": "^0.10.0",
 		"bcrypt": "^5.1.1",
 		"clsx": "2.1.1",
 		"framer-motion": "~11.5.4",
