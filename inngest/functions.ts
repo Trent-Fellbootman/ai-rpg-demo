@@ -33,10 +33,14 @@ export const writeGeneratedSceneAndUnlockDatabaseAction =
         "Started operation for writing generated scene and unlocking session",
       );
 
-      await step.sleep("wait-a-moment", "1s");
+      if (typeof event.data.sessionId !== "number") {
+        log.error("Expected sessionId to be a number");
+      }
 
       // TODO: validate input type
       const data = event.data as AddGeneratedSceneInputs;
+
+      log.debug("converted input data");
 
       const sessionLocked = await isSessionLocked(data.sessionId);
 
