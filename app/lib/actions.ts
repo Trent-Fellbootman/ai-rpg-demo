@@ -1,14 +1,19 @@
+"use server";
+
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 
 import { getCurrentUser } from "./database-actions/user-actions";
 import {
   createGameSession,
-  doesUserHaveGameSession, getGameSessionLength,
-  getGameSessionMetadata, getSceneBySessionAndIndex,
+  doesUserHaveGameSession,
+  getGameSessionLength,
+  getGameSessionMetadata,
+  getSceneBySessionAndIndex,
   getScenesBySession,
   tryLockSessionUntilAcquire,
-  unlockSession
+  unlockSession,
 } from "./database-actions/game-session-actions";
 import { generateGameSessionData } from "./data-generation/generate-session-data";
 import {
@@ -23,25 +28,43 @@ import {
 } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
 import { logger } from "@/app/lib/logger";
+import { signIn } from "@/auth";
 
 const log = logger.child({ module: "server-actions" });
 
+export async function authenticate(
+  formData: FormData,
+): Promise<string | undefined> {
+  try {
+    await signIn("credentials", formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return "Invalid credentials.";
+        default:
+          return "Something went wrong.";
+      }
+    }
+    throw error;
+  }
+}
+
 const CreateNewSessionActionFormSchema = z.object({
-  name: z.string(),
-  back_story: z.string(),
+  name: z.string().min(1, "Name must be non-empty!"),
+  back_story: z.string().min(1, "Backstory must be non-empty!"),
   description: z.string().nullable(),
 });
 
-export async function createNewSessionAction(formData: FormData): Promise<
-  | {
-      fieldErrors: {
-        [Key in keyof z.infer<
-          typeof CreateNewSessionActionFormSchema
-        >]?: string[];
-      };
-    }
-  | undefined
-> {
+export type CreateNewGameSessionActionError = {
+  fieldErrors: {
+    [Key in keyof z.infer<typeof CreateNewSessionActionFormSchema>]?: string[];
+  };
+};
+
+export async function createNewGameSessionAction(
+  formData: FormData,
+): Promise<CreateNewGameSessionActionError | undefined> {
   // no need for authorization; database constraints will enforce valid user ID automatically
   const authorizationStart = performance.now();
 
@@ -75,7 +98,7 @@ export async function createNewSessionAction(formData: FormData): Promise<
     initialSceneGenerationResponse.coverImageDescription,
     {
       imageDescription: initialSceneGenerationResponse.coverImageDescription,
-      imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
+      imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
       narration: initialSceneGenerationResponse.firstSceneText,
     },
   );
@@ -96,11 +119,7 @@ const CreateNextSceneActionFormSchema = z.object({
   action: z.string().min(1, "Action must be non-empty!"),
 });
 
-export async function createNextSceneAction(
-  userId: number,
-  sessionId: number,
-  formData: FormData,
-): Promise<{
+export type CreateNextSceneActionResponse = {
   errors?: {
     fieldErrors?: {
       [Key in keyof z.infer<typeof CreateNextSceneActionFormSchema>]?: string[];
@@ -111,7 +130,13 @@ export async function createNextSceneAction(
     narration: string;
     imageUrl: string;
   };
-}> {
+};
+
+export async function createNextSceneAction(
+  userId: number,
+  sessionId: number,
+  formData: FormData,
+): Promise<CreateNextSceneActionResponse> {
   log.debug("Started generating next scene action");
 
   const start = performance.now();
@@ -207,15 +232,14 @@ Statistics:
 
 export async function getSceneViewInitialData(
   sessionId: number,
-  sceneIndex: string,
+  sceneIndex: number | "last",
 ) {
   const user = (await getCurrentUser())!;
 
   // TODO: optimize to remove this query
   const sessionLength = await getGameSessionLength(user.id, sessionId);
 
-  const parsedIndex =
-    sceneIndex === "last" ? sessionLength - 1 : parseInt(sceneIndex);
+  const parsedIndex = sceneIndex === "last" ? sessionLength - 1 : sceneIndex;
 
   const [scene] = await Promise.all([
     getSceneBySessionAndIndex(user.id, sessionId, parsedIndex),

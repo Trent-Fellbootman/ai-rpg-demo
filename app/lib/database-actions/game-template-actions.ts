@@ -328,7 +328,7 @@ export async function getComments(
     return {
       id: comment.id,
       username: comment.user.name,
-      text: comment.text,
+      narration: comment.text,
       createdAt: comment.createdAt,
     };
   });

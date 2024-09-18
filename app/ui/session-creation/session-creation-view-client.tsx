@@ -9,7 +9,10 @@ import { Tooltip } from "@nextui-org/tooltip";
 import { InfoIcon } from "@nextui-org/shared-icons";
 import { Textarea } from "@nextui-org/input";
 
-import { generateSessionData, Errors } from "@/app/lib/data-generation/generate-session-data";
+import {
+  createNewGameSessionAction,
+  CreateNewGameSessionActionError,
+} from "@/app/lib/actions";
 
 export default function SessionCreationViewClient({
   sampleSetups,
@@ -20,9 +23,9 @@ export default function SessionCreationViewClient({
     backStory: string;
   }[];
 }) {
-  const [errorState, setErrorState] = React.useState<Errors | undefined>(
-    undefined,
-  );
+  const [errorState, setErrorState] = React.useState<
+    CreateNewGameSessionActionError | undefined
+  >(undefined);
   const [canCreateSession, setCanCreateSession] = React.useState<boolean>(true);
 
   const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -32,7 +35,7 @@ export default function SessionCreationViewClient({
     setErrorState(undefined);
 
     const formData = new FormData(event.currentTarget);
-    const response = await generateSessionData(formData);
+    const response = await createNewGameSessionAction(formData);
 
     setErrorState(response);
     setCanCreateSession(true);
@@ -157,9 +160,6 @@ export default function SessionCreationViewClient({
               >
                 {canCreateSession ? "Create Session" : <Spinner />}
               </Button>
-              {errorState?.message && (
-                <p className="text-red-500">{errorState.message}</p>
-              )}
             </div>
           </form>
         </div>

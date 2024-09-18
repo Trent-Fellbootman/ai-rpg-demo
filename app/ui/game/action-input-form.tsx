@@ -6,11 +6,11 @@ import { Spacer } from "@nextui-org/spacer";
 import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
 
-import {
-  generateNextSceneAction,
-  GenerateNextSceneActionResponse,
-} from "@/app/lib/data-generation/generate-next-scene-data";
 import { getScenePlayPagePath } from "@/app/lib/utils/path";
+import {
+  createNextSceneAction,
+  CreateNextSceneActionResponse,
+} from "@/app/lib/actions";
 
 export default function ActionInputForm({
   userId,
@@ -18,17 +18,17 @@ export default function ActionInputForm({
   sceneIndex,
   onNextSceneGenerationResponse,
 }: {
-  userId: string;
-  sessionId: string;
+  userId: number;
+  sessionId: number;
   sceneIndex: number;
   onNextSceneGenerationResponse?: (
-    response: GenerateNextSceneActionResponse,
+    response: CreateNextSceneActionResponse,
   ) => void;
 }) {
   const isFirstScene = sceneIndex === 0;
 
   const [responseState, setResponseState] = useState<
-    GenerateNextSceneActionResponse | undefined
+    CreateNextSceneActionResponse | undefined
   >(undefined);
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
   const [action, setAction] = useState<string>("");
@@ -46,7 +46,7 @@ export default function ActionInputForm({
 
     formData.set("action", action);
 
-    const response = await generateNextSceneAction(userId, sessionId, formData);
+    const response = await createNextSceneAction(userId, sessionId, formData);
 
     if (response.nextScene) {
       setAction(""); // Clear the input field after successful action
@@ -62,7 +62,7 @@ export default function ActionInputForm({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey) {
       event.preventDefault(); // Prevents adding a new line
-      formAction(); // Call the form submission function
+      void formAction(); // Call the form submission function
     }
   };
 

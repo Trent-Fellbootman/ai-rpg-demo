@@ -43,15 +43,9 @@ export async function generateGameSessionData(
       },
       {
         role: "user",
-        content: `I want you to simulate a game world.
-
-Here's the backstory of the game world:
-
-<back-story>
-${sessionBackstory}
-</back-story>
-
-Now, I want you to create a prompt for AI-generating the cover image of the game,
+        content: `I'm creating a game.
+        
+I want you to create a prompt for AI-generating the cover image of the game,
 as well as a prompt for the first scene image, and a short narration for the initial scene.
 
 For the latter two, you should keep in mind that the player plays from a FIRST-PERSON perspective.
@@ -73,6 +67,12 @@ USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
+
+Here's the backstory of the game:
+
+<backstory>
+${sessionBackstory}
+</backstory>
 
 The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,

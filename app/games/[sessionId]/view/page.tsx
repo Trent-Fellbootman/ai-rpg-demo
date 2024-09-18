@@ -1,5 +1,5 @@
 import { SessionDisplayView } from "@/app/ui/game/session-display-view/session-display-view";
-import { getCurrentUser } from "@/app/lib/utils";
+import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
 
 export default async function Page({
   params: { sessionId },
@@ -11,7 +11,7 @@ export default async function Page({
   return (
     <div className="flex justify-center">
       <div className="max-w-2xl">
-        <SessionDisplayView sessionId={sessionId} userId={user.userId} />
+        <SessionDisplayView sessionId={parseInt(sessionId)} userId={user.id} />
       </div>
     </div>
   );

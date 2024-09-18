@@ -7,8 +7,10 @@ import parse from "html-react-parser";
 import { useEffect, useState } from "react";
 import { Spinner } from "@nextui-org/spinner";
 
-import { getSceneViewInitialData } from "@/app/lib/actions";
-import { GenerateNextSceneActionResponse } from "@/app/lib/data-generation/generate-next-scene-data";
+import {
+  CreateNextSceneActionResponse,
+  getSceneViewInitialData,
+} from "@/app/lib/actions";
 import ActionInputForm from "@/app/ui/game/action-input-form";
 import ActionDisplayView from "@/app/ui/game/action-display-view";
 
@@ -16,15 +18,15 @@ export default function SceneView({
   sessionId,
   sceneIndex,
 }: {
-  sessionId: string;
-  sceneIndex: string;
+  sessionId: number;
+  sceneIndex: "last" | number;
 }) {
   const [widgetData, setWidgetData] = useState<
     | {
-        userId: string;
+        userId: number;
         imageUrl: string;
-        text: string;
-        action: string;
+        narration: string;
+        action: string | null;
         currentSceneIndex: number;
         currentSessionLength: number;
       }
@@ -41,13 +43,13 @@ export default function SceneView({
   }, []);
 
   const onNextSceneGenerationResponse = (
-    response: GenerateNextSceneActionResponse,
+    response: CreateNextSceneActionResponse,
   ) => {
     if (response.nextScene) {
       setWidgetData({
         userId: widgetData!.userId,
         imageUrl: response!.nextScene!.imageUrl,
-        text: response!.nextScene!.text,
+        narration: response!.nextScene!.narration,
         action: "",
         currentSceneIndex: widgetData!.currentSceneIndex + 1,
         currentSessionLength: widgetData!.currentSessionLength + 1,
@@ -77,7 +79,7 @@ export default function SceneView({
       <Card>
         <CardBody>
           <div className="flex flex-col space-y-1">
-            {parse(widgetData!.text)}
+            {parse(widgetData!.narration)}
           </div>
         </CardBody>
       </Card>
@@ -92,7 +94,7 @@ export default function SceneView({
         />
       ) : (
         <ActionDisplayView
-          action={widgetData!.action}
+          action={widgetData!.action!}
           sceneIndex={widgetData!.currentSceneIndex}
           sessionId={sessionId}
         />

@@ -12,7 +12,7 @@ export default function ActionDisplayView({
   sceneIndex,
 }: {
   action: string;
-  sessionId: string;
+  sessionId: number;
   sceneIndex: number;
 }) {
   const isFirstScene = sceneIndex === 0;

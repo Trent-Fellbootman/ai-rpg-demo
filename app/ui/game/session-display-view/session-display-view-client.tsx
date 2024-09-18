@@ -16,7 +16,7 @@ export function SessionDisplayViewClient({
 }: {
   scenes: {
     imageUrl: string;
-    text: string;
+    narration: string;
     action: string | null;
   }[];
 }) {
@@ -28,7 +28,7 @@ export function SessionDisplayViewClient({
             key={index}
             action={scenes[index].action}
             imageUrl={scenes[index].imageUrl}
-            text={scenes[index].text}
+            text={scenes[index].narration}
           />
         </SwiperSlide>
       ))}

@@ -2,8 +2,9 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import bcrypt from "bcrypt";
 
-import { createNewUser } from "@/app/lib/data/apis";
+import { createUser } from "@/app/lib/database-actions/user-actions";
 import { constants } from "@/app/lib/utils/path";
 
 const FormSchema = z.object({
@@ -33,9 +34,11 @@ export async function signup(formData: FormData): Promise<Response> {
     return { message: "Passwords do not match!" };
   }
 
+  const hashedPassword = await bcrypt.hash(result.data.password, 10);
+
   // signup the user
   try {
-    await createNewUser(result.data.email, result.data.password);
+    await createUser(result.data.email, hashedPassword);
   } catch (error) {
     return { message: `An error occurred: ${error}` };
   }

@@ -1,5 +1,3 @@
-"use server";
-
 export interface PrismaP2002Meta {
   target: string[];
 }
