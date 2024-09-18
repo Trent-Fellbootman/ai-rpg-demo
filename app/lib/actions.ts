@@ -22,10 +22,7 @@ import {
 } from "./data-generation/generate-next-scene-data";
 import { getScenePlayPagePath } from "./utils/path";
 
-import {
-  addGeneratedSceneAndUnlockDatabaseActionEventName,
-  AddGeneratedSceneInputs,
-} from "@/inngest/functions";
+import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
 import { logger } from "@/app/lib/logger";
 import { signIn } from "@/auth";
@@ -200,7 +197,7 @@ export async function createNextSceneAction(
   log.debug("Next scene data generated");
 
   // send event to inngest and schedule database writing operation to run in the background
-  const inngestEventData: AddGeneratedSceneInputs = {
+  const inngestEventData = {
     userId,
     sessionId,
     previousAction: formParseResult.data.action,

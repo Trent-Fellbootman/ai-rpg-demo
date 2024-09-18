@@ -9,16 +9,18 @@ import {
 
 const log = logger.child({ module: "inngest-functions" });
 
-export type AddGeneratedSceneInputs = {
-  userId: number;
-  sessionId: number;
-  previousAction: string;
-  nextScene: {
-    imageUrl: string;
-    imageDescription: string;
-    narration: string;
-  };
-};
+import { z } from "zod";
+
+const AddGeneratedSceneInputsSchema = z.object({
+  userId: z.number(),
+  sessionId: z.number(),
+  previousAction: z.string(),
+  nextScene: z.object({
+    imageUrl: z.string(),
+    imageDescription: z.string(),
+    narration: z.string(),
+  }),
+});
 
 export const addGeneratedSceneAndUnlockDatabaseActionEventName =
   "database/write-generated-scene-and-unlock-session";
@@ -33,12 +35,15 @@ export const writeGeneratedSceneAndUnlockDatabaseAction =
         "Started operation for writing generated scene and unlocking session",
       );
 
-      if (typeof event.data.sessionId !== "number") {
-        log.error("Expected sessionId to be a number");
+      const result = AddGeneratedSceneInputsSchema.safeParse(event.data);
+
+      if (result.error) {
+        log.error(result.error, `Failed to parse input data`);
+
+        throw result.error;
       }
 
-      // TODO: validate input type
-      const data = event.data as AddGeneratedSceneInputs;
+      const data = result.data;
 
       log.debug("converted input data");
 
