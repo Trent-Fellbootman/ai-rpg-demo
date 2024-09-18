@@ -28,6 +28,7 @@ export async function createGameSession(
 ): Promise<number> {
   log.debug("Started creating game session in database");
 
+  log.debug("Downloading images to storage");
   let coverImagePath: string;
   let firstSceneImagePath: string;
 
@@ -42,6 +43,8 @@ export async function createGameSession(
       `Failed to download images`,
     );
   }
+
+  log.debug("Creating game session records in postgresql database");
 
   try {
     const gameSession = await prisma.gameSession.create({
@@ -68,6 +71,8 @@ export async function createGameSession(
         id: true,
       },
     });
+
+    log.debug("Finished creating game session in database");
 
     return gameSession.id;
   } catch (error) {
