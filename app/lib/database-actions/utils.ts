@@ -3,6 +3,9 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { imagesStorageBucketName } from "@/app-config";
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "database-actions" });
 
 export function createClient() {
   const cookieStore = cookies();
@@ -64,7 +67,10 @@ export async function createImageUrl(
 export async function downloadImageToStorage(
   imageUrl: string,
 ): Promise<string> {
+  log.debug("Started downloading image to storage");
   const supabase = createClient();
+
+  log.debug(`Fetching image content from ${imageUrl}`);
 
   let blob: Blob;
 
@@ -75,6 +81,8 @@ export async function downloadImageToStorage(
   } catch (error) {
     throw new Error(`Failed to fetch image`);
   }
+
+  log.debug("Writing image content to storage");
 
   const url = new URL(imageUrl);
   const suffix = url.pathname.split(".").pop() as string;
@@ -87,6 +95,8 @@ export async function downloadImageToStorage(
   if (error) {
     throw new Error(`Error uploading image: ${error.message}`);
   }
+
+  log.debug("Finished downloading image to storage");
 
   return filepath;
 }
