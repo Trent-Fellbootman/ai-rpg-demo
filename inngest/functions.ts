@@ -23,46 +23,47 @@ export type AddGeneratedSceneInputs = {
 export const addGeneratedSceneAndUnlockDatabaseActionEventName =
   "database/write-generated-scene-and-unlock-session";
 
-export const helloWorld = inngest.createFunction(
-  { id: "write-generated-scene-and-unlock-session" },
-  { event: addGeneratedSceneAndUnlockDatabaseActionEventName },
-  // TODO: error handling
-  async ({ event, step }) => {
-    log.debug(
-      "Started operation for writing generated scene and unlocking session",
-    );
+export const writeGeneratedSceneAndUnlockDatabaseAction =
+  inngest.createFunction(
+    { id: "write-generated-scene-and-unlock-session" },
+    { event: addGeneratedSceneAndUnlockDatabaseActionEventName },
+    // TODO: error handling
+    async ({ event, step }) => {
+      log.debug(
+        "Started operation for writing generated scene and unlocking session",
+      );
 
-    await step.sleep("wait-a-moment", "1s");
+      await step.sleep("wait-a-moment", "1s");
 
-    // TODO: validate input type
-    const data = event.data as AddGeneratedSceneInputs;
+      // TODO: validate input type
+      const data = event.data as AddGeneratedSceneInputs;
 
-    const sessionLocked = await isSessionLocked(data.sessionId);
+      const sessionLocked = await isSessionLocked(data.sessionId);
 
-    if (!sessionLocked) {
-      throw new Error("Expected session to be locked, but it is not!");
-    }
+      if (!sessionLocked) {
+        throw new Error("Expected session to be locked, but it is not!");
+      }
 
-    log.debug("Checked that session is currently locked");
+      log.debug("Checked that session is currently locked");
 
-    // update database
-    await addSceneToSession(
-      data.userId,
-      data.sessionId,
-      data.previousAction,
-      data.nextScene,
-    );
+      // update database
+      await addSceneToSession(
+        data.userId,
+        data.sessionId,
+        data.previousAction,
+        data.nextScene,
+      );
 
-    log.debug("Wrote generated scene to database and storage");
+      log.debug("Wrote generated scene to database and storage");
 
-    // unlock session
-    await unlockSession(data.sessionId);
+      // unlock session
+      await unlockSession(data.sessionId);
 
-    log.debug("Unlocked session; operation complete");
+      log.debug("Unlocked session; operation complete");
 
-    return {
-      event,
-      body: "Successfully wrote generated scene and unlocked session",
-    };
-  },
-);
+      return {
+        event,
+        body: "Successfully wrote generated scene and unlocked session",
+      };
+    },
+  );

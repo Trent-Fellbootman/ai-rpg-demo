@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { imagesStorageBucketName } from "@/app-config.ts";
+import { imagesStorageBucketName } from "@/app-config";
 
 export function createClient() {
   const cookieStore = cookies();
@@ -31,9 +31,6 @@ export function createClient() {
   );
 }
 
-// TODO: reusing `supabase` should be OK in serverless environment?
-const supabase = createClient();
-
 export async function createImageUrl(
   filepath: string,
   expireSeconds: number,
@@ -41,6 +38,8 @@ export async function createImageUrl(
   url: string;
   expiration: Date;
 }> {
+  const supabase = createClient();
+
   const creationTime = new Date();
 
   const { data, error } = await supabase.storage
@@ -65,6 +64,8 @@ export async function createImageUrl(
 export async function downloadImageToStorage(
   imageUrl: string,
 ): Promise<string> {
+  const supabase = createClient();
+
   let blob: Blob;
 
   try {
