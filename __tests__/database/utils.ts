@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+
 import { fakeDataRootPath } from "../constants";
 
 export function getFakeImageUrl(imageIndex: number): string {
@@ -11,7 +12,7 @@ export function mockCookies() {
       getAll: async () => null,
       setAll: async (
         cookies: { name: string; value: string; options: any }[],
-      ) => { },
+      ) => {},
     }),
   }));
 }

@@ -1,15 +1,19 @@
-import { vi, describe, test, expect } from 'vitest';
+import { vi, describe, test, expect } from "vitest";
 
 vi.mock("next/headers", () => ({
   cookies: () => ({
     getAll: async () => null,
     setAll: async (
       cookies: { name: string; value: string; options: any }[],
-    ) => { },
+    ) => {},
   }),
 }));
 
-import { createUser } from '@/app/lib/data/database-actions/user-actions';
+import { v4 as uuidv4 } from "uuid";
+
+import { getFakeImageUrl } from "./utils";
+
+import { createUser } from "@/app/lib/data/database-actions/user-actions";
 import {
   createGameTemplate,
   deleteGameTemplate,
@@ -20,272 +24,369 @@ import {
   deleteComment,
   getComments,
   getGameTemplateNoComments,
-} from '@/app/lib/data/database-actions/game-template-actions';
-import { DatabaseError, DatabaseErrorType } from '@/app/lib/data/database-actions/error-types';
-import { getFakeImageUrl } from './utils';
+} from "@/app/lib/data/database-actions/game-template-actions";
+import {
+  DatabaseError,
+  DatabaseErrorType,
+} from "@/app/lib/data/database-actions/error-types";
 
-import {v4 as uuidv4} from 'uuid';
+describe("Game Template Actions", () => {
+  test.concurrent(
+    "should create and delete a game template with valid data",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
 
-describe('Game Template Actions', () => {
-  test.concurrent('should create and delete a game template with valid data', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+      const newGameTemplateData = {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      };
 
-    const newGameTemplateData = {
-      name: 'Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
-      isPublic: true,
-    };
+      const templateId = await createGameTemplate(userId, newGameTemplateData);
 
-    const templateId = await createGameTemplate(userId, newGameTemplateData);
-    expect(templateId).toBeGreaterThan(0);
+      expect(templateId).toBeGreaterThan(0);
 
-    // Retrieve the template
-    const template = await getGameTemplateNoComments(userId, templateId);
+      // Retrieve the template
+      const template = await getGameTemplateNoComments(userId, templateId);
 
-    expect(template).toEqual({
-      name: newGameTemplateData.name,
-      backstroy: newGameTemplateData.backStory,
-      description: newGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
-  
-    await deleteGameTemplate(userId, templateId);
+      expect(template).toEqual({
+        name: newGameTemplateData.name,
+        backstory: newGameTemplateData.backStory,
+        description: newGameTemplateData.description,
+        imageUrl: expect.any(String),
+      });
 
-    await expect(getGameTemplateNoComments(userId, templateId)).rejects.toThrowError(DatabaseError);
+      await deleteGameTemplate(userId, templateId);
 
-    try {
-      await getGameTemplateNoComments(userId, templateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
-      expect(dbError.message).toBe('Game template not found under user or not public');
-    }
-  });
+      await expect(
+        getGameTemplateNoComments(userId, templateId),
+      ).rejects.toThrowError(DatabaseError);
 
-  test.concurrent('users can only access public templates and delete their own templates', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
-    const otherUserId = await createUser(`otheruser-${uuidv4()}@example.com`, 'hashedpassword', 'Other User');
+      try {
+        await getGameTemplateNoComments(userId, templateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-    const newPublicGameTemplateData = {
-      name: 'Public Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Public Template image',
-      backStory: 'Public This is a test backstory.',
-      description: 'Public A test template',
-      isPublic: true,
-    };
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game template not found under user or not public",
+        );
+      }
+    },
+  );
 
-    const newPrivateGameTemplateData = {
-      name: 'Private Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Private Template image',
-      backStory: 'Private This is a test backstory.',
-      description: 'Private A test template',
-      isPublic: false,
-    };
+  test.concurrent(
+    "users can only access public templates and delete their own templates",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+      const otherUserId = await createUser(
+        `otheruser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Other User",
+      );
 
-    const publicTemplateId = await createGameTemplate(userId, newPublicGameTemplateData);
-    const privateTemplateId = await createGameTemplate(userId, newPrivateGameTemplateData);
+      const newPublicGameTemplateData = {
+        name: "Public Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Public Template image",
+        backStory: "Public This is a test backstory.",
+        description: "Public A test template",
+        isPublic: true,
+      };
 
-    expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual({
-      name: newPublicGameTemplateData.name,
-      backstroy: newPublicGameTemplateData.backStory,
-      description: newPublicGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+      const newPrivateGameTemplateData = {
+        name: "Private Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Private Template image",
+        backStory: "Private This is a test backstory.",
+        description: "Private A test template",
+        isPublic: false,
+      };
 
-    expect(await getGameTemplateNoComments(otherUserId, publicTemplateId)).toEqual({
-      name: newPublicGameTemplateData.name,
-      backstroy: newPublicGameTemplateData.backStory,
-      description: newPublicGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+      const publicTemplateId = await createGameTemplate(
+        userId,
+        newPublicGameTemplateData,
+      );
+      const privateTemplateId = await createGameTemplate(
+        userId,
+        newPrivateGameTemplateData,
+      );
 
-    expect(await getGameTemplateNoComments(userId, privateTemplateId)).toEqual({
-      name: newPrivateGameTemplateData.name,
-      backstroy: newPrivateGameTemplateData.backStory,
-      description: newPrivateGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+      expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual(
+        {
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageUrl: expect.any(String),
+        },
+      );
 
-    await expect(getGameTemplateNoComments(otherUserId, privateTemplateId)).rejects.toThrowError(DatabaseError);
+      expect(
+        await getGameTemplateNoComments(otherUserId, publicTemplateId),
+      ).toEqual({
+        name: newPublicGameTemplateData.name,
+        backstory: newPublicGameTemplateData.backStory,
+        description: newPublicGameTemplateData.description,
+        imageUrl: expect.any(String),
+      });
 
-    try {
-      await getGameTemplateNoComments(otherUserId, privateTemplateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
-      expect(dbError.message).toBe('Game template not found under user or not public');
-    }
+      expect(
+        await getGameTemplateNoComments(userId, privateTemplateId),
+      ).toEqual({
+        name: newPrivateGameTemplateData.name,
+        backstory: newPrivateGameTemplateData.backStory,
+        description: newPrivateGameTemplateData.description,
+        imageUrl: expect.any(String),
+      });
 
-    await expect(deleteGameTemplate(otherUserId, publicTemplateId)).rejects.toThrowError(DatabaseError);
+      await expect(
+        getGameTemplateNoComments(otherUserId, privateTemplateId),
+      ).rejects.toThrowError(DatabaseError);
 
-    try {
-      await deleteGameTemplate(otherUserId, publicTemplateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
-      expect(dbError.message).toBe('User does not own the game template');
-    }
+      try {
+        await getGameTemplateNoComments(otherUserId, privateTemplateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-    try {
-      await deleteGameTemplate(otherUserId, privateTemplateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
-      expect(dbError.message).toBe('User does not own the game template');
-    }
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game template not found under user or not public",
+        );
+      }
 
-    // check that game template is still accessible
-    expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual({
-      name: newPublicGameTemplateData.name,
-      backstroy: newPublicGameTemplateData.backStory,
-      description: newPublicGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+      await expect(
+        deleteGameTemplate(otherUserId, publicTemplateId),
+      ).rejects.toThrowError(DatabaseError);
 
-    expect(await getGameTemplateNoComments(otherUserId, publicTemplateId)).toEqual({
-      name: newPublicGameTemplateData.name,
-      backstroy: newPublicGameTemplateData.backStory,
-      description: newPublicGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+      try {
+        await deleteGameTemplate(otherUserId, publicTemplateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-    expect(await getGameTemplateNoComments(userId, privateTemplateId)).toEqual({
-      name: newPrivateGameTemplateData.name,
-      backstroy: newPrivateGameTemplateData.backStory,
-      description: newPrivateGameTemplateData.description,
-      imageUrl: expect.any(String),
-    });
+        expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+        expect(dbError.message).toBe("User does not own the game template");
+      }
 
-    // remove the templates
-    await deleteGameTemplate(userId, publicTemplateId);
-    await deleteGameTemplate(userId, privateTemplateId);
+      try {
+        await deleteGameTemplate(otherUserId, privateTemplateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-    await expect(getGameTemplateNoComments(userId, publicTemplateId)).rejects.toThrowError(DatabaseError);
-    
-    try {
-      await getGameTemplateNoComments(userId, publicTemplateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
-      expect(dbError.message).toBe('Game template not found under user or not public');
-    }
+        expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+        expect(dbError.message).toBe("User does not own the game template");
+      }
 
-    await expect(getGameTemplateNoComments(userId, privateTemplateId)).rejects.toThrowError(DatabaseError);
-    try {
-      await getGameTemplateNoComments(userId, privateTemplateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.NotFound);
-      expect(dbError.message).toBe('Game template not found under user or not public');
-    }
-  })
+      // check that game template is still accessible
+      expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual(
+        {
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageUrl: expect.any(String),
+        },
+      );
 
-  test.concurrent('should throw Unauthorized error when creating a game template with invalid userId', async () => {
-    const invalidUserId = 999999;
+      expect(
+        await getGameTemplateNoComments(otherUserId, publicTemplateId),
+      ).toEqual({
+        name: newPublicGameTemplateData.name,
+        backstory: newPublicGameTemplateData.backStory,
+        description: newPublicGameTemplateData.description,
+        imageUrl: expect.any(String),
+      });
 
-    const newGameTemplateData = {
-      name: 'Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
-      isPublic: true,
-    };
+      expect(
+        await getGameTemplateNoComments(userId, privateTemplateId),
+      ).toEqual({
+        name: newPrivateGameTemplateData.name,
+        backstory: newPrivateGameTemplateData.backStory,
+        description: newPrivateGameTemplateData.description,
+        imageUrl: expect.any(String),
+      });
 
-    await expect(createGameTemplate(invalidUserId, newGameTemplateData)).rejects.toThrowError(DatabaseError);
+      // remove the templates
+      await deleteGameTemplate(userId, publicTemplateId);
+      await deleteGameTemplate(userId, privateTemplateId);
 
-    try {
-      await createGameTemplate(invalidUserId, newGameTemplateData);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
-      expect(dbError.message).toBe('User not found');
-    }
-  });
+      await expect(
+        getGameTemplateNoComments(userId, publicTemplateId),
+      ).rejects.toThrowError(DatabaseError);
 
-  test.concurrent('should add and delete a like to a public game template', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+      try {
+        await getGameTemplateNoComments(userId, publicTemplateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-    const templateId = await createGameTemplate(userId, {
-      name: 'Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
-      isPublic: true,
-    });
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game template not found under user or not public",
+        );
+      }
 
-    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
-    await addLike(userId, templateId);
-    expect(await getGameTemplateLikeCount(templateId)).toBe(1);
-    await deleteLike(userId, templateId);
-    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
-    // do `addLike` and `deleteLike` a second time to test the behavior of soft deletion
-    await addLike(userId, templateId);
-    expect(await getGameTemplateLikeCount(templateId)).toBe(1);
-    await deleteLike(userId, templateId);
-    expect(await getGameTemplateLikeCount(templateId)).toBe(0);
-  });
+      await expect(
+        getGameTemplateNoComments(userId, privateTemplateId),
+      ).rejects.toThrowError(DatabaseError);
+      try {
+        await getGameTemplateNoComments(userId, privateTemplateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
 
-  test.concurrent('should throw Conflict error when adding a like that already exists', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game template not found under user or not public",
+        );
+      }
+    },
+  );
 
-    const templateId = await createGameTemplate(userId, {
-      name: 'Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
-      isPublic: true,
-    });
+  test.concurrent(
+    "should throw Unauthorized error when creating a game template with invalid userId",
+    async () => {
+      const invalidUserId = 999999;
 
-    await addLike(userId, templateId);
+      const newGameTemplateData = {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      };
 
-    await expect(addLike(userId, templateId)).rejects.toThrowError(DatabaseError);
+      await expect(
+        createGameTemplate(invalidUserId, newGameTemplateData),
+      ).rejects.toThrowError(DatabaseError);
 
-    try {
+      try {
+        await createGameTemplate(invalidUserId, newGameTemplateData);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
+
+        expect(dbError.type).toBe(DatabaseErrorType.Unauthorized);
+        expect(dbError.message).toBe("User not found");
+      }
+    },
+  );
+
+  test.concurrent(
+    "should add and delete a like to a public game template",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
+
+      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
       await addLike(userId, templateId);
-    } catch (error) {
-      expect(error).toBeInstanceOf(DatabaseError);
-      const dbError = error as DatabaseError;
-      expect(dbError.type).toBe(DatabaseErrorType.Conflict);
-      expect(dbError.message).toBe('User has already liked this game template');
-    }
-  });
+      expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+      await deleteLike(userId, templateId);
+      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
+      // do `addLike` and `deleteLike` a second time to test the behavior of soft deletion
+      await addLike(userId, templateId);
+      expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+      await deleteLike(userId, templateId);
+      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
+    },
+  );
 
-  test.concurrent('should add and delete a comment', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+  test.concurrent(
+    "should throw Conflict error when adding a like that already exists",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
+
+      await addLike(userId, templateId);
+
+      await expect(addLike(userId, templateId)).rejects.toThrowError(
+        DatabaseError,
+      );
+
+      try {
+        await addLike(userId, templateId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
+
+        expect(dbError.type).toBe(DatabaseErrorType.Conflict);
+        expect(dbError.message).toBe(
+          "User has already liked this game template",
+        );
+      }
+    },
+  );
+
+  test.concurrent("should add and delete a comment", async () => {
+    const userId = await createUser(
+      `testuser-${uuidv4()}@example.com`,
+      "hashedpassword",
+      "Test User",
+    );
 
     const templateId = await createGameTemplate(userId, {
-      name: 'Test Template',
+      name: "Test Template",
       imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
+      imageDescription: "Template image",
+      backStory: "This is a test backstory.",
+      description: "A test template",
       isPublic: true,
     });
 
-    const commentText = 'This is a test comment';
+    const commentText = "This is a test comment";
+
     await addComment(userId, templateId, commentText);
 
     // Retrieve comments
     const comments = await getComments(userId, templateId);
+
     expect(comments.length).toBe(1);
     const comment = comments[0];
-    expect({username : comment.username, text: comment.text, createdAt: comment.createdAt}).toEqual({
-      username: 'Test User',
+
+    expect({
+      username: comment.username,
+      text: comment.text,
+      createdAt: comment.createdAt,
+    }).toEqual({
+      username: "Test User",
       text: commentText,
       createdAt: expect.any(Date),
     });
@@ -293,28 +394,36 @@ describe('Game Template Actions', () => {
     await deleteComment(userId, comment.id);
 
     const newComments = await getComments(userId, templateId);
+
     expect(newComments.length).toBe(0);
   });
 
-  test.concurrent('should get a public game template without comments', async () => {
-    const userId = await createUser(`testuser-${uuidv4()}@example.com`, 'hashedpassword', 'Test User');
+  test.concurrent(
+    "should get a public game template without comments",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
 
-    const templateId = await createGameTemplate(userId, {
-      name: 'Test Template',
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: 'Template image',
-      backStory: 'This is a test backstory.',
-      description: 'A test template',
-      isPublic: true,
-    });
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
 
-    const template = await getGameTemplateNoComments(userId, templateId);
+      const template = await getGameTemplateNoComments(userId, templateId);
 
-    expect(template).toEqual({
-      name: 'Test Template',
-      backstroy: 'This is a test backstory.',
-      description: 'A test template',
-      imageUrl: expect.any(String),
-    });
-  });
+      expect(template).toEqual({
+        name: "Test Template",
+        backstory: "This is a test backstory.",
+        description: "A test template",
+        imageUrl: expect.any(String),
+      });
+    },
+  );
 });

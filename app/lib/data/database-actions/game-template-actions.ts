@@ -1,27 +1,35 @@
 "use server";
 
-import { PrismaClient, Prisma } from "@prisma/client";
-import { DatabaseError, DatabaseErrorType, PrismaP2003Meta } from './error-types';
-import { imageUrlExpireSeconds } from "@/app-config";
+import { Prisma, PrismaClient } from "@prisma/client";
+
+import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
+
+import { imageUrlExpireSeconds } from "@/app-config";
 
 const prisma = new PrismaClient();
 
-export async function createGameTemplate(userId: number, newGameTemplateData: {
-  name: string;
-  imageUrl: string;
-  imageDescription: string;
-  backStory: string;
-  description: string | null;
-  isPublic: boolean;
-}) : Promise<number> {
+export async function createGameTemplate(
+  userId: number,
+  newGameTemplateData: {
+    name: string;
+    imageUrl: string;
+    imageDescription: string;
+    backStory: string;
+    description: string | null;
+    isPublic: boolean;
+  },
+): Promise<number> {
   let imagePath: string;
 
   // download image to storage
   try {
     imagePath = await downloadImageToStorage(newGameTemplateData.imageUrl);
   } catch (error) {
-    throw new DatabaseError(DatabaseErrorType.InternalError, `Failed to download image`);
+    throw new DatabaseError(
+      DatabaseErrorType.InternalError,
+      `Failed to download image`,
+    );
   }
 
   try {
@@ -39,25 +47,26 @@ export async function createGameTemplate(userId: number, newGameTemplateData: {
         id: true,
       },
     });
+
     return gameTemplate.id;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2003'
+      error.code === "P2003"
     ) {
       // TODO: check that the foreign key constraint is actually violated on the user ID field
-      throw new DatabaseError(DatabaseErrorType.Unauthorized, 'User not found');
+      throw new DatabaseError(DatabaseErrorType.Unauthorized, "User not found");
     }
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      'Failed to write game template to database'
+      "Failed to write game template to database",
     );
   }
 }
 
 export async function addLike(
   userId: number,
-  gameTemplateId: number
+  gameTemplateId: number,
 ): Promise<void> {
   // Check if the game template is public and not deleted
   const gameTemplate = await prisma.gameTemplate.findFirst({
@@ -67,7 +76,7 @@ export async function addLike(
   if (!gameTemplate) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
-      'Game template not found or not public'
+      "Game template not found or not public",
     );
   }
 
@@ -94,7 +103,7 @@ export async function addLike(
       // Like already exists and is not deleted
       throw new DatabaseError(
         DatabaseErrorType.Conflict,
-        'User has already liked this game template'
+        "User has already liked this game template",
       );
     }
   } else {
@@ -111,7 +120,7 @@ export async function addLike(
 
 export async function deleteLike(
   userId: number,
-  gameTemplateId: number
+  gameTemplateId: number,
 ): Promise<void> {
   const existingLike = await prisma.gameTemplateLike.findFirst({
     where: {
@@ -122,7 +131,7 @@ export async function deleteLike(
   });
 
   if (!existingLike) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Like not found');
+    throw new DatabaseError(DatabaseErrorType.NotFound, "Like not found");
   }
 
   await prisma.gameTemplateLike.update({
@@ -138,7 +147,7 @@ export async function deleteLike(
 export async function addComment(
   userId: number,
   gameTemplateId: number,
-  text: string
+  text: string,
 ): Promise<void> {
   // Check if the game template is public and not deleted
   const gameTemplate = await prisma.gameTemplate.findFirst({
@@ -148,7 +157,7 @@ export async function addComment(
   if (!gameTemplate) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
-      'Game template not found or not public'
+      "Game template not found or not public",
     );
   }
 
@@ -162,7 +171,10 @@ export async function addComment(
   });
 }
 
-export async function deleteGameTemplate(userId: number, templateId: number): Promise<void> {
+export async function deleteGameTemplate(
+  userId: number,
+  templateId: number,
+): Promise<void> {
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
       id: templateId,
@@ -174,11 +186,17 @@ export async function deleteGameTemplate(userId: number, templateId: number): Pr
   });
 
   if (!gameTemplate) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Game template not found');
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Game template not found",
+    );
   }
 
   if (gameTemplate.userId !== userId) {
-    throw new DatabaseError(DatabaseErrorType.Unauthorized, 'User does not own the game template');
+    throw new DatabaseError(
+      DatabaseErrorType.Unauthorized,
+      "User does not own the game template",
+    );
   }
 
   // Soft delete the game template and cascade to likes and comments
@@ -225,18 +243,20 @@ export async function deleteGameTemplate(userId: number, templateId: number): Pr
  * @returns The number of likes
  */
 export async function getGameTemplateLikeCount(
-  gameTemplateId: number
+  gameTemplateId: number,
 ): Promise<number> {
-  const count = await prisma.gameTemplateLike.count({
+  return await prisma.gameTemplateLike.count({
     where: {
       gameTemplateId: gameTemplateId,
       deleted: false,
     },
   });
-  return count;
 }
 
-export async function deleteComment(userId: number, commentId: number): Promise<void> {
+export async function deleteComment(
+  userId: number,
+  commentId: number,
+): Promise<void> {
   const comment = await prisma.comment.findFirst({
     where: {
       id: commentId,
@@ -248,11 +268,14 @@ export async function deleteComment(userId: number, commentId: number): Promise<
   });
 
   if (!comment) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Comment not found');
+    throw new DatabaseError(DatabaseErrorType.NotFound, "Comment not found");
   }
 
   if (comment.userId !== userId) {
-    throw new DatabaseError(DatabaseErrorType.Unauthorized, 'User does not own the comment');
+    throw new DatabaseError(
+      DatabaseErrorType.Unauthorized,
+      "User does not own the comment",
+    );
   }
 
   await prisma.comment.update({
@@ -266,34 +289,39 @@ export async function deleteComment(userId: number, commentId: number): Promise<
 
 /**
  * Returns the comments for a game template.
- * @param userId 
- * @param gameTemplateId 
- * @returns 
+ * @param userId
+ * @param gameTemplateId
+ * @returns
  */
-export async function getComments(userId: number, gameTemplateId: number): Promise<{
-  id: number,
-  username: string | null,
-  text: string,
-  createdAt: Date,
-}[]> {
+export async function getComments(
+  userId: number,
+  gameTemplateId: number,
+): Promise<
+  {
+    id: number;
+    username: string | null;
+    text: string;
+    createdAt: Date;
+  }[]
+> {
   const comments = await prisma.comment.findMany({
     where: {
       gameTemplateId: gameTemplateId,
       deleted: false,
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
     select: {
       id: true,
       user: {
         select: {
-          name: true
-        }
+          name: true,
+        },
       },
       text: true,
       createdAt: true,
-    }
+    },
   });
 
   return comments.map((comment) => {
@@ -302,15 +330,18 @@ export async function getComments(userId: number, gameTemplateId: number): Promi
       username: comment.user.name,
       text: comment.text,
       createdAt: comment.createdAt,
-    }
+    };
   });
 }
 
-export async function getGameTemplateNoComments(userId: number, gameTemplateId: number): Promise<{
-  name: string,
-  backstroy: string,
-  description: string | null,
-  imageUrl: string | null,
+export async function getGameTemplateNoComments(
+  userId: number,
+  gameTemplateId: number,
+): Promise<{
+  name: string;
+  backstory: string;
+  description: string | null;
+  imageUrl: string | null;
 }> {
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
@@ -322,8 +353,8 @@ export async function getGameTemplateNoComments(userId: number, gameTemplateId: 
         },
         {
           isPublic: true,
-        }
-      ]
+        },
+      ],
     },
     select: {
       name: true,
@@ -332,47 +363,56 @@ export async function getGameTemplateNoComments(userId: number, gameTemplateId: 
       imageUrlExpiration: true,
       backstory: true,
       description: true,
-    }
-  })
+    },
+  });
 
   if (!gameTemplate) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Game template not found under user or not public');
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Game template not found under user or not public",
+    );
   }
 
-  if (gameTemplate.imageUrlExpiration && gameTemplate.imageUrlExpiration > new Date()) {
+  if (
+    gameTemplate.imageUrlExpiration &&
+    gameTemplate.imageUrlExpiration > new Date()
+  ) {
     return {
       name: gameTemplate.name,
-      backstroy: gameTemplate.backstory,
+      backstory: gameTemplate.backstory,
       description: gameTemplate.description,
       imageUrl: gameTemplate.imageUrl!,
-    }
+    };
   }
 
   // check for URL staleness
   try {
-    const { url, expiration } = await createImageUrl(gameTemplate.imagePath, imageUrlExpireSeconds);
+    const { url, expiration } = await createImageUrl(
+      gameTemplate.imagePath,
+      imageUrlExpireSeconds,
+    );
 
     // TODO: run this in the background
     await prisma.gameTemplate.update({
       where: {
-        id: gameTemplateId
+        id: gameTemplateId,
       },
       data: {
         imageUrl: url,
-        imageUrlExpiration: expiration
-      }
-    })
+        imageUrlExpiration: expiration,
+      },
+    });
 
     return {
       name: gameTemplate.name,
-      backstroy: gameTemplate.backstory,
+      backstory: gameTemplate.backstory,
       description: gameTemplate.description,
       imageUrl: url,
-    }
+    };
   } catch (error) {
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      'Failed to regenerate image URL'
-    )
+      "Failed to regenerate image URL",
+    );
   }
 }

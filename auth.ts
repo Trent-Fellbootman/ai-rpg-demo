@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 
 import { authConfig } from "./auth.config";
 
-import { doesUserExist, getUserFromEmail } from "@/app/lib/data/apis";
+import { getUserFromEmail } from "@/app/lib/data/apis";
 
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,

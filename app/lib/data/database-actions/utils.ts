@@ -1,7 +1,8 @@
-import { imagesStorageBucketName } from "@/app-config";
 import { v4 as uuidv4 } from "uuid";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+
+import { imagesStorageBucketName } from "@/app-config";
 
 export function createClient() {
   const cookieStore = cookies();
@@ -33,9 +34,12 @@ export function createClient() {
 // TODO: reusing `supabase` should be OK in serverless environment?
 const supabase = createClient();
 
-export async function createImageUrl(filepath: string, expireSeconds: number): Promise<{
-  url: string,
-  expiration: Date,
+export async function createImageUrl(
+  filepath: string,
+  expireSeconds: number,
+): Promise<{
+  url: string;
+  expiration: Date;
 }> {
   const creationTime = new Date();
 
@@ -55,8 +59,8 @@ export async function createImageUrl(filepath: string, expireSeconds: number): P
 
 /**
  * Downloads an image from a URL and returns the filepath on the storage
- * @param imageUrl 
- * @returns 
+ * @param imageUrl
+ * @returns
  */
 export async function downloadImageToStorage(
   imageUrl: string,
@@ -65,6 +69,7 @@ export async function downloadImageToStorage(
 
   try {
     const response = await fetch(imageUrl);
+
     blob = await response.blob();
   } catch (error) {
     throw new Error(`Failed to fetch image`);

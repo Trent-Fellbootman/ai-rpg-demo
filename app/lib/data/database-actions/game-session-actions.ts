@@ -1,9 +1,11 @@
 "use server";
 
 import { PrismaClient, Prisma } from "@prisma/client";
-import { DatabaseError, DatabaseErrorType, PrismaP2003Meta } from './error-types';
-import { imageUrlExpireSeconds } from "@/app-config";
+
+import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
+
+import { imageUrlExpireSeconds } from "@/app-config";
 
 const prisma = new PrismaClient();
 
@@ -18,22 +20,30 @@ export async function createGameSession(
     imageUrl: string;
     imageDescription: string;
     narration: string;
-  }
+  },
 ): Promise<number> {
   let imagePath: string;
 
   try {
     imagePath = await downloadImageToStorage(imageUrl);
   } catch (error) {
-    throw new DatabaseError(DatabaseErrorType.InternalError, `Failed to download image`);
+    throw new DatabaseError(
+      DatabaseErrorType.InternalError,
+      `Failed to download image`,
+    );
   }
 
   let initialSceneDataImagePath: string;
 
   try {
-    initialSceneDataImagePath = await downloadImageToStorage(initialSceneData.imageUrl);
+    initialSceneDataImagePath = await downloadImageToStorage(
+      initialSceneData.imageUrl,
+    );
   } catch (error) {
-    throw new DatabaseError(DatabaseErrorType.InternalError, `Failed to download image`);
+    throw new DatabaseError(
+      DatabaseErrorType.InternalError,
+      `Failed to download image`,
+    );
   }
 
   try {
@@ -61,29 +71,30 @@ export async function createGameSession(
         id: true,
       },
     });
+
     return gameSession.id;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2003'
+      error.code === "P2003"
     ) {
       // TODO: check that the foreign key constraint is actually violated on the user ID field
-      throw new DatabaseError(DatabaseErrorType.Unauthorized, 'User not found');
+      throw new DatabaseError(DatabaseErrorType.Unauthorized, "User not found");
     }
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      'Failed to write game session to database'
+      "Failed to write game session to database",
     );
   }
 }
 
 /**
  * The session is assumed to be locked when calling this
- * 
- * @param userId 
- * @param sessionId 
- * @param previousAction 
- * @param newSceneData 
+ *
+ * @param userId
+ * @param sessionId
+ * @param previousAction
+ * @param newSceneData
  */
 // TODO: telling the user that the session exist might be a security concern
 export async function addSceneToSession(
@@ -94,14 +105,17 @@ export async function addSceneToSession(
     imageUrl: string;
     imageDescription: string;
     narration: string;
-  }
+  },
 ): Promise<void> {
   let imagePath: string;
 
   try {
     imagePath = await downloadImageToStorage(newSceneData.imageUrl);
   } catch (error) {
-    throw new DatabaseError(DatabaseErrorType.InternalError, `Failed to download image`);
+    throw new DatabaseError(
+      DatabaseErrorType.InternalError,
+      `Failed to download image`,
+    );
   }
 
   // TODO: remove image if transaction fails
@@ -113,7 +127,7 @@ export async function addSceneToSession(
         userId: true,
         scenes: {
           where: { deleted: false },
-          orderBy: { orderInSession: 'desc' },
+          orderBy: { orderInSession: "desc" },
           take: 1,
           select: {
             id: true,
@@ -126,14 +140,14 @@ export async function addSceneToSession(
     if (!gameSession) {
       throw new DatabaseError(
         DatabaseErrorType.NotFound,
-        'Game session not found'
+        "Game session not found",
       );
     }
 
     if (gameSession.userId !== userId) {
       throw new DatabaseError(
         DatabaseErrorType.Unauthorized,
-        'User does not own the game session'
+        "User does not own the game session",
       );
     }
 
@@ -142,7 +156,7 @@ export async function addSceneToSession(
     if (!lastScene) {
       throw new DatabaseError(
         DatabaseErrorType.InternalError,
-        'No scenes found in the game session'
+        "No scenes found in the game session",
       );
     }
 
@@ -172,8 +186,8 @@ export async function addSceneToSession(
 /**
  * Returning true means that the session was successfully locked,
  * false means it was already locked or does not exist.
- * @param sessionId 
- * @returns 
+ * @param sessionId
+ * @returns
  */
 export async function tryLockSession(sessionId: number): Promise<boolean> {
   const result = await prisma.gameSession.updateMany({
@@ -193,12 +207,13 @@ export async function tryLockSession(sessionId: number): Promise<boolean> {
 export async function tryLockSessionUntilAcquire(
   sessionId: number,
   intervalMs: number = 99,
-  timeoutMs: number = 59_000
+  timeoutMs: number = 59_000,
 ): Promise<void> {
   const startTime = Date.now();
 
   while (true) {
     const acquired = await tryLockSession(sessionId);
+
     if (acquired) {
       return;
     }
@@ -206,7 +221,7 @@ export async function tryLockSessionUntilAcquire(
     if (Date.now() - startTime >= timeoutMs) {
       throw new DatabaseError(
         DatabaseErrorType.Timeout,
-        'Failed to acquire lock within timeout'
+        "Failed to acquire lock within timeout",
       );
     }
 
@@ -223,7 +238,7 @@ export async function isSessionLocked(sessionId: number): Promise<boolean> {
   if (!session) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
-      'Game session not found'
+      "Game session not found",
     );
   }
 
@@ -245,12 +260,15 @@ export async function unlockSession(sessionId: number): Promise<void> {
   if (result.count === 0) {
     throw new DatabaseError(
       DatabaseErrorType.BadRequest,
-      'Game session is not locked or does not exist'
+      "Game session is not locked or does not exist",
     );
   }
 }
 
-export async function deleteGameSession(userId: number, sessionId: number): Promise<void> {
+export async function deleteGameSession(
+  userId: number,
+  sessionId: number,
+): Promise<void> {
   const gameSession = await prisma.gameSession.findFirst({
     where: {
       id: sessionId,
@@ -262,11 +280,17 @@ export async function deleteGameSession(userId: number, sessionId: number): Prom
   });
 
   if (!gameSession) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Game session not found');
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Game session not found",
+    );
   }
 
   if (gameSession.userId !== userId) {
-    throw new DatabaseError(DatabaseErrorType.Unauthorized, 'User does not own the game session');
+    throw new DatabaseError(
+      DatabaseErrorType.Unauthorized,
+      "User does not own the game session",
+    );
   }
 
   // Soft delete the game session and cascade to scenes
@@ -296,9 +320,9 @@ export async function deleteGameSession(userId: number, sessionId: number): Prom
 
 /**
  * Returns: true if the user owns the game session, false if the user does not own the game session or that game session does not exist
- * @param userId 
- * @param sessionId 
- * @returns 
+ * @param userId
+ * @param sessionId
+ * @returns
  */
 export async function doesUserHaveGameSession(
   userId: number,
@@ -309,13 +333,16 @@ export async function doesUserHaveGameSession(
       id: sessionId,
       userId: userId,
       deleted: false,
-    }
-  })
+    },
+  });
 
   return gameSession !== null;
 }
 
-export async function getGameSessionLength(userId: number, sessionId: number): Promise<number> {
+export async function getGameSessionLength(
+  userId: number,
+  sessionId: number,
+): Promise<number> {
   const count = await prisma.scene.count({
     where: {
       gameSessionId: sessionId,
@@ -331,7 +358,7 @@ export async function getGameSessionLength(userId: number, sessionId: number): P
     if (!(await doesUserHaveGameSession(userId, sessionId))) {
       throw new DatabaseError(
         DatabaseErrorType.NotFound,
-        'Game session not found under user'
+        "Game session not found under user",
       );
     }
   }
@@ -349,7 +376,7 @@ export async function getGameSessionLength(userId: number, sessionId: number): P
 export async function getSceneBySessionAndIndex(
   userId: number,
   sessionId: number,
-  sceneIndex: number
+  sceneIndex: number,
 ): Promise<{
   imageUrl: string;
   imageDescription: string;
@@ -357,7 +384,10 @@ export async function getSceneBySessionAndIndex(
   action: string | null;
 }> {
   if (!(await doesUserHaveGameSession(userId, sessionId))) {
-    throw new DatabaseError(DatabaseErrorType.NotFound, 'Failed to find game session under user');
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Failed to find game session under user",
+    );
   }
 
   const scene = await prisma.scene.findFirst({
@@ -374,43 +404,49 @@ export async function getSceneBySessionAndIndex(
       imageUrlExpiration: true,
       narration: true,
       action: true,
-    }
+    },
   });
 
   if (!scene) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
-      'Scene not found in the game session at the specified index'
+      "Scene not found in the game session at the specified index",
     );
   }
 
-  if (scene.imageUrl === null || (scene.imageUrlExpiration && scene.imageUrlExpiration < new Date())) {
+  if (
+    scene.imageUrl === null ||
+    (scene.imageUrlExpiration && scene.imageUrlExpiration < new Date())
+  ) {
     // URL expired; regenerate new URL
     try {
-      const { url, expiration } = await createImageUrl(scene.imagePath, imageUrlExpireSeconds);
+      const { url, expiration } = await createImageUrl(
+        scene.imagePath,
+        imageUrlExpireSeconds,
+      );
 
       // TODO: make this run in the background
       await prisma.scene.update({
         where: {
-          id: scene.id
+          id: scene.id,
         },
         data: {
           imageUrl: url,
-          imageUrlExpiration: expiration
-        }
-      })
+          imageUrlExpiration: expiration,
+        },
+      });
 
       return {
         imageUrl: url,
         imageDescription: scene.imageDescription,
         narration: scene.narration,
         action: scene.action,
-      }
+      };
     } catch (error) {
       throw new DatabaseError(
         DatabaseErrorType.InternalError,
-        'Failed to regenerate image URL'
-      )
+        "Failed to regenerate image URL",
+      );
     }
   }
 
@@ -431,13 +467,15 @@ export async function getSceneBySessionAndIndex(
  */
 export async function getScenesBySession(
   userId: number,
-  sessionId: number
-): Promise<{
-  imageUrl: string;
-  imageDescription: string;
-  narration: string;
-  action: string | null;
-}[]> {
+  sessionId: number,
+): Promise<
+  {
+    imageUrl: string;
+    imageDescription: string;
+    narration: string;
+    action: string | null;
+  }[]
+> {
   const imageUrlExpiredScenes = await prisma.scene.findMany({
     where: {
       gameSessionId: sessionId,
@@ -451,37 +489,43 @@ export async function getScenesBySession(
         {
           imageUrl: null,
         },
-      ]
+      ],
     },
     select: {
       id: true,
       imagePath: true,
-    }
+    },
   });
 
   // generate new URLs for expired scenes
   // TODO: optimize
-  await Promise.all(imageUrlExpiredScenes.map(async (scene) => {
-    try {
-      const { url, expiration } = await createImageUrl(scene.imagePath, imageUrlExpireSeconds);
-      await prisma.scene.update({
-        where: {
-          id: scene.id
-        },
-        data: {
-          imageUrl: url,
-          imageUrlExpiration: expiration
-        }
-      })
+  await Promise.all(
+    imageUrlExpiredScenes.map(async (scene) => {
+      try {
+        const { url, expiration } = await createImageUrl(
+          scene.imagePath,
+          imageUrlExpireSeconds,
+        );
 
-      return url;
-    } catch (error) {
-      throw new DatabaseError(
-        DatabaseErrorType.InternalError,
-        'Failed to regenerate image URL'
-      )
-    }
-  }))
+        await prisma.scene.update({
+          where: {
+            id: scene.id,
+          },
+          data: {
+            imageUrl: url,
+            imageUrlExpiration: expiration,
+          },
+        });
+
+        return url;
+      } catch (error) {
+        throw new DatabaseError(
+          DatabaseErrorType.InternalError,
+          "Failed to regenerate image URL",
+        );
+      }
+    }),
+  );
 
   const scenes = await prisma.scene.findMany({
     where: {
@@ -489,7 +533,7 @@ export async function getScenesBySession(
       deleted: false,
       gameSession: {
         userId: userId,
-      }
+      },
     },
     select: {
       imageUrl: true,
@@ -498,13 +542,16 @@ export async function getScenesBySession(
       action: true,
     },
     orderBy: {
-      orderInSession: 'asc',
+      orderInSession: "asc",
     },
   });
 
   if (scenes.length === 0) {
-    if (!await doesUserHaveGameSession(userId, sessionId)) {
-      throw new DatabaseError(DatabaseErrorType.NotFound, 'Failed to find game session under user');
+    if (!(await doesUserHaveGameSession(userId, sessionId))) {
+      throw new DatabaseError(
+        DatabaseErrorType.NotFound,
+        "Failed to find game session under user",
+      );
     }
   }
 
@@ -515,7 +562,7 @@ export async function getScenesBySession(
       narration: scene.narration,
       action: scene.action,
     };
-  })
+  });
 }
 
 /**
@@ -524,16 +571,16 @@ export async function getScenesBySession(
  * @param userId - ID of the user
  * @returns An array of game sessions
  */
-export async function getGameSessionsByUser(
-  userId: number
-): Promise<{
-  id: number;
-  name: string;
-  backstory: string;
-  imageUrl: string;
-  imageDescription: string;
-  description: string | null;
-}[]> {
+export async function getGameSessionsByUser(userId: number): Promise<
+  {
+    id: number;
+    name: string;
+    backstory: string;
+    imageUrl: string;
+    imageDescription: string;
+    description: string | null;
+  }[]
+> {
   const imageUrlExpiredSessions = await prisma.gameSession.findMany({
     where: {
       userId: userId,
@@ -547,38 +594,44 @@ export async function getGameSessionsByUser(
         {
           imageUrl: null,
         },
-      ]
+      ],
     },
     select: {
       id: true,
       imagePath: true,
-    }
+    },
   });
 
   // regenerate URLs for expired sessions
   // TODO: optimize
-  await Promise.all(imageUrlExpiredSessions.map(async (session) => {
-    try {
-      const { url, expiration } = await createImageUrl(session.imagePath, imageUrlExpireSeconds);
-      await prisma.gameSession.update({
-        where: {
-          id: session.id
-        },
-        data: {
-          imageUrl: url,
-          imageUrlExpiration: expiration
-        }
-      })
+  await Promise.all(
+    imageUrlExpiredSessions.map(async (session) => {
+      try {
+        const { url, expiration } = await createImageUrl(
+          session.imagePath,
+          imageUrlExpireSeconds,
+        );
 
-      return url;
-    } catch (error) {
-      throw new DatabaseError(
-        DatabaseErrorType.InternalError,
-        'Failed to regenerate image URL'
-      )
-    }
-  }));
-  
+        await prisma.gameSession.update({
+          where: {
+            id: session.id,
+          },
+          data: {
+            imageUrl: url,
+            imageUrlExpiration: expiration,
+          },
+        });
+
+        return url;
+      } catch (error) {
+        throw new DatabaseError(
+          DatabaseErrorType.InternalError,
+          "Failed to regenerate image URL",
+        );
+      }
+    }),
+  );
+
   const gameSessions = await prisma.gameSession.findMany({
     where: {
       userId: userId,
@@ -602,6 +655,6 @@ export async function getGameSessionsByUser(
       imageDescription: session.imageDescription,
       backstory: session.backstory,
       description: session.description,
-    }
+    };
   });
 }

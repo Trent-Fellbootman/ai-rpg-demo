@@ -1,9 +1,9 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 
 import { createNewUser } from "@/app/lib/data/apis";
-import { redirect } from "next/navigation";
 import { constants } from "@/app/lib/utils/path";
 
 const FormSchema = z.object({
