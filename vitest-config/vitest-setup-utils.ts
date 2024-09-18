@@ -29,9 +29,10 @@ export async function deleteEverything() {
   if (error) {
     throw new Error(`Error listing images: ${error.message}`);
   }
-  for (const image of data) {
-    await supabase.storage.from(imagesStorageBucketName).remove([image.name]);
-  }
+
+  await supabase.storage
+    .from(imagesStorageBucketName)
+    .remove(data!.map((item) => item.name));
 }
 
 function createClient() {
