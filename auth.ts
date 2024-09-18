@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 
 import { authConfig } from "./auth.config";
 
-import { getUserFromEmail } from "@/app/lib/data/apis";
+import { getUserFromEmail } from "@/app/lib/database-actions/user-actions";
 
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -31,7 +31,7 @@ export const { auth, signIn, signOut } = NextAuth({
           if (passwordsMatch) {
             return {
               email: user.email,
-              id: user.userId,
+              id: String(user.id),
             };
           }
         }

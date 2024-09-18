@@ -5,11 +5,11 @@ import { v4 as uuidv4 } from "uuid";
 import {
   createUser,
   getUserFromEmail,
-} from "@/app/lib/data/database-actions/user-actions";
+} from "@/app/lib/database-actions/user-actions";
 import {
   DatabaseError,
   DatabaseErrorType,
-} from "@/app/lib/data/database-actions/error-types";
+} from "@/app/lib/database-actions/error-types";
 
 const prisma = new PrismaClient();
 

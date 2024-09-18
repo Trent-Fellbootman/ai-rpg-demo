@@ -9,7 +9,7 @@ import { Link } from "@nextui-org/link";
 import {
   generateNextSceneAction,
   GenerateNextSceneActionResponse,
-} from "@/app/lib/generate-next-scene";
+} from "@/app/lib/data-generation/generate-next-scene-data";
 import { getScenePlayPagePath } from "@/app/lib/utils/path";
 
 export default function ActionInputForm({

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Spinner } from "@nextui-org/spinner";
 
 import { getSceneViewInitialData } from "@/app/lib/actions";
-import { GenerateNextSceneActionResponse } from "@/app/lib/generate-next-scene";
+import { GenerateNextSceneActionResponse } from "@/app/lib/data-generation/generate-next-scene-data";
 import ActionInputForm from "@/app/ui/game/action-input-form";
 import ActionDisplayView from "@/app/ui/game/action-display-view";
 

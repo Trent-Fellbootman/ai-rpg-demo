@@ -1,12 +1,10 @@
 "use server";
 
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
-import {
-  DatabaseError,
-  DatabaseErrorType,
-  PrismaP2002Meta,
-} from "./error-types";
+import { DatabaseError, DatabaseErrorType, PrismaP2002Meta } from "./error-types";
+
+import { auth } from "@/auth";
 
 const prisma = new PrismaClient();
 
@@ -73,4 +71,17 @@ export async function getUserFromEmail(email: string): Promise<{
   }
 
   return user;
+}
+
+// TODO: unit test
+export async function getCurrentUser() {
+  const session = await auth();
+
+  if (!session) {
+    throw new DatabaseError(DatabaseErrorType.Unauthorized, "Not logged in");
+  }
+
+  const email = session!.user!.email!;
+
+  return (await getUserFromEmail(email))!;
 }

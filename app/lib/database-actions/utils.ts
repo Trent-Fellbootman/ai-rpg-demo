@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { imagesStorageBucketName } from "@/app-config";
+import { imagesStorageBucketName } from "@/app-config.ts";
 
 export function createClient() {
   const cookieStore = cookies();

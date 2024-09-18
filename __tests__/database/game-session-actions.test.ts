@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { getFakeImageUrl } from "./utils";
 
-import { createUser } from "@/app/lib/data/database-actions/user-actions";
+import { createUser } from "@/app/lib/database-actions/user-actions";
 import {
   createGameSession,
   addSceneToSession,
@@ -27,11 +27,12 @@ import {
   deleteGameSession,
   isSessionLocked,
   tryLockSessionUntilAcquire,
-} from "@/app/lib/data/database-actions/game-session-actions";
+  getGameSessionMetadata,
+} from "@/app/lib/database-actions/game-session-actions";
 import {
   DatabaseError,
   DatabaseErrorType,
-} from "@/app/lib/data/database-actions/error-types";
+} from "@/app/lib/database-actions/error-types";
 
 describe("Game Session Actions", () => {
   test.concurrent("should create a game session with valid data", async () => {
@@ -529,6 +530,102 @@ describe("Game Session Actions", () => {
           imageDescription: "Test image",
         },
       ]);
+    },
+  );
+
+  test.concurrent(
+    "user should be able to get the metadata of their own sessions only",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const otherUserId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const sessionId = await createGameSession(
+        userId,
+        "Test Game Session",
+        "Once upon a time...",
+        "A test game session",
+        getFakeImageUrl(1),
+        "Test image",
+        {
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Initial scene image",
+          narration: "You are in a dark forest.",
+        },
+      );
+
+      expect(await getGameSessionMetadata(userId, sessionId)).toEqual({
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: expect.any(String),
+        imageDescription: "Test image",
+      });
+
+      await expect(
+        getGameSessionMetadata(otherUserId, sessionId),
+      ).rejects.toThrow(DatabaseError);
+      try {
+        await getGameSessionMetadata(otherUserId, sessionId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
+
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game session not found under user or does not exist",
+        );
+      }
+    },
+  );
+
+  test.concurrent(
+    "user cannot get the metadata of a deleted session",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const sessionId = await createGameSession(
+        userId,
+        "Test Game Session",
+        "Once upon a time...",
+        "A test game session",
+        getFakeImageUrl(1),
+        "Test image",
+        {
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Initial scene image",
+          narration: "You are in a dark forest.",
+        },
+      );
+
+      await deleteGameSession(userId, sessionId);
+
+      await expect(getGameSessionMetadata(userId, sessionId)).rejects.toThrow(
+        DatabaseError,
+      );
+      try {
+        await getGameSessionMetadata(userId, sessionId);
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
+
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe(
+          "Game session not found under user or does not exist",
+        );
+      }
     },
   );
 });

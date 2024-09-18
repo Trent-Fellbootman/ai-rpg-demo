@@ -12,7 +12,7 @@ export const constants = {
  * @param sceneIndex If null, go to the last scene
  */
 export function getScenePlayPagePath(
-  sessionId: string,
+  sessionId: number,
   sceneIndex: number | null,
 ) {
   return `${constants.gamePagesRootPath}/${sessionId}/play/${sceneIndex === null ? "last" : sceneIndex}`;

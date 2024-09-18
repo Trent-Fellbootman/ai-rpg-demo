@@ -1,6 +1,6 @@
 "use server";
 
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
@@ -369,6 +369,7 @@ export async function getGameSessionLength(
 /**
  * Retrieves a scene from a game session by session ID and scene index.
  *
+ * @param userId
  * @param sessionId - ID of the game session
  * @param sceneIndex - Index of the scene in the session (orderInSession)
  * @returns The scene object
@@ -657,4 +658,85 @@ export async function getGameSessionsByUser(userId: number): Promise<
       description: session.description,
     };
   });
+}
+
+export async function getGameSessionMetadata(
+  userId: number,
+  sessionId: number,
+): Promise<{
+  name: string;
+  backstory: string;
+  description: string | null;
+  imageDescription: string;
+  imageUrl: string;
+}> {
+  const gameSessionMetadata = await prisma.gameSession.findFirst({
+    where: {
+      userId: userId,
+      id: sessionId,
+      deleted: false,
+    },
+    select: {
+      name: true,
+      backstory: true,
+      description: true,
+      imageDescription: true,
+      imagePath: true,
+      imageUrl: true,
+      imageUrlExpiration: true,
+    },
+  });
+
+  if (!gameSessionMetadata) {
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Game session not found under user or does not exist",
+    );
+  }
+
+  if (
+    gameSessionMetadata.imageUrl === null ||
+    (gameSessionMetadata.imageUrlExpiration &&
+      gameSessionMetadata.imageUrlExpiration < new Date())
+  ) {
+    // regenerate URL
+    try {
+      const { url, expiration } = await createImageUrl(
+        gameSessionMetadata.imagePath,
+        imageUrlExpireSeconds,
+      );
+
+      // TODO: run this in background
+      await prisma.gameSession.update({
+        where: {
+          id: sessionId,
+        },
+        data: {
+          imageUrl: url,
+          imageUrlExpiration: expiration,
+        },
+      });
+
+      return {
+        name: gameSessionMetadata.name,
+        backstory: gameSessionMetadata.backstory,
+        description: gameSessionMetadata.description,
+        imageDescription: gameSessionMetadata.imageDescription,
+        imageUrl: url,
+      };
+    } catch (error) {
+      throw new DatabaseError(
+        DatabaseErrorType.InternalError,
+        "Failed to regenerate image URL",
+      );
+    }
+  }
+
+  return {
+    imageUrl: gameSessionMetadata.imageUrl,
+    backstory: gameSessionMetadata.backstory,
+    description: gameSessionMetadata.description,
+    name: gameSessionMetadata.name,
+    imageDescription: gameSessionMetadata.imageDescription,
+  };
 }

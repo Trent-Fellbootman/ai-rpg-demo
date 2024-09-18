@@ -9,7 +9,7 @@ import { Tooltip } from "@nextui-org/tooltip";
 import { InfoIcon } from "@nextui-org/shared-icons";
 import { Textarea } from "@nextui-org/input";
 
-import { createSession, Errors } from "@/app/lib/create-session";
+import { generateSessionData, Errors } from "@/app/lib/data-generation/generate-session-data";
 
 export default function SessionCreationViewClient({
   sampleSetups,
@@ -32,7 +32,7 @@ export default function SessionCreationViewClient({
     setErrorState(undefined);
 
     const formData = new FormData(event.currentTarget);
-    const response = await createSession(formData);
+    const response = await generateSessionData(formData);
 
     setErrorState(response);
     setCanCreateSession(true);

@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { getFakeImageUrl } from "./utils";
 
-import { createUser } from "@/app/lib/data/database-actions/user-actions";
+import { createUser } from "@/app/lib/database-actions/user-actions";
 import {
   createGameTemplate,
   deleteGameTemplate,
@@ -24,11 +24,11 @@ import {
   deleteComment,
   getComments,
   getGameTemplateNoComments,
-} from "@/app/lib/data/database-actions/game-template-actions";
+} from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
   DatabaseErrorType,
-} from "@/app/lib/data/database-actions/error-types";
+} from "@/app/lib/database-actions/error-types";
 
 describe("Game Template Actions", () => {
   test.concurrent(

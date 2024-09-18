@@ -1,18 +1,22 @@
 import { inngest } from "./client";
 
-import { updateSceneDatabase } from "@/app/lib/generate-next-scene";
-import { isSessionLocked, unlockSession } from "@/app/lib/data/apis";
 import { logger } from "@/app/lib/logger";
+import {
+  addSceneToSession,
+  isSessionLocked,
+  unlockSession,
+} from "@/app/lib/database-actions/game-session-actions";
 
 const log = logger.child({ module: "inngest-functions" });
 
 export type AddGeneratedSceneInputs = {
-  sessionId: string;
+  userId: number;
+  sessionId: number;
   previousAction: string;
   nextScene: {
     imageUrl: string;
     imageDescription: string;
-    text: string;
+    narration: string;
   };
 };
 
@@ -42,13 +46,14 @@ export const helloWorld = inngest.createFunction(
     log.debug("Checked that session is currently locked");
 
     // update database
-    await updateSceneDatabase(
+    await addSceneToSession(
+      data.userId,
       data.sessionId,
       data.previousAction,
       data.nextScene,
     );
 
-    log.debug("Wrote generated scene to database");
+    log.debug("Wrote generated scene to database and storage");
 
     // unlock session
     await unlockSession(data.sessionId);
