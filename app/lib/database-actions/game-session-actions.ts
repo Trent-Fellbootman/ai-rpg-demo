@@ -5,6 +5,10 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
 
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "database-actions" });
+
 import { imageUrlExpireSeconds } from "@/app-config";
 
 const prisma = new PrismaClient();
@@ -22,27 +26,20 @@ export async function createGameSession(
     narration: string;
   },
 ): Promise<number> {
-  let imagePath: string;
+  log.debug("Started creating game session in database");
+
+  let coverImagePath: string;
+  let firstSceneImagePath: string;
 
   try {
-    imagePath = await downloadImageToStorage(imageUrl);
+    [coverImagePath, firstSceneImagePath] = await Promise.all([
+      downloadImageToStorage(imageUrl),
+      downloadImageToStorage(initialSceneData.imageUrl),
+    ]);
   } catch (error) {
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      `Failed to download image`,
-    );
-  }
-
-  let initialSceneDataImagePath: string;
-
-  try {
-    initialSceneDataImagePath = await downloadImageToStorage(
-      initialSceneData.imageUrl,
-    );
-  } catch (error) {
-    throw new DatabaseError(
-      DatabaseErrorType.InternalError,
-      `Failed to download image`,
+      `Failed to download images`,
     );
   }
 
@@ -52,13 +49,13 @@ export async function createGameSession(
         name,
         backstory,
         description,
-        imagePath,
+        imagePath: coverImagePath,
         imageDescription,
         userId,
         scenes: {
           create: [
             {
-              imagePath: initialSceneDataImagePath,
+              imagePath: firstSceneImagePath,
               imageDescription: initialSceneData.imageDescription,
               narration: initialSceneData.narration,
               action: null,
