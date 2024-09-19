@@ -429,6 +429,7 @@ export async function getGameTemplatesByUser(userId: number): Promise<
     isPublic: boolean;
     isLiked: boolean;
     likes: number;
+    comments: number;
     description: string | null;
     backstory: string;
     imageUrl: string;
