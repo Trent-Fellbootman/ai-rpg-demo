@@ -7,22 +7,26 @@ export const siteConfig = {
   description: "Make beautiful websites regardless of your design experience.",
   navItems: [
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "My Game Sessions",
+      href: constants.gameSessionsDashboardPagePath,
+    },
+    {
+      label: "My Game Templates",
+      href: constants.gameTemplatesDashboardPagePath,
     },
   ],
   navMenuItems: [
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "My Game Sessions",
+      href: constants.gameSessionsDashboardPagePath,
+    },
+    {
+      label: "My Game Templates",
+      href: constants.gameTemplatesDashboardPagePath,
     },
     {
       label: "New Session",
       href: constants.newSessionPagePath,
-    },
-    {
-      label: "Logout",
-      href: "/logout",
     },
   ],
   links: {},

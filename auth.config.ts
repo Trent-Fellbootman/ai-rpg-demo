@@ -17,7 +17,7 @@ export const authConfig = {
       if (isOnRestrictedPage) {
         return isLoggedIn;
       } else if (isLoggedIn) {
-        return Response.redirect(new URL(constants.dashboardPagePath, nextUrl));
+        return Response.redirect(new URL(constants.gameSessionsDashboardPagePath, nextUrl));
       }
 
       return true;

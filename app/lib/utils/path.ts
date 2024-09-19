@@ -3,9 +3,10 @@ export const constants = {
   signupPagePath: "/signup",
   gamePagesRootPath: "/games",
   gameSessionsPagesRootPath: "/games/sessions",
-  gameTemplatesPagesRootPath: "/games/templates",
-  dashboardPagePath: "/games/sessions",
+  gameSessionsDashboardPagePath: "/games/sessions",
   newSessionPagePath: "/games/sessions/new",
+  gameTemplatesPagesRootPath: "/games/templates",
+  gameTemplatesDashboardPagePath: "/games/templates",
 };
 
 /**
