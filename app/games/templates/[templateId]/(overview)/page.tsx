@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
-import GameTemplateOverview from "@/app/ui/game-templates/game-template-overview";
+import GameTemplateOverview from "@/app/ui/game-templates/game-template-overview/game-template-overview";
 
 export default async function Page({
   params: { templateId },

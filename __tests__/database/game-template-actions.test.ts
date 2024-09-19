@@ -23,7 +23,7 @@ import {
   addComment,
   deleteComment,
   getComments,
-  getGameTemplateNoComments,
+  getGameTemplateMetadata,
   getGameTemplatesByUser,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
@@ -55,7 +55,7 @@ describe("Game Template Actions", () => {
       expect(templateId).toBeGreaterThan(0);
 
       // Retrieve the template
-      const template = await getGameTemplateNoComments(userId, templateId);
+      const template = await getGameTemplateMetadata(userId, templateId);
 
       expect(template).toEqual({
         name: newGameTemplateData.name,
@@ -68,11 +68,11 @@ describe("Game Template Actions", () => {
       await deleteGameTemplate(userId, templateId);
 
       await expect(
-        getGameTemplateNoComments(userId, templateId),
+        getGameTemplateMetadata(userId, templateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateNoComments(userId, templateId);
+        await getGameTemplateMetadata(userId, templateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -126,7 +126,7 @@ describe("Game Template Actions", () => {
         newPrivateGameTemplateData,
       );
 
-      expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual(
+      expect(await getGameTemplateMetadata(userId, publicTemplateId)).toEqual(
         {
           name: newPublicGameTemplateData.name,
           backstory: newPublicGameTemplateData.backStory,
@@ -137,7 +137,7 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateNoComments(otherUserId, publicTemplateId),
+        await getGameTemplateMetadata(otherUserId, publicTemplateId),
       ).toEqual({
         name: newPublicGameTemplateData.name,
         backstory: newPublicGameTemplateData.backStory,
@@ -147,7 +147,7 @@ describe("Game Template Actions", () => {
       });
 
       expect(
-        await getGameTemplateNoComments(userId, privateTemplateId),
+        await getGameTemplateMetadata(userId, privateTemplateId),
       ).toEqual({
         name: newPrivateGameTemplateData.name,
         backstory: newPrivateGameTemplateData.backStory,
@@ -157,11 +157,11 @@ describe("Game Template Actions", () => {
       });
 
       await expect(
-        getGameTemplateNoComments(otherUserId, privateTemplateId),
+        getGameTemplateMetadata(otherUserId, privateTemplateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateNoComments(otherUserId, privateTemplateId);
+        await getGameTemplateMetadata(otherUserId, privateTemplateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -197,7 +197,7 @@ describe("Game Template Actions", () => {
       }
 
       // check that game template is still accessible
-      expect(await getGameTemplateNoComments(userId, publicTemplateId)).toEqual(
+      expect(await getGameTemplateMetadata(userId, publicTemplateId)).toEqual(
         {
           name: newPublicGameTemplateData.name,
           backstory: newPublicGameTemplateData.backStory,
@@ -208,7 +208,7 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateNoComments(otherUserId, publicTemplateId),
+        await getGameTemplateMetadata(otherUserId, publicTemplateId),
       ).toEqual({
         name: newPublicGameTemplateData.name,
         backstory: newPublicGameTemplateData.backStory,
@@ -218,7 +218,7 @@ describe("Game Template Actions", () => {
       });
 
       expect(
-        await getGameTemplateNoComments(userId, privateTemplateId),
+        await getGameTemplateMetadata(userId, privateTemplateId),
       ).toEqual({
         name: newPrivateGameTemplateData.name,
         backstory: newPrivateGameTemplateData.backStory,
@@ -232,11 +232,11 @@ describe("Game Template Actions", () => {
       await deleteGameTemplate(userId, privateTemplateId);
 
       await expect(
-        getGameTemplateNoComments(userId, publicTemplateId),
+        getGameTemplateMetadata(userId, publicTemplateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateNoComments(userId, publicTemplateId);
+        await getGameTemplateMetadata(userId, publicTemplateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -248,10 +248,10 @@ describe("Game Template Actions", () => {
       }
 
       await expect(
-        getGameTemplateNoComments(userId, privateTemplateId),
+        getGameTemplateMetadata(userId, privateTemplateId),
       ).rejects.toThrowError(DatabaseError);
       try {
-        await getGameTemplateNoComments(userId, privateTemplateId);
+        await getGameTemplateMetadata(userId, privateTemplateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -424,7 +424,7 @@ describe("Game Template Actions", () => {
         isPublic: true,
       });
 
-      const template = await getGameTemplateNoComments(userId, templateId);
+      const template = await getGameTemplateMetadata(userId, templateId);
 
       expect(template).toEqual({
         name: "Test Template",

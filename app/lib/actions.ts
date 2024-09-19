@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
+import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "./database-actions/user-actions";
 import {
@@ -20,13 +21,16 @@ import {
   generateNextSceneData,
   NextSceneGenerationResponse,
 } from "./data-generation/generate-next-scene-data";
-import { getScenePlayPagePath } from "./utils/path";
+import { getScenePlayPagePath, getTemplateOverviewPath } from "./utils/path";
 
 import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
 import { logger } from "@/app/lib/logger";
 import { signIn } from "@/auth";
-import { createGameTemplate } from "@/app/lib/database-actions/game-template-actions";
+import {
+  addComment,
+  createGameTemplate,
+} from "@/app/lib/database-actions/game-template-actions";
 
 const log = logger.child({ module: "server-actions" });
 
@@ -273,4 +277,43 @@ export async function getSceneViewInitialData(
     currentSceneIndex: parsedIndex,
     currentSessionLength: sessionLength,
   };
+}
+
+const PostCommentFormSchema = z.object({
+  text: z.string().min(1, "Comment must not be empty!"),
+});
+
+export type PostCommentActionErrors = {
+  fieldErrors?: {
+    [Key in keyof z.infer<typeof PostCommentFormSchema>]?: string[];
+  };
+  message?: string;
+};
+
+export type PostCommentActionResponse = {
+  errors?: PostCommentActionErrors;
+};
+
+export async function postCommentAction(
+  userId: number,
+  gameTemplateId: number,
+  formData: FormData,
+): Promise<PostCommentActionResponse> {
+  const formParseResult = PostCommentFormSchema.safeParse(
+    Object.fromEntries(formData.entries()),
+  );
+
+  if (!formParseResult.success) {
+    return {
+      errors: { fieldErrors: formParseResult.error.flatten().fieldErrors },
+    };
+  }
+
+  const { text } = formParseResult.data;
+
+  await addComment(userId, gameTemplateId, text);
+
+  revalidatePath(getTemplateOverviewPath(gameTemplateId));
+
+  return {};
 }

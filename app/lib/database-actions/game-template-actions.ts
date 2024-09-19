@@ -339,7 +339,7 @@ export async function getComments(
   });
 }
 
-export async function getGameTemplateNoComments(
+export async function getGameTemplateMetadata(
   userId: number,
   gameTemplateId: number,
 ): Promise<{
@@ -348,6 +348,9 @@ export async function getGameTemplateNoComments(
   description: string | null;
   imageUrl: string;
   imageDescription: string;
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
 }> {
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
@@ -370,6 +373,28 @@ export async function getGameTemplateNoComments(
       imageDescription: true,
       backstory: true,
       description: true,
+      likes: {
+        select: {
+          userId: true,
+        },
+        where: {
+          deleted: false,
+        },
+      },
+      _count: {
+        select: {
+          likes: {
+            where: {
+              deleted: false,
+            },
+          },
+          comments: {
+            where: {
+              deleted: false,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -390,6 +415,9 @@ export async function getGameTemplateNoComments(
       description: gameTemplate.description,
       imageUrl: gameTemplate.imageUrl!,
       imageDescription: gameTemplate.imageDescription,
+      likeCount: gameTemplate._count.likes,
+      commentCount: gameTemplate._count.comments,
+      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
     };
   }
 
@@ -417,6 +445,9 @@ export async function getGameTemplateNoComments(
       description: gameTemplate.description,
       imageUrl: url,
       imageDescription: gameTemplate.imageDescription,
+      likeCount: gameTemplate._count.likes,
+      commentCount: gameTemplate._count.comments,
+      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
     };
   } catch (error) {
     throw new DatabaseError(
