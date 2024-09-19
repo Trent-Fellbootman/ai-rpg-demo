@@ -346,7 +346,8 @@ export async function getGameTemplateNoComments(
   name: string;
   backstory: string;
   description: string | null;
-  imageUrl: string | null;
+  imageUrl: string;
+  imageDescription: string;
 }> {
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
@@ -366,6 +367,7 @@ export async function getGameTemplateNoComments(
       imageUrl: true,
       imagePath: true,
       imageUrlExpiration: true,
+      imageDescription: true,
       backstory: true,
       description: true,
     },
@@ -387,6 +389,7 @@ export async function getGameTemplateNoComments(
       backstory: gameTemplate.backstory,
       description: gameTemplate.description,
       imageUrl: gameTemplate.imageUrl!,
+      imageDescription: gameTemplate.imageDescription,
     };
   }
 
@@ -413,6 +416,7 @@ export async function getGameTemplateNoComments(
       backstory: gameTemplate.backstory,
       description: gameTemplate.description,
       imageUrl: url,
+      imageDescription: gameTemplate.imageDescription,
     };
   } catch (error) {
     throw new DatabaseError(

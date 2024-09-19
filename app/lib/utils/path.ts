@@ -3,6 +3,7 @@ export const constants = {
   signupPagePath: "/signup",
   gamePagesRootPath: "/games",
   gameSessionsPagesRootPath: "/games/sessions",
+  gameTemplatesPagesRootPath: "/games/templates",
   dashboardPagePath: "/games/sessions",
   newSessionPagePath: "/games/sessions/new",
 };
@@ -25,4 +26,8 @@ export function getSessionViewPath(sessionId: number) {
 
 export function getSessionOverviewPath(sessionId: number) {
   return `${constants.gameSessionsPagesRootPath}/${sessionId}`;
+}
+
+export function getTemplateOverviewPath(templateId: number) {
+  return `${constants.gameTemplatesPagesRootPath}/${templateId}`;
 }
