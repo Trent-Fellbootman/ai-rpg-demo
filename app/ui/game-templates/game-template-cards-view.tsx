@@ -6,11 +6,11 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/outline";
 
-import { getSessionOverviewPath, getTemplateOverviewPath } from "@/app/lib/utils/path";
+import { getTemplateOverviewPath } from "@/app/lib/utils/path";
 import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
 import { getGameTemplatesByUser } from "@/app/lib/database-actions/game-template-actions";
 
-export default async function GameTemplatesOverview() {
+export default async function GameTemplateCardsView() {
   const userId = (await getCurrentUser()).id;
 
   const templates = await getGameTemplatesByUser(userId);
