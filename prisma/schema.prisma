@@ -45,6 +45,8 @@ model GameSession {
   userId             Int
   scenes             Scene[]
   isLocked           Boolean   @default(false)
+  parentTemplate     GameTemplate? @relation(fields: [parentTemplateId], references: [id])
+  parentTemplateId   Int?
 }
 
 model Scene {
@@ -81,6 +83,7 @@ model GameTemplate {
   userId             Int
   likes              GameTemplateLike[]
   comments           GameTemplateComment[]
+  childGameSessions  GameSession[]
 }
 
 model GameTemplateLike {
