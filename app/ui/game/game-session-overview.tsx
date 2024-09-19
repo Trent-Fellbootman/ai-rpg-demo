@@ -1,9 +1,9 @@
 import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
-
-import { getGameSessionMetadata } from "@/app/lib/database-actions/game-session-actions";
 import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
+
+import { getGameSessionMetadata } from "@/app/lib/database-actions/game-session-actions";
 import { getScenePlayPagePath, getSessionViewPath } from "@/app/lib/utils/path";
 
 export default async function GameSessionOverview({

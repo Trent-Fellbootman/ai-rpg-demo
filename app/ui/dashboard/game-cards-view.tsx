@@ -1,13 +1,8 @@
 import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
-import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
 
-import {
-  getScenePlayPagePath,
-  getSessionOverviewPath,
-  getSessionViewPath,
-} from "@/app/lib/utils/path";
+import { getSessionOverviewPath } from "@/app/lib/utils/path";
 import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
 import { getGameSessionsByUser } from "@/app/lib/database-actions/game-session-actions";
 

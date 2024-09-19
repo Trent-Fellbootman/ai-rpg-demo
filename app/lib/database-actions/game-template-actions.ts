@@ -148,7 +148,7 @@ export async function addComment(
   userId: number,
   gameTemplateId: number,
   text: string,
-): Promise<void> {
+): Promise<number> {
   // Check if the game template is public and not deleted
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: { id: gameTemplateId, isPublic: true, deleted: false },
@@ -162,13 +162,18 @@ export async function addComment(
   }
 
   // Create the comment
-  await prisma.gameTemplateComment.create({
+  const newComment = await prisma.gameTemplateComment.create({
     data: {
       text,
       userId,
       gameTemplateId,
     },
+    select: {
+      id: true,
+    },
   });
+
+  return newComment.id;
 }
 
 export async function deleteGameTemplate(
@@ -415,4 +420,130 @@ export async function getGameTemplateNoComments(
       "Failed to regenerate image URL",
     );
   }
+}
+
+export async function getGameTemplatesByUser(userId: number): Promise<
+  {
+    id: number;
+    name: string;
+    isPublic: boolean;
+    isLiked: boolean;
+    likes: number;
+    description: string | null;
+    backstory: string;
+    imageUrl: string;
+    imageDescription: string;
+  }[]
+> {
+  const imageUrlExpiredTemplates = await prisma.gameTemplate.findMany({
+    where: {
+      userId: userId,
+      deleted: false,
+      OR: [
+        {
+          imageUrl: null,
+        },
+        {
+          imageUrlExpiration: {
+            lt: new Date(),
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      imagePath: true,
+    },
+  });
+
+  // regenerate URLs for expired templates
+  // TODO: optimize
+  await Promise.all(
+    imageUrlExpiredTemplates.map(async (template) => {
+      try {
+        const { url, expiration } = await createImageUrl(
+          template.imagePath,
+          imageUrlExpireSeconds,
+        );
+
+        await prisma.gameTemplate.update({
+          where: {
+            id: template.id,
+          },
+          data: {
+            imageUrl: url,
+            imageUrlExpiration: expiration,
+          },
+        });
+
+        return url;
+      } catch (error) {
+        throw new DatabaseError(
+          DatabaseErrorType.InternalError,
+          "Failed to regenerate image URL",
+        );
+      }
+    }),
+  );
+
+  const gameTemplates = await prisma.gameTemplate.findMany({
+    where: {
+      userId: userId,
+      deleted: false,
+    },
+    select: {
+      id: true,
+      name: true,
+      isPublic: true,
+      description: true,
+      backstory: true,
+      imageUrl: true,
+      imageDescription: true,
+      likes: {
+        select: {
+          userId: true,
+        },
+        where: {
+          deleted: false,
+        },
+      },
+      _count: {
+        select: {
+          likes: {
+            where: {
+              deleted: false,
+            },
+          },
+          comments: {
+            where: {
+              deleted: false,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  gameTemplates.sort((a, b) => {
+    if (a.isPublic > b.isPublic) {
+      return -1;
+    } else {
+      return -(a._count.likes - b._count.likes);
+    }
+  });
+
+  return gameTemplates.map((gameTemplate) => {
+    return {
+      id: gameTemplate.id,
+      name: gameTemplate.name,
+      isPublic: gameTemplate.isPublic,
+      description: gameTemplate.description,
+      backstory: gameTemplate.backstory,
+      imageUrl: gameTemplate.imageUrl!,
+      imageDescription: gameTemplate.imageDescription,
+      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
+      likes: gameTemplate._count.likes,
+      comments: gameTemplate._count.comments,
+    };
+  });
 }

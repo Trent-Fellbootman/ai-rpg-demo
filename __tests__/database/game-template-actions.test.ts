@@ -24,6 +24,7 @@ import {
   deleteComment,
   getComments,
   getGameTemplateNoComments,
+  getGameTemplatesByUser,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
@@ -424,6 +425,118 @@ describe("Game Template Actions", () => {
         description: "A test template",
         imageUrl: expect.any(String),
       });
+    },
+  );
+
+  test.concurrent(
+    "should retrieve game template metadata and count likes & comments correctly",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const anotherUserId = await createUser(
+        `anotheruser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Another User",
+      );
+
+      // create a public template
+      const publicTemplateId = await createGameTemplate(userId, {
+        name: "Public Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Public Template image",
+        backStory: "This is a public test backstory.",
+        description: "A public test template",
+        isPublic: true,
+      });
+
+      // create another public template
+      const publicTemplateId2 = await createGameTemplate(userId, {
+        name: "Public Test Template 2",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Public Template image 2",
+        backStory: "This is a public test backstory 2.",
+        description: "A public test template 2",
+        isPublic: true,
+      });
+
+      // create a private template
+      const privateTemplateId = await createGameTemplate(userId, {
+        name: "Private Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Private Template image",
+        backStory: "This is a private test backstory.",
+        description: "A private test template",
+        isPublic: false,
+      });
+
+      // like the first public template
+      await addLike(userId, publicTemplateId);
+
+      // like the second public template then delete it
+      await addLike(userId, publicTemplateId2);
+      await addLike(anotherUserId, publicTemplateId2);
+      await deleteLike(userId, publicTemplateId2);
+      await deleteLike(anotherUserId, publicTemplateId2);
+
+      // add a comment to the second public template
+      const commentText = "This is a test comment";
+
+      await addComment(userId, publicTemplateId2, commentText);
+
+      const commentId = await addComment(
+        anotherUserId,
+        publicTemplateId2,
+        commentText,
+      );
+
+      await deleteComment(anotherUserId, commentId);
+
+      // retrieve the metadata
+      const templatesMetadata = await getGameTemplatesByUser(userId);
+
+      // should be first public template, then second public template, then private template
+      expect(templatesMetadata).toEqual([
+        {
+          id: publicTemplateId,
+          name: "Public Test Template",
+          isPublic: true,
+          isLiked: true,
+          likes: 1,
+          comments: 0,
+          description: "A public test template",
+          backstory: "This is a public test backstory.",
+          imageUrl: expect.any(String),
+          imageDescription: "Public Template image",
+        },
+        {
+          id: publicTemplateId2,
+          name: "Public Test Template 2",
+          isPublic: true,
+          isLiked: false,
+          likes: 0,
+          comments: 1,
+          description: "A public test template 2",
+          backstory: "This is a public test backstory 2.",
+          imageUrl: expect.any(String),
+          imageDescription: "Public Template image 2",
+        },
+        {
+          id: privateTemplateId,
+          name: "Private Test Template",
+          isPublic: false,
+          isLiked: false,
+          likes: 0,
+          comments: 0,
+          description: "A private test template",
+          backstory: "This is a private test backstory.",
+          imageUrl: expect.any(String),
+          imageDescription: "Private Template image",
+        },
+      ]);
     },
   );
 });
