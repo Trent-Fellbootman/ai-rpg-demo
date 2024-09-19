@@ -24,5 +24,5 @@ export function getSessionViewPath(sessionId: number) {
 }
 
 export function getSessionOverviewPath(sessionId: number) {
-  return `${constants.gameSessionsPagesRootPath}/${sessionId}/overview`;
+  return `${constants.gameSessionsPagesRootPath}/${sessionId}`;
 }
