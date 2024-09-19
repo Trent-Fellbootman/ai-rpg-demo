@@ -2,8 +2,9 @@ export const constants = {
   loginPagePath: "/login",
   signupPagePath: "/signup",
   gamePagesRootPath: "/games",
-  dashboardPagePath: "/games",
-  newSessionPagePath: "/games/new",
+  gameSessionsPagesRootPath: "/games/sessions",
+  dashboardPagePath: "/games/sessions",
+  newSessionPagePath: "/games/sessions/new",
 };
 
 /**
@@ -15,13 +16,13 @@ export function getScenePlayPagePath(
   sessionId: number,
   sceneIndex: number | null,
 ) {
-  return `${constants.gamePagesRootPath}/${sessionId}/play/${sceneIndex === null ? "last" : sceneIndex}`;
+  return `${constants.gameSessionsPagesRootPath}/${sessionId}/play/${sceneIndex === null ? "last" : sceneIndex}`;
 }
 
 export function getSessionViewPath(sessionId: number) {
-  return `${constants.gamePagesRootPath}/${sessionId}/view`;
+  return `${constants.gameSessionsPagesRootPath}/${sessionId}/view`;
 }
 
 export function getSessionOverviewPath(sessionId: number) {
-  return `${constants.gamePagesRootPath}/${sessionId}/overview`;
+  return `${constants.gameSessionsPagesRootPath}/${sessionId}/overview`;
 }
