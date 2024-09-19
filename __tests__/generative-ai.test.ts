@@ -10,49 +10,61 @@ import {
 } from "@/app/lib/services/generative-ai";
 
 describe("Generative AI", () => {
-  it("chat completion is able to do basic math correctly (unstructured outputs)", async () => {
-    const message = await generateChatMessage([
-      {
-        role: "user",
-        content:
-          "What is the sum of 3 and 5? Output a number ONLY and NOTHING ELSE.",
-      },
-    ]);
-
-    expect(message.content).toBe("8");
-  });
-
-  it("chat completion is able to do basic math correctly (structured outputs)", async () => {
-    const answerFormat = z.object({
-      answer: z.number(),
-    });
-
-    const message = await generateChatMessage(
-      [
+  it.concurrent(
+    "chat completion is able to do basic math correctly (unstructured outputs)",
+    async () => {
+      const message = await generateChatMessage([
         {
           role: "user",
           content:
             "What is the sum of 3 and 5? Output a number ONLY and NOTHING ELSE.",
         },
-      ],
-      answerFormat,
-    );
+      ]);
 
-    const expectedOutput = {
-      answer: 8,
-    };
+      expect(message.content).toBe("8");
+    },
+  );
 
-    expect(message.content).toEqual(expectedOutput);
-  }, 30000);
+  it.concurrent(
+    "chat completion is able to do basic math correctly (structured outputs)",
+    async () => {
+      const answerFormat = z.object({
+        answer: z.number(),
+      });
 
-  it.skip("image generation is able to generate an image", async () => {
-    const imageUrl = await generateImage("A cute cat sitting on a couch");
+      const message = await generateChatMessage(
+        [
+          {
+            role: "user",
+            content:
+              "What is the sum of 3 and 5? Output a number ONLY and NOTHING ELSE.",
+          },
+        ],
+        answerFormat,
+      );
 
-    const { width, height } = await downloadImageAndCheckWidthHeight(imageUrl);
+      const expectedOutput = {
+        answer: 8,
+      };
 
-    expect(width).toBeGreaterThan(0);
-    expect(height).toBeGreaterThan(0);
-  }, 30000);
+      expect(message.content).toEqual(expectedOutput);
+    },
+    30000,
+  );
+
+  it.concurrent.skip(
+    "image generation is able to generate an image",
+    async () => {
+      const imageUrl = await generateImage("A cute cat sitting on a couch");
+
+      const { width, height } =
+        await downloadImageAndCheckWidthHeight(imageUrl);
+
+      expect(width).toBeGreaterThan(0);
+      expect(height).toBeGreaterThan(0);
+    },
+    30000,
+  );
 });
 
 async function downloadImageAndCheckWidthHeight(imageUrl: string) {
