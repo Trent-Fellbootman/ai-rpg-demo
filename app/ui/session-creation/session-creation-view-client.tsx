@@ -8,6 +8,7 @@ import { Spinner } from "@nextui-org/spinner";
 import { Tooltip } from "@nextui-org/tooltip";
 import { InfoIcon } from "@nextui-org/shared-icons";
 import { Textarea } from "@nextui-org/input";
+import { Checkbox } from "@nextui-org/checkbox";
 
 import {
   createNewGameSessionAction,
@@ -35,6 +36,10 @@ export default function SessionCreationViewClient({
     setErrorState(undefined);
 
     const formData = new FormData(event.currentTarget);
+
+    formData.set("save_as_template", saveAsTemplate ? "true" : "false");
+    formData.set("make_template_public", makeTemplatePublic ? "true" : "false");
+
     const response = await createNewGameSessionAction(formData);
 
     setErrorState(response);
@@ -45,6 +50,9 @@ export default function SessionCreationViewClient({
   const [sessionDescription, setSessionDescription] =
     React.useState<string>("");
   const [backStory, setBackStory] = React.useState<string>("");
+  const [saveAsTemplate, setSaveAsTemplate] = React.useState<boolean>(true);
+  const [makeTemplatePublic, setMakeTemplatePublic] =
+    React.useState<boolean>(true);
 
   return (
     <div className="flex flex-col space-y-4 w-full">
@@ -152,6 +160,58 @@ export default function SessionCreationViewClient({
                     {error}
                   </p>
                 ))}
+              <div className="flex gap-4">
+                <Checkbox
+                  isSelected={saveAsTemplate}
+                  name="save_as_template"
+                  onValueChange={setSaveAsTemplate}
+                >
+                  <div className="flex flex-row items-center">
+                    <p>Save as template</p>
+                    <StyledTooltip
+                      placement="top"
+                      tooltipContent={
+                        <div className="flex flex-col max-w-lg space-y-1">
+                          <p>
+                            A template consists of name, backstory and
+                            description, and can be reused to create other game
+                            sessions with the same background setup.
+                          </p>
+                          <p>
+                            If selected, a game template will be created from
+                            the information you provided.
+                          </p>
+                        </div>
+                      }
+                    />
+                  </div>
+                </Checkbox>
+                <Checkbox
+                  isDisabled={!saveAsTemplate}
+                  isSelected={makeTemplatePublic}
+                  name="make_template_public"
+                  onValueChange={setMakeTemplatePublic}
+                >
+                  <div className="flex flex-row items-center">
+                    <p>Make template public</p>
+                    <StyledTooltip
+                      placement="top"
+                      tooltipContent={
+                        <div className="flex flex-col max-w-lg space-y-1">
+                          <p>
+                            If selected, other people will be able to view and
+                            use this template to create their own game sessions.
+                          </p>
+                          <p>
+                            Still, they will <strong>not</strong> be able to
+                            view your game sessions.
+                          </p>
+                        </div>
+                      }
+                    />
+                  </div>
+                </Checkbox>
+              </div>
               <Button
                 className="w-full"
                 color="primary"
@@ -189,16 +249,7 @@ function FormField({
     <div className="flex flex-col">
       <div className="flex flex-row justify-start items-center">
         <p className="text-large">{fieldDisplayName}</p>
-        <Tooltip
-          showArrow
-          color="primary"
-          content={fieldTooltipContent}
-          placement="right"
-        >
-          <Button isIconOnly size="sm" variant="light">
-            <InfoIcon />
-          </Button>
-        </Tooltip>
+        <StyledTooltip placement="right" tooltipContent={fieldTooltipContent} />
       </div>
       <Textarea
         label={fieldDisplayName}
@@ -209,5 +260,26 @@ function FormField({
         onChange={onChange}
       />
     </div>
+  );
+}
+
+function StyledTooltip({
+  tooltipContent,
+  placement,
+}: {
+  tooltipContent: ReactNode | string;
+  placement: "top" | "right";
+}) {
+  return (
+    <Tooltip
+      showArrow
+      color="primary"
+      content={tooltipContent}
+      placement={placement}
+    >
+      <Button isIconOnly size="sm" variant="light">
+        <InfoIcon />
+      </Button>
+    </Tooltip>
   );
 }

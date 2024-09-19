@@ -20,6 +20,7 @@ export async function createGameSession(
   description: string | null,
   imageUrl: string,
   imageDescription: string,
+  parentGameTemplateId: number | null,
   initialSceneData: {
     imageUrl: string;
     imageDescription: string;
@@ -55,6 +56,7 @@ export async function createGameSession(
         imagePath: coverImagePath,
         imageDescription,
         userId,
+        parentTemplateId: parentGameTemplateId,
         scenes: {
           create: [
             {
@@ -671,6 +673,7 @@ export async function getGameSessionMetadata(
   description: string | null;
   imageDescription: string;
   imageUrl: string;
+  parentTemplateId: number | null;
 }> {
   const gameSessionMetadata = await prisma.gameSession.findFirst({
     where: {
@@ -686,6 +689,7 @@ export async function getGameSessionMetadata(
       imagePath: true,
       imageUrl: true,
       imageUrlExpiration: true,
+      parentTemplateId: true,
     },
   });
 
@@ -725,6 +729,7 @@ export async function getGameSessionMetadata(
         description: gameSessionMetadata.description,
         imageDescription: gameSessionMetadata.imageDescription,
         imageUrl: url,
+        parentTemplateId: gameSessionMetadata.parentTemplateId,
       };
     } catch (error) {
       throw new DatabaseError(
@@ -740,5 +745,6 @@ export async function getGameSessionMetadata(
     description: gameSessionMetadata.description,
     name: gameSessionMetadata.name,
     imageDescription: gameSessionMetadata.imageDescription,
+    parentTemplateId: gameSessionMetadata.parentTemplateId,
   };
 }

@@ -33,6 +33,7 @@ import {
   DatabaseError,
   DatabaseErrorType,
 } from "@/app/lib/database-actions/error-types";
+import { createGameTemplate } from "@/app/lib/database-actions/game-template-actions";
 
 describe("Game Session Actions", () => {
   test.concurrent("should create a game session with valid data", async () => {
@@ -59,6 +60,7 @@ describe("Game Session Actions", () => {
       description,
       imageUrl,
       imageDescription,
+      null,
       initialSceneData,
     );
 
@@ -117,6 +119,7 @@ describe("Game Session Actions", () => {
           description,
           imageUrl,
           imageDescription,
+          null,
           initialSceneData,
         ),
       ).rejects.toThrowError(DatabaseError);
@@ -129,6 +132,7 @@ describe("Game Session Actions", () => {
           description,
           imageUrl,
           imageDescription,
+          null,
           initialSceneData,
         );
       } catch (error) {
@@ -154,6 +158,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -208,6 +213,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -264,6 +270,7 @@ describe("Game Session Actions", () => {
       "A test game session",
       getFakeImageUrl(1),
       "Test image",
+      null,
       {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
@@ -306,6 +313,7 @@ describe("Game Session Actions", () => {
       "A test game session",
       getFakeImageUrl(1),
       "Test image",
+      null,
       {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
@@ -351,6 +359,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -406,6 +415,7 @@ describe("Game Session Actions", () => {
       "A test game session",
       getFakeImageUrl(1),
       "Test image",
+      null,
       {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
@@ -439,6 +449,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -485,6 +496,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -513,6 +525,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -555,6 +568,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -568,6 +582,7 @@ describe("Game Session Actions", () => {
         description: "A test game session",
         imageUrl: expect.any(String),
         imageDescription: "Test image",
+        parentTemplateId: null,
       });
 
       await expect(
@@ -603,6 +618,7 @@ describe("Game Session Actions", () => {
         "A test game session",
         getFakeImageUrl(1),
         "Test image",
+        null,
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
@@ -626,6 +642,45 @@ describe("Game Session Actions", () => {
           "Game session not found under user or does not exist",
         );
       }
+    },
+  );
+
+  test.concurrent(
+    "create game session should set template ID field correctly",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
+
+      const sessionId = await createGameSession(
+        userId,
+        "Test Game Session",
+        "Once upon a time...",
+        "A test game session",
+        getFakeImageUrl(1),
+        "Test image",
+        templateId,
+        {
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Initial scene image",
+          narration: "You are in a dark forest.",
+        },
+      );
+
+      expect(
+        (await getGameSessionMetadata(userId, sessionId)).parentTemplateId,
+      ).toBe(templateId);
     },
   );
 });

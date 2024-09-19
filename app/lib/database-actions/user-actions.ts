@@ -2,9 +2,16 @@
 
 import { Prisma, PrismaClient } from "@prisma/client";
 
-import { DatabaseError, DatabaseErrorType, PrismaP2002Meta } from "./error-types";
+import {
+  DatabaseError,
+  DatabaseErrorType,
+  PrismaP2002Meta,
+} from "./error-types";
 
 import { auth } from "@/auth";
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "database-actions" });
 
 const prisma = new PrismaClient();
 
@@ -40,6 +47,8 @@ export async function createUser(
         );
       }
     }
+
+    log.error(`Failed to create user: ${error}`);
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
       "Failed to create user",

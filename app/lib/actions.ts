@@ -26,6 +26,7 @@ import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/fun
 import { inngest } from "@/inngest/client";
 import { logger } from "@/app/lib/logger";
 import { signIn } from "@/auth";
+import { createGameTemplate } from "@/app/lib/database-actions/game-template-actions";
 
 const log = logger.child({ module: "server-actions" });
 
@@ -51,6 +52,12 @@ const CreateNewSessionActionFormSchema = z.object({
   name: z.string().min(1, "Name must be non-empty!"),
   back_story: z.string().min(1, "Backstory must be non-empty!"),
   description: z.string().nullable(),
+  save_as_template: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true"),
+  make_template_public: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true"),
 });
 
 export type CreateNewGameSessionActionError = {
@@ -86,6 +93,21 @@ export async function createNewGameSessionAction(
 
   const sessionDataGenerationEnd = performance.now();
 
+  // TODO: optimize for concurrency
+  let templateId: number | null = null;
+
+  // first create session
+  if (result.data.save_as_template) {
+    templateId = await createGameTemplate(user.id, {
+      name: initialSceneGenerationResponse.name,
+      imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
+      imageDescription: initialSceneGenerationResponse.coverImageDescription,
+      description: initialSceneGenerationResponse.description,
+      backStory: initialSceneGenerationResponse.backstory,
+      isPublic: result.data.make_template_public,
+    });
+  }
+
   const newSessionId = await createGameSession(
     user.id,
     initialSceneGenerationResponse.name,
@@ -93,6 +115,7 @@ export async function createNewGameSessionAction(
     initialSceneGenerationResponse.description,
     initialSceneGenerationResponse.temporaryCoverImageUrl,
     initialSceneGenerationResponse.coverImageDescription,
+    templateId,
     {
       imageDescription: initialSceneGenerationResponse.coverImageDescription,
       imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
