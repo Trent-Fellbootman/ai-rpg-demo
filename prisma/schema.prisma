@@ -25,7 +25,7 @@ model User {
   gameSessions      GameSession[]
   gameTemplates     GameTemplate[]
   gameTemplateLikes GameTemplateLike[]
-  comments          Comment[]
+  comments          GameTemplateComment[]
 }
 
 model GameSession {
@@ -79,7 +79,7 @@ model GameTemplate {
   user               User               @relation(fields: [userId], references: [id])
   userId             Int
   likes              GameTemplateLike[]
-  comments           Comment[]
+  comments           GameTemplateComment[]
 }
 
 model GameTemplateLike {
@@ -95,7 +95,7 @@ model GameTemplateLike {
   @@unique([userId, gameTemplateId])
 }
 
-model Comment {
+model GameTemplateComment {
   id                Int          @id @default(autoincrement())
   text              String
   createdAt         DateTime     @default(now())
