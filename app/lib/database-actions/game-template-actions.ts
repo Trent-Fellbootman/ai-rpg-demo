@@ -162,7 +162,7 @@ export async function addComment(
   }
 
   // Create the comment
-  await prisma.comment.create({
+  await prisma.gameTemplateComment.create({
     data: {
       text,
       userId,
@@ -211,7 +211,7 @@ export async function deleteGameTemplate(
     });
 
     // Soft delete associated comments
-    await prisma.comment.updateMany({
+    await prisma.gameTemplateComment.updateMany({
       where: {
         gameTemplateId: templateId,
         deleted: false,
@@ -257,7 +257,7 @@ export async function deleteComment(
   userId: number,
   commentId: number,
 ): Promise<void> {
-  const comment = await prisma.comment.findFirst({
+  const comment = await prisma.gameTemplateComment.findFirst({
     where: {
       id: commentId,
       deleted: false,
@@ -278,7 +278,7 @@ export async function deleteComment(
     );
   }
 
-  await prisma.comment.update({
+  await prisma.gameTemplateComment.update({
     where: { id: commentId },
     data: {
       deleted: true,
@@ -304,7 +304,7 @@ export async function getComments(
     createdAt: Date;
   }[]
 > {
-  const comments = await prisma.comment.findMany({
+  const comments = await prisma.gameTemplateComment.findMany({
     where: {
       gameTemplateId: gameTemplateId,
       deleted: false,

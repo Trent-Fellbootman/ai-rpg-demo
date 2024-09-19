@@ -17,7 +17,7 @@ export async function deleteEverything() {
   await prisma.scene.deleteMany({});
   await prisma.gameSession.deleteMany({});
   await prisma.gameTemplateLike.deleteMany({});
-  await prisma.comment.deleteMany({});
+  await prisma.gameTemplateComment.deleteMany({});
   await prisma.gameTemplate.deleteMany({});
   await prisma.user.deleteMany({});
 

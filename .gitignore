@@ -1,6 +1,6 @@
 # secrets
 /.env
-/.env
+/.env.production
 
 # IDE
 /.idea
@@ -32,7 +32,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+.env
 
 # vercel
 .vercel
