@@ -18,6 +18,10 @@ export function getScenePlayPagePath(
   return `${constants.gamePagesRootPath}/${sessionId}/play/${sceneIndex === null ? "last" : sceneIndex}`;
 }
 
-export function getSessionViewPath(session: number) {
-  return `${constants.gamePagesRootPath}/${session}/view`;
+export function getSessionViewPath(sessionId: number) {
+  return `${constants.gamePagesRootPath}/${sessionId}/view`;
+}
+
+export function getSessionOverviewPath(sessionId: number) {
+  return `${constants.gamePagesRootPath}/${sessionId}/overview`;
 }

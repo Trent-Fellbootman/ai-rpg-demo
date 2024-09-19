@@ -3,7 +3,11 @@ import { Image } from "@nextui-org/image";
 import { Button } from "@nextui-org/button";
 import { Link } from "@nextui-org/link";
 
-import { getScenePlayPagePath, getSessionViewPath } from "@/app/lib/utils/path";
+import {
+  getScenePlayPagePath,
+  getSessionOverviewPath,
+  getSessionViewPath,
+} from "@/app/lib/utils/path";
 import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
 import { getGameSessionsByUser } from "@/app/lib/database-actions/game-session-actions";
 
@@ -23,7 +27,14 @@ export default async function GameCardsView() {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
       {userSessions.map((item, index) => (
-        <Card key={index} shadow="sm">
+        <Card
+          key={index}
+          // isHoverable
+          // isPressable
+          as={Link}
+          href={getSessionOverviewPath(item.id)}
+          shadow="sm"
+        >
           <CardBody className="overflow-visible p-0">
             <Image
               alt={item.imageDescription}
@@ -35,30 +46,8 @@ export default async function GameCardsView() {
             />
           </CardBody>
           <CardFooter className="text-small justify-between">
-            <div className="w-full flex flex-col space-y-2">
-              <p className="font-bold">{item.name}</p>
-              <div className="flex flex-row justify-end gap-1">
-                <Button
-                  as={Link}
-                  color="primary"
-                  href={getScenePlayPagePath(item.id, null)}
-                  radius="full"
-                  size="sm"
-                  variant="bordered"
-                >
-                  Play
-                </Button>
-                <Button
-                  as={Link}
-                  color="secondary"
-                  href={getSessionViewPath(item.id)}
-                  radius="full"
-                  size="sm"
-                  variant="bordered"
-                >
-                  View
-                </Button>
-              </div>
+            <div className="w-full flex flex-col space-y-2 h-5">
+              <p className="font-bold line-clamp-1">{item.name}</p>
             </div>
           </CardFooter>
         </Card>
