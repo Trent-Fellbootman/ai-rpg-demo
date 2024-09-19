@@ -61,6 +61,7 @@ describe("Game Template Actions", () => {
         name: newGameTemplateData.name,
         backstory: newGameTemplateData.backStory,
         description: newGameTemplateData.description,
+        imageDescription: newGameTemplateData.imageDescription,
         imageUrl: expect.any(String),
       });
 
@@ -130,6 +131,7 @@ describe("Game Template Actions", () => {
           name: newPublicGameTemplateData.name,
           backstory: newPublicGameTemplateData.backStory,
           description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
           imageUrl: expect.any(String),
         },
       );
@@ -140,6 +142,7 @@ describe("Game Template Actions", () => {
         name: newPublicGameTemplateData.name,
         backstory: newPublicGameTemplateData.backStory,
         description: newPublicGameTemplateData.description,
+        imageDescription: newPublicGameTemplateData.imageDescription,
         imageUrl: expect.any(String),
       });
 
@@ -149,6 +152,7 @@ describe("Game Template Actions", () => {
         name: newPrivateGameTemplateData.name,
         backstory: newPrivateGameTemplateData.backStory,
         description: newPrivateGameTemplateData.description,
+        imageDescription: newPrivateGameTemplateData.imageDescription,
         imageUrl: expect.any(String),
       });
 
@@ -198,6 +202,7 @@ describe("Game Template Actions", () => {
           name: newPublicGameTemplateData.name,
           backstory: newPublicGameTemplateData.backStory,
           description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
           imageUrl: expect.any(String),
         },
       );
@@ -208,6 +213,7 @@ describe("Game Template Actions", () => {
         name: newPublicGameTemplateData.name,
         backstory: newPublicGameTemplateData.backStory,
         description: newPublicGameTemplateData.description,
+        imageDescription: newPublicGameTemplateData.imageDescription,
         imageUrl: expect.any(String),
       });
 
@@ -217,6 +223,7 @@ describe("Game Template Actions", () => {
         name: newPrivateGameTemplateData.name,
         backstory: newPrivateGameTemplateData.backStory,
         description: newPrivateGameTemplateData.description,
+        imageDescription: newPrivateGameTemplateData.imageDescription,
         imageUrl: expect.any(String),
       });
 
@@ -423,6 +430,7 @@ describe("Game Template Actions", () => {
         name: "Test Template",
         backstory: "This is a test backstory.",
         description: "A test template",
+        imageDescription: "Template image",
         imageUrl: expect.any(String),
       });
     },
