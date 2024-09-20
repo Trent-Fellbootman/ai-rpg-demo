@@ -457,20 +457,22 @@ export async function getGameTemplateMetadata(
   }
 }
 
-export async function getGameTemplatesByUser(userId: number): Promise<
-  {
-    id: number;
-    name: string;
-    isPublic: boolean;
-    isLiked: boolean;
-    likes: number;
-    comments: number;
-    description: string | null;
-    backstory: string;
-    imageUrl: string;
-    imageDescription: string;
-  }[]
-> {
+export interface GameTemplateMetadata {
+  id: number;
+  name: string;
+  isPublic: boolean;
+  isLiked: boolean;
+  likes: number;
+  comments: number;
+  description: string | null;
+  backstory: string;
+  imageUrl: string;
+  imageDescription: string;
+}
+
+export async function getGameTemplatesByUser(
+  userId: number,
+): Promise<GameTemplateMetadata[]> {
   const imageUrlExpiredTemplates = await prisma.gameTemplate.findMany({
     where: {
       userId: userId,

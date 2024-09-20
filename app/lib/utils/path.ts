@@ -1,6 +1,7 @@
 export const constants = {
   loginPagePath: "/login",
   signupPagePath: "/signup",
+  homePagePath: "/games/home",
   gamePagesRootPath: "/games",
   gameSessionsPagesRootPath: "/games/sessions",
   gameSessionsDashboardPagePath: "/games/sessions",

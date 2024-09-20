@@ -7,25 +7,16 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
-import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
-import { getGameTemplatesByUser } from "@/app/lib/database-actions/game-template-actions";
+import { GameTemplateMetadata } from "@/app/lib/database-actions/game-template-actions";
 
-export default async function GameTemplateCardsView() {
-  const userId = (await getCurrentUser()).id;
-
-  const templates = await getGameTemplatesByUser(userId);
-
-  if (templates.length === 0) {
-    return (
-      <p className="text-center font-bold text-xl">
-        You haven&apos;t created any game templates currently.
-      </p>
-    );
-  }
-
+export default async function GameTemplateCardsView({
+  gameTemplatesMetadata,
+}: {
+  gameTemplatesMetadata: GameTemplateMetadata[];
+}) {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
-      {templates.map((item, index) => (
+      {gameTemplatesMetadata.map((item, index) => (
         <Card
           key={index}
           as={Link}
