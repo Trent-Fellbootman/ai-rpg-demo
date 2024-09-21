@@ -2,21 +2,22 @@ import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
 import { Link } from "@nextui-org/link";
 import {
-  ChatBubbleBottomCenterIcon, EyeIcon,
+  ChatBubbleBottomCenterIcon,
+  EyeIcon,
   HeartIcon,
-  PlayIcon
+  PlayIcon,
 } from "@heroicons/react/24/outline";
 
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
-import { GameTemplateMetadata } from "@/app/lib/database-actions/game-template-actions";
+import {
+  GameTemplateMetadata,
+  GameTemplateStatistics,
+} from "@/app/lib/database-actions/game-template-actions";
 
 export default async function GameTemplateCardsView({
   gameTemplatesMetadata,
 }: {
-  gameTemplatesMetadata: (GameTemplateMetadata & {
-    visitCount: number;
-    childSessionCount: number;
-  })[];
+  gameTemplatesMetadata: (GameTemplateMetadata & GameTemplateStatistics)[];
 }) {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
@@ -48,15 +49,15 @@ export default async function GameTemplateCardsView({
                 <div className="w-6">
                   <PlayIcon />
                 </div>
-                <p>{item.childSessionCount}</p>
+                <p>{item.childSessionsCount}</p>
                 <div className="w-6">
                   <HeartIcon />
                 </div>
-                <p>{item.likes}</p>
+                <p>{item.undeletedLikeCount}</p>
                 <div className="w-6">
                   <ChatBubbleBottomCenterIcon />
                 </div>
-                <p>{item.comments}</p>
+                <p>{item.undeletedCommentCount}</p>
               </div>
             </div>
           </CardFooter>
