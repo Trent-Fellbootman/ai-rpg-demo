@@ -29,7 +29,7 @@ import {
   getGameTemplateMetadata,
   getGameTemplatesByUser,
   getGameTemplateStatistics,
-  getRecommendedGameTemplates,
+  getRecommendedGameTemplates, markGameTemplateAsVisited, markGameTemplateAsRecommended
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
@@ -1049,4 +1049,90 @@ describe("Game Template Actions", () => {
       expectedTemplate1,
     ]);
   });
+
+  test.concurrent(
+    "should mark a game template as visited and update statistics",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
+
+      // Get initial statistics
+      const initialStatistics = await getGameTemplateStatistics(templateId);
+      const initialVisitCount = initialStatistics.visitCount;
+
+      // Mark the template as visited
+      await markGameTemplateAsVisited(userId, templateId);
+
+      // Get updated statistics
+      const updatedStatistics = await getGameTemplateStatistics(templateId);
+      const updatedVisitCount = updatedStatistics.visitCount;
+
+      expect(updatedVisitCount).toBe(initialVisitCount + 1);
+
+      // Try marking the same template as visited again
+      await markGameTemplateAsVisited(userId, templateId);
+
+      // Get final statistics
+      const finalStatistics = await getGameTemplateStatistics(templateId);
+      const finalVisitCount = finalStatistics.visitCount;
+
+      // The visit count should not increase because it's the same user visiting the same template
+      expect(finalVisitCount).toBe(updatedVisitCount);
+    },
+  );
+
+  test.concurrent(
+    "should mark a game template as recommended and update statistics",
+    async () => {
+      const userId = await createUser(
+        `testuser-${uuidv4()}@example.com`,
+        "hashedpassword",
+        "Test User",
+      );
+
+      const templateId = await createGameTemplate(userId, {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      });
+
+      // Get initial statistics
+      const initialStatistics = await getGameTemplateStatistics(templateId);
+      const initialPushCount = initialStatistics.trendingPushCount;
+
+      // Mark the template as recommended
+      await markGameTemplateAsRecommended(userId, templateId);
+
+      // Get updated statistics
+      const updatedStatistics = await getGameTemplateStatistics(templateId);
+      const updatedPushCount = updatedStatistics.trendingPushCount;
+
+      expect(updatedPushCount).toBe(initialPushCount + 1);
+
+      // Try marking the same template as recommended again
+      await markGameTemplateAsRecommended(userId, templateId);
+
+      // Get final statistics
+      const finalStatistics = await getGameTemplateStatistics(templateId);
+      const finalPushCount = finalStatistics.trendingPushCount;
+
+      // The push count should not increase because it's the same user recommending the same template
+      expect(finalPushCount).toBe(updatedPushCount);
+    },
+  );
 });

@@ -677,7 +677,11 @@ export async function getRecommendedGameTemplates(
   userId: number,
   limit: number = 5,
 ): Promise<
-  (GameTemplateMetadata & { childSessionCount: number; score: number })[]
+  (GameTemplateMetadata & {
+    childSessionCount: number;
+    visitCount: number;
+    score: number;
+  })[]
 > {
   const rawQuery = Prisma.sql`
       SELECT *
@@ -693,6 +697,7 @@ export async function getRecommendedGameTemplates(
                 gts."historicalLikeCount",
                 gts."historicalCommentCount",
                 gts."childSessionsCount",
+                gts."visitCount",
                 -- Score calculation
                 gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount")
                 - (CASE
@@ -740,6 +745,7 @@ export async function getRecommendedGameTemplates(
       historicalLikeCount: number;
       historicalCommentCount: number;
       childSessionsCount: number;
+      visitCount: number;
       score: number;
     }[]
   >(rawQuery);
@@ -777,6 +783,29 @@ export async function getRecommendedGameTemplates(
     likes: Number(gameTemplate.historicalLikeCount),
     comments: Number(gameTemplate.historicalCommentCount),
     childSessionCount: Number(gameTemplate.childSessionsCount),
+    visitCount: Number(gameTemplate.visitCount),
     score: Number(gameTemplate.score),
   }));
+}
+
+export async function markGameTemplateAsVisited(
+  userId: number,
+  gameTemplateId: number,
+) {
+  await prisma.$executeRaw`
+    INSERT INTO "GameTemplateVisit" ("userId", "gameTemplateId")
+    VALUES (${userId}, ${gameTemplateId})
+    ON CONFLICT ("userId", "gameTemplateId") DO NOTHING;
+  `;
+}
+
+export async function markGameTemplateAsRecommended(
+  userId: number,
+  gameTemplateId: number,
+) {
+  await prisma.$executeRaw`
+    INSERT INTO "GameTemplatePush" ("userId", "gameTemplateId")
+    VALUES (${userId}, ${gameTemplateId})
+    ON CONFLICT ("userId", "gameTemplateId") DO NOTHING;
+  `;
 }

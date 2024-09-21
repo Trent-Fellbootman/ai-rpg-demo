@@ -25,11 +25,12 @@ export async function MyGameTemplatesView() {
   return (
     <GameTemplateCardsView
       gameTemplatesMetadata={templates.map((template) => {
+        const stats = statistics.filter((stat) => stat.id === template.id)[0];
+
         return {
           ...template,
-          childSessionCount: statistics.filter(
-            (stat) => stat.id === template.id,
-          )[0].childSessionsCount,
+          childSessionCount: stats.childSessionsCount,
+          visitCount: stats.visitCount,
         };
       })}
     />

@@ -2,9 +2,9 @@ import { Card, CardBody, CardFooter } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
 import { Link } from "@nextui-org/link";
 import {
-  ChatBubbleBottomCenterIcon,
+  ChatBubbleBottomCenterIcon, EyeIcon,
   HeartIcon,
-  PlayIcon,
+  PlayIcon
 } from "@heroicons/react/24/outline";
 
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
@@ -14,6 +14,7 @@ export default async function GameTemplateCardsView({
   gameTemplatesMetadata,
 }: {
   gameTemplatesMetadata: (GameTemplateMetadata & {
+    visitCount: number;
     childSessionCount: number;
   })[];
 }) {
@@ -40,6 +41,10 @@ export default async function GameTemplateCardsView({
             <div className="w-full flex flex-col space-y-2">
               <p className="font-bold line-clamp-1">{item.name}</p>
               <div className="w-full flex flex-row justify-end space-x-2 items-center">
+                <div className="w-6">
+                  <EyeIcon />
+                </div>
+                <p>{item.visitCount}</p>
                 <div className="w-6">
                   <PlayIcon />
                 </div>

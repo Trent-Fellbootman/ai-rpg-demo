@@ -1,8 +1,8 @@
 import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
 import {
-  ChatBubbleBottomCenterIcon,
-  PlayIcon,
+  ChatBubbleBottomCenterIcon, EyeIcon,
+  PlayIcon
 } from "@heroicons/react/24/outline";
 import { Card, CardBody } from "@nextui-org/card";
 
@@ -41,6 +41,12 @@ export default async function GameTemplateOverview({
       <Card>
         <CardBody>
           <div className="flex flex-row items-center space-x-8">
+            <div className="flex flex-row items-center space-x-2">
+              <div className="w-8">
+                <EyeIcon />
+              </div>
+              <p>{statistics.visitCount}</p>
+            </div>
             <div className="flex flex-row items-center space-x-2">
               <div className="w-8">
                 <PlayIcon />
