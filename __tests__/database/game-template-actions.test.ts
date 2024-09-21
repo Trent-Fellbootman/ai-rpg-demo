@@ -10,6 +10,9 @@ vi.mock("next/headers", () => ({
 }));
 
 import { v4 as uuidv4 } from "uuid";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 import { getFakeImageUrl } from "./utils";
 
@@ -26,12 +29,16 @@ import {
   getGameTemplateMetadata,
   getGameTemplatesByUser,
   getGameTemplateStatistics,
+  getRecommendedGameTemplates,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
   DatabaseErrorType,
 } from "@/app/lib/database-actions/error-types";
-import { addSceneToSession, createGameSession } from "@/app/lib/database-actions/game-session-actions";
+import {
+  addSceneToSession,
+  createGameSession,
+} from "@/app/lib/database-actions/game-session-actions";
 
 describe("Game Template Actions", () => {
   test.concurrent(
@@ -695,7 +702,12 @@ describe("Game Template Actions", () => {
 
     // Add and delete comments
     const comment1Id = await addComment(userId, template1Id, "Comment 1");
-    const comment2Id = await addComment(anotherUserId, template1Id, "Comment 2");
+    const comment2Id = await addComment(
+      anotherUserId,
+      template1Id,
+      "Comment 2",
+    );
+
     await deleteComment(anotherUserId, comment2Id);
 
     await addComment(userId, template2Id, "Comment 3");
@@ -779,5 +791,250 @@ describe("Game Template Actions", () => {
       visitCount: 0, // Assuming no visits for simplicity
       trendingPushCount: 0, // Assuming no trending pushes for simplicity
     });
+  });
+
+  // This test must be invoked separately from other because it depends on the global state
+  test.skip("should correctly recommend game templates based on the exclusion and score rules", async () => {
+    // Generate unique emails using UUID
+    const user1Email = `user1-${uuidv4()}@example.com`;
+    const user2Email = `user2-${uuidv4()}@example.com`;
+    const user3Email = `user3-${uuidv4()}@example.com`;
+    const user4Email = `user4-${uuidv4()}@example.com`;
+    const user5Email = `user5-${uuidv4()}@example.com`;
+
+    // Create multiple users
+    const user1Id = await createUser(user1Email, "hashedpassword", "User 1");
+    const user2Id = await createUser(user2Email, "hashedpassword", "User 2");
+    const user3Id = await createUser(user3Email, "hashedpassword", "User 3");
+    const user4Id = await createUser(user4Email, "hashedpassword", "User 4");
+    const user5Id = await createUser(user5Email, "hashedpassword", "User 5");
+
+    // Template data
+    const templateData = {
+      imageUrl: getFakeImageUrl(0),
+      imageDescription: "Description",
+      backStory: "Backstory",
+      description: "Description",
+      isPublic: true,
+    };
+
+    // Create multiple game templates for user1
+    const template1Id = await createGameTemplate(user3Id, {
+      ...templateData,
+      name: "Template 1",
+    });
+
+    const template2Id = await createGameTemplate(user3Id, {
+      ...templateData,
+      name: "Template 2",
+    });
+
+    const template3Id = await createGameTemplate(user3Id, {
+      ...templateData,
+      name: "Template 3",
+    });
+
+    const template4Id = await createGameTemplate(user3Id, {
+      ...templateData,
+      name: "Template 4",
+    });
+
+    // Create a private template for user1
+    await createGameTemplate(user1Id, {
+      ...templateData,
+      name: "Private Template",
+      isPublic: false,
+    });
+
+    await createGameTemplate(user2Id, {
+      ...templateData,
+      name: "Private Template",
+      isPublic: false,
+    });
+
+    await createGameTemplate(user3Id, {
+      ...templateData,
+      name: "Private Template",
+      isPublic: false,
+    });
+
+    const session2Id = await createGameSession(
+      user4Id,
+      "Template 2 derived session",
+      "Backstory",
+      "Description",
+      getFakeImageUrl(0),
+      "Image description",
+      template2Id,
+      {
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Scene 1 image",
+        narration: "You are in a dark forest.",
+      },
+    );
+
+    const anotherSession2Id = await createGameSession(
+      user4Id,
+      "Template 2 derived session",
+      "Backstory",
+      "Description",
+      getFakeImageUrl(0),
+      "Image description",
+      template2Id,
+      {
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Scene 1 image",
+        narration: "You are in a dark forest.",
+      },
+    );
+
+    await addSceneToSession(user4Id, session2Id, "Go north", {
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Scene 2 image",
+      narration: "You arrive at a clearing.",
+    });
+
+    // Simulate visits and pushes by creating records in relevant tables
+    await prisma.gameTemplateVisit.createMany({
+      data: [
+        { userId: user2Id, gameTemplateId: template1Id },
+        { userId: user1Id, gameTemplateId: template2Id }, // Just a different visit record
+      ],
+    });
+
+    await prisma.gameTemplatePush.createMany({
+      data: [
+        { userId: user1Id, gameTemplateId: template1Id },
+        { userId: user2Id, gameTemplateId: template2Id }, // Pushed to user2
+        { userId: user2Id, gameTemplateId: template3Id }, // Pushed to user2
+      ],
+    });
+
+    // User2 likes and comments on template 1 and 2
+    await addLike(user2Id, template1Id);
+    await addLike(user2Id, template2Id);
+    await addLike(user1Id, template4Id);
+    await addComment(user2Id, template1Id, "Great template!");
+    await addComment(user2Id, template2Id, "Nice work!");
+
+    // Expected exclusions
+    // User 1: Template 2 (visited), template 4 (liked)
+    // User 2: template 1 (visited), template 2 (liked)
+    // User 3: Everything (owned)
+    // User 4: Template 2 (derived session)
+    // User 5: Nothing
+
+    // Scores:
+    // Template 1: 1 visit, 1 like, 1 comment, 1 push, score = 16
+    // Template 2: 1 visit, 1 like, 1 comment, 1 push, 1 action, score = 17
+    // Template 3: 1 push, score = 10
+    // Template 4: 1 like, score = 22
+
+    // Expected recommendations:
+    // User 1: Template 1 then 3 (more visits/likes/comments first)
+    // User 2: Template 4 then 3 (fewer pushes first)
+    // User 3: Nothing
+    // User 4: Template 4 then 1 then 3
+    // User 5: Template 4, 2, 1 (truncating template 3)
+
+    // Test the recommendation system
+    const user1RecommendedTemplates = await getRecommendedGameTemplates(
+      user1Id,
+      3,
+    );
+    const user2RecommendedTemplates = await getRecommendedGameTemplates(
+      user2Id,
+      3,
+    );
+    const user3RecommendedTemplates = await getRecommendedGameTemplates(
+      user3Id,
+      3,
+    );
+    const user4RecommendedTemplates = await getRecommendedGameTemplates(
+      user4Id,
+      3,
+    );
+    const user5RecommendedTemplates = await getRecommendedGameTemplates(
+      user5Id,
+      3,
+    );
+
+    const expectedTemplate1 = {
+      id: template1Id,
+      name: "Template 1",
+      isPublic: true,
+      description: "Description",
+      backstory: "Backstory",
+      imageUrl: expect.any(String),
+      imageDescription: "Description",
+      isLiked: false,
+      likes: 1,
+      comments: 1,
+      score: 16,
+    };
+
+    const expectedTemplate2 = {
+      id: template2Id,
+      name: "Template 2",
+      isPublic: true,
+      description: "Description",
+      backstory: "Backstory",
+      imageUrl: expect.any(String),
+      imageDescription: "Description",
+      isLiked: false,
+      likes: 1,
+      comments: 1,
+      score: 17,
+    };
+
+    // Expected template data for the results
+    const expectedTemplate3 = {
+      id: template3Id,
+      name: "Template 3",
+      isPublic: true,
+      description: "Description",
+      backstory: "Backstory",
+      imageUrl: expect.any(String),
+      imageDescription: "Description",
+      isLiked: false,
+      likes: 0,
+      comments: 0,
+      score: 10,
+    };
+
+    const expectedTemplate4 = {
+      id: template4Id,
+      name: "Template 4",
+      isPublic: true,
+      description: "Description",
+      backstory: "Backstory",
+      imageUrl: expect.any(String),
+      imageDescription: "Description",
+      isLiked: false,
+      likes: 1,
+      comments: 0,
+      score: 22,
+    };
+
+    // Validate the results
+    expect(user1RecommendedTemplates).toEqual([
+      expectedTemplate1,
+      expectedTemplate3,
+    ]);
+    expect(user2RecommendedTemplates).toEqual([
+      expectedTemplate4,
+      expectedTemplate3,
+    ]);
+    expect(user3RecommendedTemplates).toEqual([]);
+    expect(user4RecommendedTemplates).toEqual([
+      expectedTemplate4,
+      expectedTemplate1,
+      expectedTemplate3,
+    ]);
+    expect(user5RecommendedTemplates).toEqual([
+      expectedTemplate4,
+      expectedTemplate2,
+      expectedTemplate1,
+    ]);
   });
 });

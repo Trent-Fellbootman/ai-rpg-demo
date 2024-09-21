@@ -653,80 +653,6 @@ export async function refreshGameTemplateImageUrls(
   }
 }
 
-export async function getTrendingGameTemplates(
-  userId: number,
-): Promise<GameTemplateMetadata[]> {
-  const gameTemplates = await prisma.gameTemplate.findMany({
-    take: 10,
-    orderBy: {
-      likes: {
-        _count: "desc",
-      },
-    },
-    where: {
-      deleted: false,
-      isPublic: true,
-    },
-    include: {
-      likes: {
-        where: {
-          deleted: false,
-          userId: userId,
-        },
-      },
-      _count: {
-        select: {
-          likes: {
-            where: {
-              deleted: false,
-            },
-          },
-          comments: {
-            where: {
-              deleted: false,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const imageUrls: Map<number, string | null> = new Map();
-
-  gameTemplates.forEach((template) => {
-    imageUrls.set(template.id, template.imageUrl);
-  });
-
-  const newImageUrls =
-    // TODO: optimize
-    await refreshGameTemplateImageUrls(
-      gameTemplates
-        .filter(
-          (template) =>
-            template.imageUrl === null ||
-            template.imageUrlExpiration! < new Date(),
-        )
-        .map((template) => template.id),
-    );
-
-  newImageUrls.forEach((newUrl, templateId) => {
-    imageUrls.set(templateId, newUrl);
-  });
-
-  return gameTemplates.map((gameTemplate) => ({
-    id: gameTemplate.id,
-    name: gameTemplate.name,
-    isPublic: gameTemplate.isPublic,
-    description: gameTemplate.description,
-    backstory: gameTemplate.backstory,
-    imageUrl: imageUrls.get(gameTemplate.id)!!,
-    imageDescription: gameTemplate.imageDescription,
-    isLiked: gameTemplate.likes.length > 0,
-    likes: gameTemplate._count.likes,
-    comments: gameTemplate._count.comments,
-  }));
-}
-
 export async function getGameTemplateStatistics(
   gameTemplateId: number,
 ): Promise<GameTemplateStatistics> {
@@ -744,4 +670,101 @@ export async function getGameTemplateStatistics(
   }
 
   return statistics;
+}
+
+export async function getRecommendedGameTemplates(
+  userId: number,
+  limit: number = 5,
+): Promise<(GameTemplateMetadata & { score: number })[]> {
+  const rawQuery = Prisma.sql`
+      SELECT *
+      FROM (SELECT DISTINCT
+            ON (gt."id")
+                gt."id",
+                gt."name",
+                gt."description",
+                gt."backstory",
+                gt."imageUrl",
+                gt."imageUrlExpiration",
+                gt."imageDescription",
+                gts."historicalLikeCount",
+                gts."historicalCommentCount",
+                gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount") AS score
+            FROM
+                "GameTemplate" gt
+                JOIN
+                "GameTemplateStatistics" gts
+            ON gt.id = gts.id
+                LEFT JOIN
+                "GameTemplateVisit" gtv ON gt.id = gtv."gameTemplateId" AND gtv."userId" = ${userId}
+                LEFT JOIN
+                "GameTemplatePush" gtp ON gt.id = gtp."gameTemplateId" AND gtp."userId" = ${userId}
+                LEFT JOIN
+                "GameTemplateLike" gtl ON gt.id = gtl."gameTemplateId" AND gtl."userId" = ${userId} AND gtl."deleted" = false
+                LEFT JOIN
+                "GameTemplateComment" gtc ON gt.id = gtc."gameTemplateId" AND gtc."userId" = ${userId} AND gtc."deleted" = false
+                LEFT JOIN
+                "GameSession" gs ON gt.id = gs."parentTemplateId" AND gs."userId" = ${userId} AND gs."deleted" = false
+            WHERE
+                gt."userId" != ${userId}
+              AND gt."isPublic" = true
+              AND gt."deleted" = false
+              AND gtv."id" IS NULL
+              AND gtl."id" IS NULL
+              AND gtc."id" IS NULL
+              AND gs."id" IS NULL
+            ORDER BY
+                gt."id", score DESC) AS templates
+      ORDER BY score DESC LIMIT ${limit}
+  `;
+
+  const gameTemplates = await prisma.$queryRaw<
+    {
+      id: number;
+      name: string;
+      description: string | null;
+      backstory: string;
+      imageUrl: string | null;
+      imageUrlExpiration: Date | null;
+      imageDescription: string;
+      historicalLikeCount: number;
+      historicalCommentCount: number;
+      score: number;
+    }[]
+  >(rawQuery);
+
+  // Process image URLs, regenerate if necessary
+  const imageUrls: Map<number, string | null> = new Map();
+
+  gameTemplates.forEach((template) => {
+    imageUrls.set(template.id, template.imageUrl);
+  });
+
+  const newImageUrls = await refreshGameTemplateImageUrls(
+    gameTemplates
+      .filter(
+        (template) =>
+          template.imageUrl === null ||
+          template.imageUrlExpiration! < new Date(),
+      )
+      .map((template) => template.id),
+  );
+
+  newImageUrls.forEach((newUrl, templateId) => {
+    imageUrls.set(templateId, newUrl);
+  });
+
+  return gameTemplates.map((gameTemplate) => ({
+    id: gameTemplate.id,
+    name: gameTemplate.name,
+    isPublic: true,
+    description: gameTemplate.description,
+    backstory: gameTemplate.backstory,
+    imageUrl: imageUrls.get(gameTemplate.id)!!,
+    imageDescription: gameTemplate.imageDescription,
+    isLiked: false,
+    likes: Number(gameTemplate.historicalLikeCount),
+    comments: Number(gameTemplate.historicalCommentCount),
+    score: Number(gameTemplate.score),
+  }));
 }
