@@ -49,6 +49,7 @@ export function LikeButton({
           isIconOnly
           aria-label="Like"
           isLoading={isProcessing}
+          size="sm"
           type="submit"
           variant="light"
         >

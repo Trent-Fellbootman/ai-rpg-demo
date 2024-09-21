@@ -21,6 +21,7 @@ export function CommentInputForm({
     PostCommentActionResponse | undefined
   >(undefined);
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
+  const [commentText, setCommentText] = useState<string>("");
 
   const formAction = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,13 +33,22 @@ export function CommentInputForm({
     const response = await postCommentAction(userId, gameTemplateId, formData);
 
     setResponseState(response);
+    if (!response.errors) {
+      setCommentText("");
+    }
     setIsProcessingAction(false);
   };
 
   return (
     <form onSubmit={formAction}>
       <div className="flex flex-col">
-        <Textarea label="Post a comment" name="text" placeholder="Input comment..." />
+        <Textarea
+          label="Post a comment"
+          name="text"
+          placeholder="Input comment..."
+          value={commentText}
+          onValueChange={(newValue) => setCommentText(newValue)}
+        />
         {responseState?.errors?.fieldErrors?.text &&
           responseState?.errors.fieldErrors.text.map((e, index) => (
             <p key={index} className="text-red-500">

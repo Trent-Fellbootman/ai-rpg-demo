@@ -16,7 +16,10 @@ import {
   tryLockSessionUntilAcquire,
   unlockSession,
 } from "./database-actions/game-session-actions";
-import { generateGameSessionData } from "./data-generation/generate-session-data";
+import {
+  generateGameSessionData,
+  generateInitialSceneData,
+} from "./data-generation/generate-session-data";
 import {
   generateNextSceneData,
   NextSceneGenerationResponse,
@@ -30,6 +33,7 @@ import { signIn } from "@/auth";
 import {
   addComment,
   createGameTemplate,
+  getGameTemplateMetadata,
 } from "@/app/lib/database-actions/game-template-actions";
 
 const log = logger.child({ module: "server-actions" });
@@ -69,6 +73,62 @@ export type CreateNewGameSessionActionError = {
     [Key in keyof z.infer<typeof CreateNewSessionActionFormSchema>]?: string[];
   };
 };
+
+export async function createGameSessionFromTemplateAction(
+  userId: number,
+  templateId: number,
+) {
+  const authorizationStart = performance.now();
+
+  const user = await getCurrentUser();
+
+  const authorizationEnd = performance.now();
+
+  // TODO: only get the fields that we really need
+  const templateMetadata = await getGameTemplateMetadata(userId, templateId);
+
+  const templateDataRetrievalEnd = performance.now();
+
+  // no need for authorization; database constraints will enforce valid user ID automatically
+
+  const initialSceneGenerationResponse = await generateInitialSceneData(
+    templateMetadata.name,
+    templateMetadata.backstory,
+    templateMetadata.description,
+    templateMetadata.imageUrl,
+    templateMetadata.imageDescription,
+  );
+
+  const initialSceneDataGenerationEnd = performance.now();
+
+  // TODO: optimize for concurrency
+  const newSessionId = await createGameSession(
+    user.id,
+    templateMetadata.name,
+    templateMetadata.backstory,
+    templateMetadata.description,
+    templateMetadata.imageUrl,
+    templateMetadata.imageDescription,
+    templateId,
+    {
+      imageDescription: initialSceneGenerationResponse.imageDescription,
+      imageUrl: initialSceneGenerationResponse.imageUrl,
+      narration: initialSceneGenerationResponse.narration,
+    },
+  );
+
+  const databaseUpdateEnd = performance.now();
+
+  log.debug(`Finished creating new session from template. Statistics:
+- Authorization: ${authorizationEnd - authorizationStart}ms
+- Template data retrieval: ${templateDataRetrievalEnd - authorizationEnd}ms
+- Initial scene data generation: ${initialSceneDataGenerationEnd - templateDataRetrievalEnd}ms
+- Database update: ${databaseUpdateEnd - initialSceneDataGenerationEnd}ms
+- Total: ${databaseUpdateEnd - authorizationStart}ms`);
+
+  // redirect to new session
+  redirect(getScenePlayPagePath(newSessionId, null));
+}
 
 export async function createNewGameSessionAction(
   formData: FormData,

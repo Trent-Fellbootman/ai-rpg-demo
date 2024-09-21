@@ -4,6 +4,7 @@ import { Link } from "@nextui-org/link";
 import {
   ChatBubbleBottomCenterIcon,
   HeartIcon,
+  PlayIcon,
 } from "@heroicons/react/24/outline";
 
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
@@ -12,7 +13,9 @@ import { GameTemplateMetadata } from "@/app/lib/database-actions/game-template-a
 export default async function GameTemplateCardsView({
   gameTemplatesMetadata,
 }: {
-  gameTemplatesMetadata: GameTemplateMetadata[];
+  gameTemplatesMetadata: (GameTemplateMetadata & {
+    childSessionCount: number;
+  })[];
 }) {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
@@ -37,6 +40,10 @@ export default async function GameTemplateCardsView({
             <div className="w-full flex flex-col space-y-2">
               <p className="font-bold line-clamp-1">{item.name}</p>
               <div className="w-full flex flex-row justify-end space-x-2 items-center">
+                <div className="w-6">
+                  <PlayIcon />
+                </div>
+                <p>{item.childSessionCount}</p>
                 <div className="w-6">
                   <HeartIcon />
                 </div>

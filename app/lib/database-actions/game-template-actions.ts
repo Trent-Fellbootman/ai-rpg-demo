@@ -653,6 +653,7 @@ export async function refreshGameTemplateImageUrls(
   }
 }
 
+// TODO: add authorization
 export async function getGameTemplateStatistics(
   gameTemplateId: number,
 ): Promise<GameTemplateStatistics> {
@@ -675,7 +676,9 @@ export async function getGameTemplateStatistics(
 export async function getRecommendedGameTemplates(
   userId: number,
   limit: number = 5,
-): Promise<(GameTemplateMetadata & { score: number })[]> {
+): Promise<
+  (GameTemplateMetadata & { childSessionCount: number; score: number })[]
+> {
   const rawQuery = Prisma.sql`
       SELECT *
       FROM (SELECT DISTINCT
@@ -689,6 +692,7 @@ export async function getRecommendedGameTemplates(
                 gt."imageDescription",
                 gts."historicalLikeCount",
                 gts."historicalCommentCount",
+                gts."childSessionsCount",
                 -- Score calculation
                 gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount")
                 - (CASE
@@ -735,6 +739,7 @@ export async function getRecommendedGameTemplates(
       imageDescription: string;
       historicalLikeCount: number;
       historicalCommentCount: number;
+      childSessionsCount: number;
       score: number;
     }[]
   >(rawQuery);
@@ -771,6 +776,7 @@ export async function getRecommendedGameTemplates(
     isLiked: false,
     likes: Number(gameTemplate.historicalLikeCount),
     comments: Number(gameTemplate.historicalCommentCount),
+    childSessionCount: Number(gameTemplate.childSessionsCount),
     score: Number(gameTemplate.score),
   }));
 }

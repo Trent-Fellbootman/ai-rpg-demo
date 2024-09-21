@@ -1,5 +1,5 @@
-import { TrendingGameTemplatesView } from "@/app/ui/game-templates/trending-game-templates-view";
+import { RecommendedGameTemplatesView } from "@/app/ui/game-templates/recommended-game-templates-view";
 
 export default function Home() {
-  return <TrendingGameTemplatesView />;
+  return <RecommendedGameTemplatesView />;
 }

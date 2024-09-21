@@ -115,10 +115,10 @@ view GameTemplateStatistics {
   // The number of likes (including deleted) in history
   historicalLikeCount           Int
   // The number of undeleted comments
-  undeletedCommentCount                  Int
+  undeletedCommentCount         Int
   // The number of comments (including deleted) in history
-  historicalCommentCount         Int
-  // The number of child sessions
+  historicalCommentCount        Int
+  // The number of child (including deleted) sessions
   childSessionsCount            Int
   // The number actions taken (scene count - 1 for a session) in all game sessions created from this template
   childSessionsUserActionsCount Int

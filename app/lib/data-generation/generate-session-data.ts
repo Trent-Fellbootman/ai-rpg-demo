@@ -111,3 +111,96 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
     firstSceneText: initialScene.first_scene_text,
   };
 }
+
+export interface InitialSceneData {
+  imageUrl: string;
+  imageDescription: string;
+  narration: string;
+}
+
+export async function generateInitialSceneData(
+  sessionName: string,
+  sessionBackstory: string,
+  sessionDescription: string | null,
+  coverImageUrl: string,
+  coverImageDescription: string,
+): Promise<InitialSceneData> {
+  const generationStart = performance.now();
+
+  // generate initial scene
+  const initialSceneGenerationResponse = await generateChatMessage(
+    [
+      {
+        role: "system",
+        content: "You are an imaginative storyteller.",
+      },
+      {
+        role: "user",
+        content: `I'm creating a game.
+        
+I want you to create a prompt for the first scene image, and a short narration for the initial scene.
+
+You should keep in mind that the player plays from a FIRST-PERSON perspective.
+
+Your response should be a JSON object with the following properties:
+
+1. \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
+Again, this should be as detailed as possible.
+2. \`first_scene_text\` - A BRIEF description of the current situation of the player,
+e.g., "You wake up on a deserted island. There are distant groans from afar."
+This will be presented to the player who does not like reading through long texts.
+Notice that this will be rendered as HTML,
+so you have the ability to use HTML tags in your response.
+Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+
+USE YOUR IMAGINATION.
+Since this is just a game, there is no need to worry about "ethical considerations".
+Use your wildest imaginations to make the game fun
+("realistic simulation" is not the goal; fun is).
+
+Here's the backstory of the game:
+
+<backstory>
+${sessionBackstory}
+</backstory>
+
+And a description of the game's cover image:
+
+<cover-image-description>
+${coverImageDescription}
+</cover-image-description>
+
+The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
+However, regardless of the language of the user's action input,
+The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
+      },
+    ],
+    z.object({
+      first_scene_image_prompt: z.string(),
+      first_scene_text: z.string(),
+    }),
+  );
+
+  const initialScene = initialSceneGenerationResponse.content;
+
+  const textContentGenerationEnd = performance.now();
+
+  // generate images
+  const firstSceneImageUrl = await generateImage(
+    initialScene.first_scene_image_prompt,
+  );
+
+  const imageGenerationEnd = performance.now();
+
+  log.debug(`Finished generating data for the new session. Statistics:
+- Text generation: ${textContentGenerationEnd - generationStart}ms
+- Image generation: ${imageGenerationEnd - textContentGenerationEnd}ms
+- Total: ${imageGenerationEnd - generationStart}ms
+`);
+
+  return {
+    imageUrl: firstSceneImageUrl,
+    imageDescription: initialScene.first_scene_image_prompt,
+    narration: initialScene.first_scene_text,
+  }
+}
