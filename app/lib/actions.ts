@@ -24,7 +24,7 @@ import {
   generateNextSceneData,
   NextSceneGenerationResponse,
 } from "./data-generation/generate-next-scene-data";
-import { getScenePlayPagePath, getTemplateOverviewPath } from "./utils/path";
+import { getScenePlayPagePath, getSessionOverviewPath, getTemplateOverviewPath } from "./utils/path";
 
 import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
@@ -127,7 +127,7 @@ export async function createGameSessionFromTemplateAction(
 - Total: ${databaseUpdateEnd - authorizationStart}ms`);
 
   // redirect to new session
-  redirect(getScenePlayPagePath(newSessionId, null));
+  redirect(getSessionOverviewPath(newSessionId));
 }
 
 export async function createNewGameSessionAction(
