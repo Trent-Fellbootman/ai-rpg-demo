@@ -33,7 +33,7 @@ import { signIn } from "@/auth";
 import {
   addComment,
   createGameTemplate,
-  getGameTemplateMetadata,
+  getGameTemplateMetadataAndStatistics,
 } from "@/app/lib/database-actions/game-template-actions";
 
 const log = logger.child({ module: "server-actions" });
@@ -85,7 +85,7 @@ export async function createGameSessionFromTemplateAction(
   const authorizationEnd = performance.now();
 
   // TODO: only get the fields that we really need
-  const templateMetadata = await getGameTemplateMetadata(userId, templateId);
+  const templateMetadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
 
   const templateDataRetrievalEnd = performance.now();
 

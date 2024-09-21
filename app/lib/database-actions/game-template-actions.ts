@@ -339,64 +339,57 @@ export async function getComments(
   });
 }
 
-export async function getGameTemplateMetadata(
-  userId: number,
-  gameTemplateId: number,
-): Promise<{
+// TODO: remove statistics fields
+export interface GameTemplateMetadata {
+  id: number;
   name: string;
   backstory: string;
   description: string | null;
   imageUrl: string;
   imageDescription: string;
-  likeCount: number;
-  commentCount: number;
   isLiked: boolean;
-}> {
-  const gameTemplate = await prisma.gameTemplate.findFirst({
-    where: {
-      id: gameTemplateId,
-      deleted: false,
-      OR: [
-        {
-          userId: userId,
-        },
-        {
-          isPublic: true,
-        },
-      ],
-    },
-    select: {
-      name: true,
-      imageUrl: true,
-      imagePath: true,
-      imageUrlExpiration: true,
-      imageDescription: true,
-      backstory: true,
-      description: true,
-      likes: {
-        select: {
-          userId: true,
-        },
-        where: {
-          deleted: false,
-        },
-      },
-      _count: {
-        select: {
-          likes: {
-            where: {
-              deleted: false,
-            },
+  isPublic: boolean;
+}
+
+export async function getGameTemplateMetadataAndStatistics(
+  userId: number,
+  gameTemplateId: number,
+): Promise<GameTemplateMetadata & GameTemplateStatistics> {
+  const [gameTemplate, statistics] = await Promise.all([
+    prisma.gameTemplate.findFirst({
+      where: {
+        id: gameTemplateId,
+        deleted: false,
+        OR: [
+          {
+            userId: userId,
           },
-          comments: {
-            where: {
-              deleted: false,
-            },
+          {
+            isPublic: true,
+          },
+        ],
+      },
+      select: {
+        name: true,
+        imageUrl: true,
+        imagePath: true,
+        imageUrlExpiration: true,
+        imageDescription: true,
+        backstory: true,
+        description: true,
+        isPublic: true,
+        likes: {
+          select: {
+            userId: true,
+          },
+          where: {
+            deleted: false,
           },
         },
       },
-    },
-  });
+    }),
+    getGameTemplateStatistics(gameTemplateId),
+  ]);
 
   if (!gameTemplate) {
     throw new DatabaseError(
@@ -407,17 +400,15 @@ export async function getGameTemplateMetadata(
 
   if (
     gameTemplate.imageUrlExpiration &&
-    gameTemplate.imageUrlExpiration > new Date()
+    gameTemplate.imageUrlExpiration! > new Date()
   ) {
+    const { likes, ...metadata } = gameTemplate;
+
     return {
-      name: gameTemplate.name,
-      backstory: gameTemplate.backstory,
-      description: gameTemplate.description,
+      ...metadata,
+      ...statistics,
       imageUrl: gameTemplate.imageUrl!,
-      imageDescription: gameTemplate.imageDescription,
-      likeCount: gameTemplate._count.likes,
-      commentCount: gameTemplate._count.comments,
-      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
+      isLiked: likes.some((like) => like.userId === userId),
     };
   }
 
@@ -439,15 +430,13 @@ export async function getGameTemplateMetadata(
       },
     });
 
+    const { likes, ...metadata } = gameTemplate;
+
     return {
-      name: gameTemplate.name,
-      backstory: gameTemplate.backstory,
-      description: gameTemplate.description,
+      ...metadata,
+      ...statistics,
       imageUrl: url,
-      imageDescription: gameTemplate.imageDescription,
-      likeCount: gameTemplate._count.likes,
-      commentCount: gameTemplate._count.comments,
-      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
+      isLiked: likes.some((like) => like.userId === userId),
     };
   } catch (error) {
     throw new DatabaseError(
@@ -455,20 +444,6 @@ export async function getGameTemplateMetadata(
       "Failed to regenerate image URL",
     );
   }
-}
-
-// TODO: remove `likes` and `comments` from this as well as from relevant functions
-export interface GameTemplateMetadata {
-  id: number;
-  name: string;
-  isPublic: boolean;
-  isLiked: boolean;
-  likes: number;
-  comments: number;
-  description: string | null;
-  backstory: string;
-  imageUrl: string;
-  imageDescription: string;
 }
 
 export interface GameTemplateStatistics {
@@ -485,7 +460,7 @@ export interface GameTemplateStatistics {
 
 export async function getGameTemplatesByUser(
   userId: number,
-): Promise<GameTemplateMetadata[]> {
+): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
   const imageUrlExpiredTemplates = await prisma.gameTemplate.findMany({
     where: {
       userId: userId,
@@ -537,64 +512,66 @@ export async function getGameTemplatesByUser(
     }),
   );
 
-  const gameTemplates = await prisma.gameTemplate.findMany({
-    where: {
-      userId: userId,
-      deleted: false,
-    },
-    select: {
-      id: true,
-      name: true,
-      isPublic: true,
-      description: true,
-      backstory: true,
-      imageUrl: true,
-      imageDescription: true,
-      likes: {
-        select: {
-          userId: true,
-        },
-        where: {
-          deleted: false,
+  const [gameTemplates] = await Promise.all([
+    prisma.gameTemplate.findMany({
+      where: {
+        userId: userId,
+        deleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        isPublic: true,
+        description: true,
+        backstory: true,
+        imageUrl: true,
+        imageDescription: true,
+        likes: {
+          select: {
+            userId: true,
+          },
+          where: {
+            deleted: false,
+          },
         },
       },
-      _count: {
-        select: {
-          likes: {
-            where: {
-              deleted: false,
-            },
-          },
-          comments: {
-            where: {
-              deleted: false,
-            },
-          },
-        },
+    }),
+  ]);
+
+  // TODO: update database schema and make this query run concurrently with the one retrieving metadata
+  const statistics = await prisma.gameTemplateStatistics.findMany({
+    where: {
+      id: {
+        in: gameTemplates.map((template) => template.id),
       },
     },
   });
+
+  const statisticsMap = new Map<number, GameTemplateStatistics>();
+
+  for (const stat of statistics) {
+    statisticsMap.set(stat.id, stat);
+  }
 
   gameTemplates.sort((a, b) => {
     if (a.isPublic > b.isPublic) {
       return -1;
     } else {
-      return -(a._count.likes - b._count.likes);
+      return -(
+        statisticsMap.get(a.id)!.undeletedLikeCount -
+        statisticsMap.get(b.id)!.undeletedLikeCount
+      );
     }
   });
 
   return gameTemplates.map((gameTemplate) => {
+    const { likes, ...metadata } = gameTemplate;
+
     return {
-      id: gameTemplate.id,
-      name: gameTemplate.name,
-      isPublic: gameTemplate.isPublic,
-      description: gameTemplate.description,
-      backstory: gameTemplate.backstory,
+      ...metadata,
+      ...statisticsMap.get(gameTemplate.id)!,
+      isLiked: likes.some((like) => like.userId === userId),
       imageUrl: gameTemplate.imageUrl!,
-      imageDescription: gameTemplate.imageDescription,
-      isLiked: gameTemplate.likes.some((like) => like.userId === userId),
-      likes: gameTemplate._count.likes,
-      comments: gameTemplate._count.comments,
     };
   });
 }
@@ -676,13 +653,7 @@ export async function getGameTemplateStatistics(
 export async function getRecommendedGameTemplates(
   userId: number,
   limit: number = 5,
-): Promise<
-  (GameTemplateMetadata & {
-    childSessionCount: number;
-    visitCount: number;
-    score: number;
-  })[]
-> {
+): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
   const rawQuery = Prisma.sql`
       SELECT *
       FROM (SELECT DISTINCT
@@ -694,10 +665,14 @@ export async function getRecommendedGameTemplates(
                 gt."imageUrl",
                 gt."imageUrlExpiration",
                 gt."imageDescription",
+                gts."undeletedLikeCount",
                 gts."historicalLikeCount",
+                gts."undeletedCommentCount",
                 gts."historicalCommentCount",
                 gts."childSessionsCount",
                 gts."visitCount",
+                gts."trendingPushCount",
+                gts."childSessionsUserActionsCount",
                 -- Score calculation
                 gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount")
                 - (CASE
@@ -742,10 +717,14 @@ export async function getRecommendedGameTemplates(
       imageUrl: string | null;
       imageUrlExpiration: Date | null;
       imageDescription: string;
+      undeletedLikeCount: number;
       historicalLikeCount: number;
+      undeletedCommentCount: number;
       historicalCommentCount: number;
       childSessionsCount: number;
       visitCount: number;
+      childSessionsUserActionsCount: number;
+      trendingPushCount: number;
       score: number;
     }[]
   >(rawQuery);
@@ -785,6 +764,15 @@ export async function getRecommendedGameTemplates(
     childSessionCount: Number(gameTemplate.childSessionsCount),
     visitCount: Number(gameTemplate.visitCount),
     score: Number(gameTemplate.score),
+    undeletedLikeCount: Number(gameTemplate.undeletedLikeCount),
+    historicalLikeCount: Number(gameTemplate.historicalLikeCount),
+    undeletedCommentCount: Number(gameTemplate.undeletedCommentCount),
+    childSessionsCount: Number(gameTemplate.childSessionsCount),
+    historicalCommentCount: Number(gameTemplate.historicalCommentCount),
+    childSessionsUserActionsCount: Number(
+      gameTemplate.childSessionsUserActionsCount,
+    ),
+    trendingPushCount: Number(gameTemplate.trendingPushCount),
   }));
 }
 

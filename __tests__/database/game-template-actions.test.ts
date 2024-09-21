@@ -26,10 +26,12 @@ import {
   addComment,
   deleteComment,
   getComments,
-  getGameTemplateMetadata,
+  getGameTemplateMetadataAndStatistics,
   getGameTemplatesByUser,
   getGameTemplateStatistics,
-  getRecommendedGameTemplates, markGameTemplateAsVisited, markGameTemplateAsRecommended
+  getRecommendedGameTemplates,
+  markGameTemplateAsVisited,
+  markGameTemplateAsRecommended,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
@@ -64,27 +66,32 @@ describe("Game Template Actions", () => {
       expect(templateId).toBeGreaterThan(0);
 
       // Retrieve the template
-      const template = await getGameTemplateMetadata(userId, templateId);
+      const template = await getGameTemplateMetadataAndStatistics(
+        userId,
+        templateId,
+      );
 
-      expect(template).toEqual({
-        name: newGameTemplateData.name,
-        backstory: newGameTemplateData.backStory,
-        description: newGameTemplateData.description,
-        imageDescription: newGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(template).toEqual(
+        expect.objectContaining({
+          name: newGameTemplateData.name,
+          backstory: newGameTemplateData.backStory,
+          description: newGameTemplateData.description,
+          imageDescription: newGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
       await deleteGameTemplate(userId, templateId);
 
       await expect(
-        getGameTemplateMetadata(userId, templateId),
+        getGameTemplateMetadataAndStatistics(userId, templateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadata(userId, templateId);
+        await getGameTemplateMetadataAndStatistics(userId, templateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -138,47 +145,63 @@ describe("Game Template Actions", () => {
         newPrivateGameTemplateData,
       );
 
-      expect(await getGameTemplateMetadata(userId, publicTemplateId)).toEqual({
-        name: newPublicGameTemplateData.name,
-        backstory: newPublicGameTemplateData.backStory,
-        description: newPublicGameTemplateData.description,
-        imageDescription: newPublicGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(
+        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
       expect(
-        await getGameTemplateMetadata(otherUserId, publicTemplateId),
-      ).toEqual({
-        name: newPublicGameTemplateData.name,
-        backstory: newPublicGameTemplateData.backStory,
-        description: newPublicGameTemplateData.description,
-        imageDescription: newPublicGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+        await getGameTemplateMetadataAndStatistics(
+          otherUserId,
+          publicTemplateId,
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
-      expect(await getGameTemplateMetadata(userId, privateTemplateId)).toEqual({
-        name: newPrivateGameTemplateData.name,
-        backstory: newPrivateGameTemplateData.backStory,
-        description: newPrivateGameTemplateData.description,
-        imageDescription: newPrivateGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(
+        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPrivateGameTemplateData.name,
+          backstory: newPrivateGameTemplateData.backStory,
+          description: newPrivateGameTemplateData.description,
+          imageDescription: newPrivateGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
       await expect(
-        getGameTemplateMetadata(otherUserId, privateTemplateId),
+        getGameTemplateMetadataAndStatistics(otherUserId, privateTemplateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadata(otherUserId, privateTemplateId);
+        await getGameTemplateMetadataAndStatistics(
+          otherUserId,
+          privateTemplateId,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -214,51 +237,64 @@ describe("Game Template Actions", () => {
       }
 
       // check that game template is still accessible
-      expect(await getGameTemplateMetadata(userId, publicTemplateId)).toEqual({
-        name: newPublicGameTemplateData.name,
-        backstory: newPublicGameTemplateData.backStory,
-        description: newPublicGameTemplateData.description,
-        imageDescription: newPublicGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(
+        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
       expect(
-        await getGameTemplateMetadata(otherUserId, publicTemplateId),
-      ).toEqual({
-        name: newPublicGameTemplateData.name,
-        backstory: newPublicGameTemplateData.backStory,
-        description: newPublicGameTemplateData.description,
-        imageDescription: newPublicGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+        await getGameTemplateMetadataAndStatistics(
+          otherUserId,
+          publicTemplateId,
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPublicGameTemplateData.name,
+          backstory: newPublicGameTemplateData.backStory,
+          description: newPublicGameTemplateData.description,
+          imageDescription: newPublicGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
-      expect(await getGameTemplateMetadata(userId, privateTemplateId)).toEqual({
-        name: newPrivateGameTemplateData.name,
-        backstory: newPrivateGameTemplateData.backStory,
-        description: newPrivateGameTemplateData.description,
-        imageDescription: newPrivateGameTemplateData.imageDescription,
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(
+        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
+      ).toEqual(
+        expect.objectContaining({
+          name: newPrivateGameTemplateData.name,
+          backstory: newPrivateGameTemplateData.backStory,
+          description: newPrivateGameTemplateData.description,
+          imageDescription: newPrivateGameTemplateData.imageDescription,
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
 
       // remove the templates
       await deleteGameTemplate(userId, publicTemplateId);
       await deleteGameTemplate(userId, privateTemplateId);
 
       await expect(
-        getGameTemplateMetadata(userId, publicTemplateId),
+        getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadata(userId, publicTemplateId);
+        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -270,10 +306,10 @@ describe("Game Template Actions", () => {
       }
 
       await expect(
-        getGameTemplateMetadata(userId, privateTemplateId),
+        getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
       ).rejects.toThrowError(DatabaseError);
       try {
-        await getGameTemplateMetadata(userId, privateTemplateId);
+        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId);
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -476,18 +512,23 @@ describe("Game Template Actions", () => {
         isPublic: true,
       });
 
-      const template = await getGameTemplateMetadata(userId, templateId);
+      const template = await getGameTemplateMetadataAndStatistics(
+        userId,
+        templateId,
+      );
 
-      expect(template).toEqual({
-        name: "Test Template",
-        backstory: "This is a test backstory.",
-        description: "A test template",
-        imageDescription: "Template image",
-        imageUrl: expect.any(String),
-        commentCount: 0,
-        isLiked: false,
-        likeCount: 0,
-      });
+      expect(template).toEqual(
+        expect.objectContaining({
+          name: "Test Template",
+          backstory: "This is a test backstory.",
+          description: "A test template",
+          imageDescription: "Template image",
+          imageUrl: expect.any(String),
+          undeletedCommentCount: 0,
+          isLiked: false,
+          undeletedLikeCount: 0,
+        }),
+      );
     },
   );
 
@@ -563,42 +604,42 @@ describe("Game Template Actions", () => {
 
       // should be first public template, then second public template, then private template
       expect(templatesMetadata).toEqual([
-        {
+        expect.objectContaining({
           id: publicTemplateId,
           name: "Public Test Template",
           isPublic: true,
           isLiked: true,
-          likes: 1,
-          comments: 0,
+          undeletedLikeCount: 1,
+          undeletedCommentCount: 0,
           description: "A public test template",
           backstory: "This is a public test backstory.",
           imageUrl: expect.any(String),
           imageDescription: "Public Template image",
-        },
-        {
+        }),
+        expect.objectContaining({
           id: publicTemplateId2,
           name: "Public Test Template 2",
           isPublic: true,
           isLiked: false,
-          likes: 0,
-          comments: 1,
+          undeletedLikeCount: 0,
+          undeletedCommentCount: 1,
           description: "A public test template 2",
           backstory: "This is a public test backstory 2.",
           imageUrl: expect.any(String),
           imageDescription: "Public Template image 2",
-        },
-        {
+        }),
+        expect.objectContaining({
           id: privateTemplateId,
           name: "Private Test Template",
           isPublic: false,
           isLiked: false,
-          likes: 0,
-          comments: 0,
+          undeletedLikeCount: 0,
+          undeletedCommentCount: 0,
           description: "A private test template",
           backstory: "This is a private test backstory.",
           imageUrl: expect.any(String),
           imageDescription: "Private Template image",
-        },
+        }),
       ]);
     },
   );
@@ -621,42 +662,45 @@ describe("Game Template Actions", () => {
         isPublic: true,
       });
 
-      let metadata = await getGameTemplateMetadata(userId, templateId);
+      let metadata = await getGameTemplateMetadataAndStatistics(
+        userId,
+        templateId,
+      );
 
-      expect(metadata.likeCount).toBe(0);
+      expect(metadata.undeletedLikeCount).toBe(0);
       expect(metadata.isLiked).toBe(false);
-      expect(metadata.commentCount).toBe(0);
+      expect(metadata.undeletedCommentCount).toBe(0);
 
       await addLike(userId, templateId);
-      metadata = await getGameTemplateMetadata(userId, templateId);
-      expect(metadata.likeCount).toBe(1);
+      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
-      expect(metadata.commentCount).toBe(0);
+      expect(metadata.undeletedCommentCount).toBe(0);
 
       await deleteLike(userId, templateId);
-      metadata = await getGameTemplateMetadata(userId, templateId);
-      expect(metadata.likeCount).toBe(0);
+      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      expect(metadata.undeletedLikeCount).toBe(0);
       expect(metadata.isLiked).toBe(false);
-      expect(metadata.commentCount).toBe(0);
+      expect(metadata.undeletedCommentCount).toBe(0);
 
       await addLike(userId, templateId);
-      metadata = await getGameTemplateMetadata(userId, templateId);
-      expect(metadata.likeCount).toBe(1);
+      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
-      expect(metadata.commentCount).toBe(0);
+      expect(metadata.undeletedCommentCount).toBe(0);
 
       const commentId = await addComment(userId, templateId, "Test comment");
 
-      metadata = await getGameTemplateMetadata(userId, templateId);
-      expect(metadata.likeCount).toBe(1);
+      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
-      expect(metadata.commentCount).toBe(1);
+      expect(metadata.undeletedCommentCount).toBe(1);
 
       await deleteComment(userId, commentId);
-      metadata = await getGameTemplateMetadata(userId, templateId);
-      expect(metadata.likeCount).toBe(1);
+      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
-      expect(metadata.commentCount).toBe(0);
+      expect(metadata.undeletedCommentCount).toBe(0);
     },
   );
 
@@ -1026,16 +1070,16 @@ describe("Game Template Actions", () => {
 
     // Validate the results
     expect(user1RecommendedTemplates).toEqual([
-      expectedTemplate1,
-      expectedTemplate3,
+      expect.objectContaining(expectedTemplate1),
+      expect.objectContaining(expectedTemplate3),
       expect.anything(),
     ]);
     expect([template2Id, template4Id]).toContainEqual(
       user1RecommendedTemplates[2].id,
     );
     expect(user2RecommendedTemplates).toEqual([
-      expectedTemplate4,
-      expectedTemplate3,
+      expect.objectContaining(expectedTemplate4),
+      expect.objectContaining(expectedTemplate3),
       expect.anything(),
     ]);
     expect([template1Id, template2Id]).toContainEqual(
@@ -1047,14 +1091,14 @@ describe("Game Template Actions", () => {
       expect.anything(),
     ]);
     expect(user4RecommendedTemplates).toEqual([
-      expectedTemplate4,
-      expectedTemplate1,
-      expectedTemplate3,
+      expect.objectContaining(expectedTemplate4),
+      expect.objectContaining(expectedTemplate1),
+      expect.objectContaining(expectedTemplate3),
     ]);
     expect(user5RecommendedTemplates).toEqual([
-      expectedTemplate4,
-      expectedTemplate2,
-      expectedTemplate1,
+      expect.objectContaining(expectedTemplate4),
+      expect.objectContaining(expectedTemplate2),
+      expect.objectContaining(expectedTemplate1),
     ]);
   });
 
