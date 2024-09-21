@@ -689,7 +689,18 @@ export async function getRecommendedGameTemplates(
                 gt."imageDescription",
                 gts."historicalLikeCount",
                 gts."historicalCommentCount",
-                gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount") AS score
+                -- Score calculation
+                gts."visitCount" + gts."childSessionsUserActionsCount" + 2 * gts."historicalLikeCount" + 3 * gts."historicalCommentCount" + 20 / (1 + gts."trendingPushCount")
+                - (CASE
+                WHEN gtv."id" IS NOT NULL THEN 100000000 ELSE 0 END)
+                - (CASE
+                WHEN gtl."id" IS NOT NULL THEN 100000000 ELSE 0 END)
+                - (CASE
+                WHEN gtc."id" IS NOT NULL THEN 100000000 ELSE 0 END)
+                - (CASE
+                WHEN gs."id" IS NOT NULL THEN 100000000 ELSE 0 END)
+                - (CASE
+                WHEN gt."userId" = ${userId} THEN 100000000 ELSE 0 END) AS score
             FROM
                 "GameTemplate" gt
                 JOIN
@@ -706,13 +717,8 @@ export async function getRecommendedGameTemplates(
                 LEFT JOIN
                 "GameSession" gs ON gt.id = gs."parentTemplateId" AND gs."userId" = ${userId} AND gs."deleted" = false
             WHERE
-                gt."userId" != ${userId}
-              AND gt."isPublic" = true
+              gt."isPublic" = true
               AND gt."deleted" = false
-              AND gtv."id" IS NULL
-              AND gtl."id" IS NULL
-              AND gtc."id" IS NULL
-              AND gs."id" IS NULL
             ORDER BY
                 gt."id", score DESC) AS templates
       ORDER BY score DESC LIMIT ${limit}

@@ -1020,12 +1020,24 @@ describe("Game Template Actions", () => {
     expect(user1RecommendedTemplates).toEqual([
       expectedTemplate1,
       expectedTemplate3,
+      expect.anything(),
     ]);
+    expect([template2Id, template4Id]).toContainEqual(
+      user1RecommendedTemplates[2].id,
+    );
     expect(user2RecommendedTemplates).toEqual([
       expectedTemplate4,
       expectedTemplate3,
+      expect.anything(),
     ]);
-    expect(user3RecommendedTemplates).toEqual([]);
+    expect([template1Id, template2Id]).toContainEqual(
+      user2RecommendedTemplates[2].id,
+    );
+    expect(user3RecommendedTemplates).toEqual([
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    ]);
     expect(user4RecommendedTemplates).toEqual([
       expectedTemplate4,
       expectedTemplate1,
