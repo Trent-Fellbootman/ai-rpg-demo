@@ -585,3 +585,131 @@ export async function getGameTemplatesByUser(
     };
   });
 }
+
+export async function refreshGameTemplateImageUrls(
+  ids: number[],
+): Promise<Map<number, string>> {
+  try {
+    const gameTemplates = await prisma.gameTemplate.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      select: {
+        id: true,
+        imagePath: true,
+      },
+    });
+
+    const imageUrls = await Promise.all(
+      gameTemplates.map((template) =>
+        (async () => {
+          const { url, expiration } = await createImageUrl(
+            template.imagePath,
+            imageUrlExpireSeconds,
+          );
+
+          await prisma.gameTemplate.update({
+            where: {
+              id: template.id,
+            },
+            data: {
+              imageUrl: url,
+              imageUrlExpiration: expiration,
+            },
+          });
+
+          return { id: template.id, url: url };
+        })(),
+      ),
+    );
+
+    const urlMap = new Map<number, string>();
+
+    imageUrls.forEach(({ id, url }) => {
+      urlMap.set(id, url);
+    });
+
+    return urlMap;
+  } catch (error) {
+    throw new DatabaseError(
+      DatabaseErrorType.InternalError,
+      "Failed to refresh game template image URLs",
+    );
+  }
+}
+
+export async function getTrendingGameTemplates(
+  userId: number,
+): Promise<GameTemplateMetadata[]> {
+  const gameTemplates = await prisma.gameTemplate.findMany({
+    take: 10,
+    orderBy: {
+      likes: {
+        _count: "desc",
+      },
+    },
+    where: {
+      deleted: false,
+      isPublic: true,
+    },
+    include: {
+      likes: {
+        where: {
+          deleted: false,
+          userId: userId,
+        },
+      },
+      _count: {
+        select: {
+          likes: {
+            where: {
+              deleted: false,
+            },
+          },
+          comments: {
+            where: {
+              deleted: false,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const imageUrls: Map<number, string | null> = new Map();
+
+  gameTemplates.forEach((template) => {
+    imageUrls.set(template.id, template.imageUrl);
+  });
+
+  const newImageUrls =
+    // TODO: optimize
+    await refreshGameTemplateImageUrls(
+      gameTemplates
+        .filter(
+          (template) =>
+            template.imageUrl === null ||
+            template.imageUrlExpiration! < new Date(),
+        )
+        .map((template) => template.id),
+    );
+
+  newImageUrls.forEach((newUrl, templateId) => {
+    imageUrls.set(templateId, newUrl);
+  });
+
+  return gameTemplates.map((gameTemplate) => ({
+    id: gameTemplate.id,
+    name: gameTemplate.name,
+    isPublic: gameTemplate.isPublic,
+    description: gameTemplate.description,
+    backstory: gameTemplate.backstory,
+    imageUrl: imageUrls.get(gameTemplate.id)!!,
+    imageDescription: gameTemplate.imageDescription,
+    isLiked: gameTemplate.likes.length > 0,
+    likes: gameTemplate._count.likes,
+    comments: gameTemplate._count.comments,
+  }));
+}

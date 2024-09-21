@@ -7,6 +7,10 @@ export const siteConfig = {
   description: "Make beautiful websites regardless of your design experience.",
   navItems: [
     {
+      label: "Home",
+      href: constants.homePagePath,
+    },
+    {
       label: "My Game Sessions",
       href: constants.gameSessionsDashboardPagePath,
     },
@@ -16,6 +20,10 @@ export const siteConfig = {
     },
   ],
   navMenuItems: [
+    {
+      label: "Home",
+      href: constants.homePagePath,
+    },
     {
       label: "My Game Sessions",
       href: constants.gameSessionsDashboardPagePath,
