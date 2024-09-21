@@ -926,7 +926,7 @@ describe("Game Template Actions", () => {
 
     // Scores:
     // Template 1: 1 visit, 1 like, 1 comment, 1 push, score = 16
-    // Template 2: 1 visit, 1 like, 1 comment, 1 push, 1 action, score = 17
+    // Template 2: 1 visit, 1 like, 1 comment, 1 push, 2 child sessions, 1 action, score = 17
     // Template 3: 1 push, score = 10
     // Template 4: 1 like, score = 22
 
@@ -970,6 +970,8 @@ describe("Game Template Actions", () => {
       isLiked: false,
       likes: 1,
       comments: 1,
+      childSessionCount: 0,
+      visitCount: 1,
       score: 16,
     };
 
@@ -984,6 +986,8 @@ describe("Game Template Actions", () => {
       isLiked: false,
       likes: 1,
       comments: 1,
+      childSessionCount: 2,
+      visitCount: 1,
       score: 17,
     };
 
@@ -999,6 +1003,8 @@ describe("Game Template Actions", () => {
       isLiked: false,
       likes: 0,
       comments: 0,
+      childSessionCount: 0,
+      visitCount: 0,
       score: 10,
     };
 
@@ -1013,6 +1019,8 @@ describe("Game Template Actions", () => {
       isLiked: false,
       likes: 1,
       comments: 0,
+      childSessionCount: 0,
+      visitCount: 0,
       score: 22,
     };
 
