@@ -457,6 +457,7 @@ export async function getGameTemplateMetadata(
   }
 }
 
+// TODO: remove `likes` and `comments` from this as well as from relevant functions
 export interface GameTemplateMetadata {
   id: number;
   name: string;
@@ -468,6 +469,18 @@ export interface GameTemplateMetadata {
   backstory: string;
   imageUrl: string;
   imageDescription: string;
+}
+
+export interface GameTemplateStatistics {
+  id: number;
+  undeletedLikeCount: number;
+  historicalLikeCount: number;
+  undeletedCommentCount: number;
+  historicalCommentCount: number;
+  childSessionsCount: number;
+  childSessionsUserActionsCount: number;
+  visitCount: number;
+  trendingPushCount: number;
 }
 
 export async function getGameTemplatesByUser(
@@ -712,4 +725,23 @@ export async function getTrendingGameTemplates(
     likes: gameTemplate._count.likes,
     comments: gameTemplate._count.comments,
   }));
+}
+
+export async function getGameTemplateStatistics(
+  gameTemplateId: number,
+): Promise<GameTemplateStatistics> {
+  const statistics = await prisma.gameTemplateStatistics.findFirst({
+    where: {
+      id: gameTemplateId,
+    },
+  });
+
+  if (!statistics) {
+    throw new DatabaseError(
+      DatabaseErrorType.NotFound,
+      "Game template statistics not found",
+    );
+  }
+
+  return statistics;
 }

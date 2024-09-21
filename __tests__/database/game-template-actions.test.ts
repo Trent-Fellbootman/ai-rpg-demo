@@ -25,11 +25,13 @@ import {
   getComments,
   getGameTemplateMetadata,
   getGameTemplatesByUser,
+  getGameTemplateStatistics,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
   DatabaseErrorType,
 } from "@/app/lib/database-actions/error-types";
+import { addSceneToSession, createGameSession } from "@/app/lib/database-actions/game-session-actions";
 
 describe("Game Template Actions", () => {
   test.concurrent(
@@ -650,4 +652,132 @@ describe("Game Template Actions", () => {
       expect(metadata.commentCount).toBe(0);
     },
   );
+
+  test.concurrent("should calculate statistics correctly", async () => {
+    const userId = await createUser(
+      `testuser-${uuidv4()}@example.com`,
+      "hashedpassword",
+      "Test User",
+    );
+
+    const anotherUserId = await createUser(
+      `anotheruser-${uuidv4()}@example.com`,
+      "hashedpassword",
+      "Another User",
+    );
+
+    // Create two game templates
+    const template1Id = await createGameTemplate(userId, {
+      name: "Template 1",
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: "Template 1 image",
+      backStory: "This is template 1 backstory.",
+      description: "Template 1 description",
+      isPublic: true,
+    });
+
+    const template2Id = await createGameTemplate(userId, {
+      name: "Template 2",
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Template 2 image",
+      backStory: "This is template 2 backstory.",
+      description: "Template 2 description",
+      isPublic: true,
+    });
+
+    // Add and delete likes
+    await addLike(userId, template1Id);
+    await addLike(anotherUserId, template1Id);
+    await deleteLike(anotherUserId, template1Id);
+
+    await addLike(userId, template2Id);
+    await addLike(anotherUserId, template2Id);
+
+    // Add and delete comments
+    const comment1Id = await addComment(userId, template1Id, "Comment 1");
+    const comment2Id = await addComment(anotherUserId, template1Id, "Comment 2");
+    await deleteComment(anotherUserId, comment2Id);
+
+    await addComment(userId, template2Id, "Comment 3");
+    await addComment(anotherUserId, template2Id, "Comment 4");
+
+    // Create game sessions and add scenes (actions)
+    const session1Id = await createGameSession(
+      userId,
+      "Session 1",
+      "Session 1 backstory",
+      "Session 1 description",
+      getFakeImageUrl(3),
+      "Session 1 image",
+      template1Id,
+      {
+        imageUrl: getFakeImageUrl(4),
+        imageDescription: "Scene 1 image",
+        narration: "You are in a dark forest.",
+      },
+    );
+
+    await addSceneToSession(userId, session1Id, "Go north", {
+      imageUrl: getFakeImageUrl(5),
+      imageDescription: "Scene 2 image",
+      narration: "You arrive at a clearing.",
+    });
+
+    const session2Id = await createGameSession(
+      userId,
+      "Session 2",
+      "Session 2 backstory",
+      "Session 2 description",
+      getFakeImageUrl(6),
+      "Session 2 image",
+      template2Id,
+      {
+        imageUrl: getFakeImageUrl(7),
+        imageDescription: "Scene 3 image",
+        narration: "You are in a dark forest.",
+      },
+    );
+
+    await addSceneToSession(userId, session2Id, "Go east", {
+      imageUrl: getFakeImageUrl(8),
+      imageDescription: "Scene 4 image",
+      narration: "You see a river.",
+    });
+
+    await addSceneToSession(userId, session2Id, "Cross the river", {
+      imageUrl: getFakeImageUrl(9),
+      imageDescription: "Scene 5 image",
+      narration: "You reach the other side.",
+    });
+
+    // Get and validate statistics for template 1
+    const statistics1 = await getGameTemplateStatistics(template1Id);
+
+    expect(statistics1).toEqual({
+      id: template1Id,
+      undeletedLikeCount: 1,
+      historicalLikeCount: 2,
+      undeletedCommentCount: 1,
+      historicalCommentCount: 2,
+      childSessionsCount: 1,
+      childSessionsUserActionsCount: 1, // 2 scenes - 1
+      visitCount: 0, // Assuming no visits for simplicity
+      trendingPushCount: 0, // Assuming no trending pushes for simplicity
+    });
+
+    // Get and validate statistics for template 2
+    const statistics2 = await getGameTemplateStatistics(template2Id);
+
+    expect(statistics2).toEqual({
+      id: template2Id,
+      undeletedLikeCount: 2,
+      historicalLikeCount: 2,
+      undeletedCommentCount: 2,
+      historicalCommentCount: 2,
+      childSessionsCount: 1,
+      childSessionsUserActionsCount: 2, // 3 scenes - 1
+      visitCount: 0, // Assuming no visits for simplicity
+      trendingPushCount: 0, // Assuming no trending pushes for simplicity
+    });
+  });
 });
