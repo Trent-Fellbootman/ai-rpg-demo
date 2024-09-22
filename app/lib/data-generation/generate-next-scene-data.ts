@@ -8,6 +8,7 @@ import {
   generateImage,
 } from "@/app/lib/services/generative-ai";
 import { logger } from "@/app/lib/logger";
+import { promptConstants } from "@/app/lib/data-generation/prompt-constants";
 
 const log = logger.child({ module: "data-generation" });
 
@@ -16,6 +17,7 @@ export type NextSceneGenerationResponse = {
   imageUrl: string;
   imageDescription: string;
   narration: string;
+  proposedActions: string[];
 };
 
 /**
@@ -128,6 +130,7 @@ Make it BRIEF; this will be presented to the player who does NOT like reading th
 Notice that this will be rendered as HTML,
 so you have the ability to use HTML tags in your response.
 Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+- \`proposed_actions\`: ${promptConstants.proposedActionsFieldDescription}
 
 These JSON fields should all pertain to the "world state" AFTER the player has taken the action,
 NOT before the action completes.
@@ -180,6 +183,7 @@ JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
       oracle_event: z.string(),
       image_prompt: z.string(),
       narration: z.string(),
+      proposed_actions: z.array(z.string()),
     })
     .safeParse(JSON.parse(response.content));
 
@@ -208,5 +212,6 @@ JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
     narration: parsedResponseContent.narration,
     imageUrl,
     imageDescription: parsedResponseContent.image_prompt,
+    proposedActions: parsedResponseContent.proposed_actions,
   };
 }

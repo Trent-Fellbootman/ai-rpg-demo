@@ -61,6 +61,7 @@ model Scene {
   event               String
   narration           String
   action              String?
+  proposedActions     String[]
   orderInSession      Int
   generationTimestamp DateTime    @default(now())
   deleted             Boolean     @default(false)

@@ -24,11 +24,13 @@ export default function SceneView({
   const [widgetData, setWidgetData] = useState<
     | {
         userId: number;
+        sceneIndex: number;
+        sessionLength: number;
         imageUrl: string;
+        imageDescription: string;
         narration: string;
         action: string | null;
-        currentSceneIndex: number;
-        currentSessionLength: number;
+        proposedActions: string[];
       }
     | undefined
   >(undefined);
@@ -50,9 +52,11 @@ export default function SceneView({
         userId: widgetData!.userId,
         imageUrl: response!.nextScene!.imageUrl,
         narration: response!.nextScene!.narration,
+        imageDescription: response!.nextScene!.imageUrl,
         action: "",
-        currentSceneIndex: widgetData!.currentSceneIndex + 1,
-        currentSessionLength: widgetData!.currentSessionLength + 1,
+        proposedActions: response!.nextScene!.proposedActions,
+        sceneIndex: widgetData!.sceneIndex + 1,
+        sessionLength: widgetData!.sessionLength + 1,
       });
     }
   };
@@ -84,10 +88,10 @@ export default function SceneView({
         </CardBody>
       </Card>
       <Spacer y={2} />
-      {widgetData!.currentSceneIndex ===
-      widgetData!.currentSessionLength - 1 ? (
+      {widgetData!.sceneIndex === widgetData!.sessionLength - 1 ? (
         <ActionInputForm
-          sceneIndex={widgetData!.currentSceneIndex}
+          proposedActions={widgetData.proposedActions}
+          sceneIndex={widgetData!.sceneIndex}
           sessionId={sessionId}
           userId={widgetData!.userId}
           onNextSceneGenerationResponse={onNextSceneGenerationResponse}
@@ -95,7 +99,7 @@ export default function SceneView({
       ) : (
         <ActionDisplayView
           action={widgetData!.action!}
-          sceneIndex={widgetData!.currentSceneIndex}
+          sceneIndex={widgetData!.sceneIndex}
           sessionId={sessionId}
         />
       )}

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { inngest } from "./client";
 
 import { logger } from "@/app/lib/logger";
@@ -9,8 +11,6 @@ import {
 
 const log = logger.child({ module: "inngest-functions" });
 
-import { z } from "zod";
-
 const AddGeneratedSceneInputsSchema = z.object({
   userId: z.number(),
   sessionId: z.number(),
@@ -20,6 +20,7 @@ const AddGeneratedSceneInputsSchema = z.object({
     imageUrl: z.string(),
     imageDescription: z.string(),
     narration: z.string(),
+    proposedActions: z.array(z.string()),
   }),
 });
 

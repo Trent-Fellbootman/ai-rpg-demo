@@ -21,5 +21,9 @@ This will be presented to the player who does not like reading through long text
 Notice that this will be rendered as HTML,
 so you have the ability to use HTML tags in your response.
 Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-DO NOT include things that the play can see from the image.`
-}
+DO NOT include things that the play can see from the image.`,
+  proposedActionsFieldDescription: `An array consisting of four strings.
+Each string is a different action that you propose for the player to take.
+You may make one of them look "reasonable"; for the others,
+use your wildest imagination to make them look as interesting as possible.`,
+};

@@ -24,7 +24,11 @@ import {
   generateNextSceneData,
   NextSceneGenerationResponse,
 } from "./data-generation/generate-next-scene-data";
-import { getScenePlayPagePath, getSessionOverviewPath, getTemplateOverviewPath } from "./utils/path";
+import {
+  getScenePlayPagePath,
+  getSessionOverviewPath,
+  getTemplateOverviewPath,
+} from "./utils/path";
 
 import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
@@ -85,7 +89,10 @@ export async function createGameSessionFromTemplateAction(
   const authorizationEnd = performance.now();
 
   // TODO: only get the fields that we really need
-  const templateMetadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+  const templateMetadata = await getGameTemplateMetadataAndStatistics(
+    userId,
+    templateId,
+  );
 
   const templateDataRetrievalEnd = performance.now();
 
@@ -115,6 +122,7 @@ export async function createGameSessionFromTemplateAction(
       imageDescription: initialSceneGenerationResponse.imageDescription,
       imageUrl: initialSceneGenerationResponse.imageUrl,
       narration: initialSceneGenerationResponse.narration,
+      proposedActions: initialSceneGenerationResponse.proposedActions,
     },
   );
 
@@ -186,6 +194,7 @@ export async function createNewGameSessionAction(
       imageDescription: initialSceneGenerationResponse.coverImageDescription,
       imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
       narration: initialSceneGenerationResponse.firstSceneNarration,
+      proposedActions: initialSceneGenerationResponse.firstSceneProposedActions,
     },
   );
 
@@ -213,6 +222,7 @@ export type CreateNextSceneActionResponse = {
     message?: string;
   };
   nextScene?: {
+    proposedActions: string[];
     narration: string;
     imageUrl: string;
   };
@@ -313,7 +323,7 @@ Statistics:
 - Scheduling background task for database update: ${databaseUpdateBackgroundTaskSchedulingEnd - nextSceneDataGenerationEnd}ms
 - Total: ${databaseUpdateBackgroundTaskSchedulingEnd - start}ms`);
 
-  const {event, ...playerPerceivableNextSceneData} = nextScene;
+  const { event, ...playerPerceivableNextSceneData } = nextScene;
 
   return { nextScene: playerPerceivableNextSceneData };
 }
@@ -321,7 +331,16 @@ Statistics:
 export async function getSceneViewInitialData(
   sessionId: number,
   sceneIndex: number | "last",
-) {
+): Promise<{
+  userId: number;
+  sceneIndex: number;
+  sessionLength: number;
+  imageUrl: string;
+  imageDescription: string;
+  narration: string;
+  action: string | null;
+  proposedActions: string[];
+}> {
   const user = (await getCurrentUser())!;
 
   // TODO: optimize to remove this query
@@ -334,12 +353,10 @@ export async function getSceneViewInitialData(
   ]);
 
   return {
+    ...scene,
     userId: user.id,
-    narration: scene.narration,
-    imageUrl: scene.imageUrl,
-    action: scene.action,
-    currentSceneIndex: parsedIndex,
-    currentSessionLength: sessionLength,
+    sceneIndex: parsedIndex,
+    sessionLength,
   };
 }
 

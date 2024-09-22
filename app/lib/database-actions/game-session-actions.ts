@@ -18,6 +18,7 @@ export interface SceneDataNoAction {
   imageDescription: string;
   narration: string;
   event: string;
+  proposedActions: string[];
 }
 
 export async function createGameSession(
@@ -68,6 +69,7 @@ export async function createGameSession(
               narration: initialSceneData.narration,
               event: initialSceneData.event,
               action: null,
+              proposedActions: initialSceneData.proposedActions,
               orderInSession: 0,
             },
           ],
@@ -180,6 +182,7 @@ export async function addSceneToSession(
         imageDescription: newSceneData.imageDescription,
         narration: newSceneData.narration,
         event: newSceneData.event,
+        proposedActions: newSceneData.proposedActions,
         action: null,
         orderInSession: lastScene.orderInSession + 1,
         gameSessionId: sessionId,
@@ -405,6 +408,7 @@ export async function getSceneBySessionAndIndex(
       imageUrlExpiration: true,
       narration: true,
       action: true,
+      proposedActions: true,
       event: true,
     },
   });
@@ -443,6 +447,7 @@ export async function getSceneBySessionAndIndex(
         imageDescription: scene.imageDescription,
         narration: scene.narration,
         action: scene.action,
+        proposedActions: scene.proposedActions,
         event: scene.event,
       };
     } catch (error) {
@@ -458,6 +463,7 @@ export async function getSceneBySessionAndIndex(
     imageDescription: scene.imageDescription,
     narration: scene.narration,
     action: scene.action,
+    proposedActions: scene.proposedActions,
     event: scene.event,
   };
 }
@@ -543,6 +549,7 @@ export async function getScenesBySession(
       imageDescription: true,
       narration: true,
       event: true,
+      proposedActions: true,
       action: true,
     },
     orderBy: {

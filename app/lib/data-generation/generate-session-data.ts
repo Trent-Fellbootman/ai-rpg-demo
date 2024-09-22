@@ -2,12 +2,13 @@
 
 import { z } from "zod";
 
+import { promptConstants } from "./prompt-constants";
+
 import {
   generateChatMessage,
   generateImage,
 } from "@/app/lib/services/generative-ai";
 import { logger } from "@/app/lib/logger";
-import { promptConstants } from "./prompt-constants";
 
 const log = logger.child({ module: "data-generation" });
 
@@ -21,6 +22,7 @@ export type GameSessionDataGenerationResponse = {
   temporaryFirstSceneImageUrl: string;
   firstSceneImageDescription: string;
   firstSceneNarration: string;
+  firstSceneProposedActions: string[];
 };
 
 const firstSceneAndCoverImagePromptAiDataSchema = z.object({
@@ -28,6 +30,7 @@ const firstSceneAndCoverImagePromptAiDataSchema = z.object({
   first_scene_oracle_event: z.string(),
   first_scene_image_prompt: z.string(),
   first_scene_narration: z.string(),
+  proposed_actions: z.array(z.string()),
 });
 
 export async function generateGameSessionData(
@@ -72,6 +75,7 @@ This should be as detailed as possible.
 - \`first_scene_image_prompt\` - ${promptConstants.firstSceneImagePromptFieldDescription}
 he/she should NOT be able to see his/her body (unless looking in a mirror or something)
 - \`first_scene_narration\` - ${promptConstants.firstSceneTextPromptFieldDescription}
+- \`proposed_actions\` - ${promptConstants.proposedActionsFieldDescription}
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
@@ -114,6 +118,7 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
     temporaryFirstSceneImageUrl: firstSceneImageUrl,
     firstSceneImageDescription: initialScene.first_scene_image_prompt,
     firstSceneNarration: initialScene.first_scene_narration,
+    firstSceneProposedActions: initialScene.proposed_actions,
   };
 }
 
@@ -130,7 +135,7 @@ export async function generateInitialSceneData(
   sessionDescription: string | null,
   coverImageUrl: string,
   coverImageDescription: string,
-): Promise<InitialSceneData> {
+): Promise<InitialSceneData & { proposedActions: string[] }> {
   const generationStart = performance.now();
 
   // generate initial scene
@@ -171,6 +176,7 @@ Your response should be a JSON object with the following properties:
 - \`first_scene_oracle_event\` - ${promptConstants.firstSceneOracleEventFieldDescription}
 - \`first_scene_image_prompt\` - ${promptConstants.firstSceneImagePromptFieldDescription}
 - \`first_scene_narration\` - ${promptConstants.firstSceneTextPromptFieldDescription}
+- \`proposed_actions\` - ${promptConstants.proposedActionsFieldDescription}
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
@@ -186,6 +192,7 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
       first_scene_oracle_event: z.string(),
       first_scene_image_prompt: z.string(),
       first_scene_narration: z.string(),
+      proposed_actions: z.array(z.string()),
     }),
   );
 
@@ -211,5 +218,6 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
     imageUrl: firstSceneImageUrl,
     imageDescription: initialScene.first_scene_image_prompt,
     narration: initialScene.first_scene_narration,
+    proposedActions: initialScene.proposed_actions,
   };
 }
