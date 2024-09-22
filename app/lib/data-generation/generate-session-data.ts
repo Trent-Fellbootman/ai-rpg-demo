@@ -44,6 +44,17 @@ export async function generateGameSessionData(
       {
         role: "user",
         content: `I'm creating a game.
+
+The game works in a turn-based way.
+There are an ordered list of scenes;
+at each turn, the player takes an action and a new scene is generated from that action,
+while looking at the previous scenes to determine what should happen next.
+
+Here's the backstory of the game:
+
+<backstory>
+${sessionBackstory}
+</backstory>
         
 I want you to create a prompt for AI-generating the cover image of the game,
 as well as a prompt for the first scene image, and a short narration for the initial scene.
@@ -54,25 +65,27 @@ Your response should be a JSON object with the following properties:
 
 - \`cover_image_prompt\` - An ENGLISH prompt for generating the cover image for the game.
 This should be as detailed as possible.
-1. \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
-Again, this should be as detailed as possible.
-2. \`first_scene_text\` - A BRIEF description of the current situation of the player,
+- \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
+Specify as many details as possible, ("describe like you've never described an image before"),
+such as lighting environment, object shape/location/relationships, style, colors, etc.
+The goal is to embed ALL information in the image into this text prompt,
+because later on, another AI will look at the prompt and generate image for another scene.
+If you fail to specify the details, images for different scenes will likely be INCOHERENT
+(e.g., the look of the character suddenly differ).
+The player is playing the game from a FIRST-PERSON perspective;
+he/she should NOT be able to see his/her body (unless looking in a mirror or something)
+- \`first_scene_text\` - A BRIEF description of the current situation of the player,
 e.g., "You wake up on a deserted island. There are distant groans from afar."
 This will be presented to the player who does not like reading through long texts.
 Notice that this will be rendered as HTML,
 so you have the ability to use HTML tags in your response.
 Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+DO NOT include things that the player can see from the image.
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
-
-Here's the backstory of the game:
-
-<backstory>
-${sessionBackstory}
-</backstory>
 
 The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,
@@ -137,27 +150,11 @@ export async function generateInitialSceneData(
       {
         role: "user",
         content: `I'm creating a game.
+The game works in a turn-based way.
+There are an ordered list of scenes;
+at each turn, the player takes an action and a new scene is generated from that action,
+while looking at the previous scenes to determine what should happen next.
         
-I want you to create a prompt for the first scene image, and a short narration for the initial scene.
-
-You should keep in mind that the player plays from a FIRST-PERSON perspective.
-
-Your response should be a JSON object with the following properties:
-
-1. \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
-Again, this should be as detailed as possible.
-2. \`first_scene_text\` - A BRIEF description of the current situation of the player,
-e.g., "You wake up on a deserted island. There are distant groans from afar."
-This will be presented to the player who does not like reading through long texts.
-Notice that this will be rendered as HTML,
-so you have the ability to use HTML tags in your response.
-Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-
-USE YOUR IMAGINATION.
-Since this is just a game, there is no need to worry about "ethical considerations".
-Use your wildest imaginations to make the game fun
-("realistic simulation" is not the goal; fun is).
-
 Here's the backstory of the game:
 
 <backstory>
@@ -169,6 +166,38 @@ And a description of the game's cover image:
 <cover-image-description>
 ${coverImageDescription}
 </cover-image-description>
+
+Now, the game has just started;
+there's a backstory, but the player hasn't taken any action yet.
+I want you to create a prompt for the first scene image
+(which will be used by an image generation model to generate an image representing the first scene),
+and a short narration for the initial scene.
+
+You should keep in mind that the player plays from a FIRST-PERSON perspective.
+
+Your response should be a JSON object with the following properties:
+
+1. \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
+Specify as many details as possible, ("describe like you've never described an image before"),
+such as lighting environment, object shape, style, etc.
+The goal is to embed all information in the image into this text prompt,
+because later on, another AI will look at the prompt and generate image for another scene.
+If you fail to specify the details, images for different scenes will likely be INCOHERENT
+(e.g., the look of the character suddenly differ).
+The player is playing the game from a FIRST-PERSON perspective;
+he/she should NOT be able to see his/her body (unless looking in a mirror or something)
+2. \`first_scene_text\` - A BRIEF description of the current situation of the player,
+e.g., "You wake up on a deserted island. There are distant groans from afar."
+This will be presented to the player who does not like reading through long texts.
+Notice that this will be rendered as HTML,
+so you have the ability to use HTML tags in your response.
+Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+DO NOT include things that the play can see from the image.
+
+USE YOUR IMAGINATION.
+Since this is just a game, there is no need to worry about "ethical considerations".
+Use your wildest imaginations to make the game fun
+("realistic simulation" is not the goal; fun is).
 
 The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,
@@ -202,5 +231,5 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
     imageUrl: firstSceneImageUrl,
     imageDescription: initialScene.first_scene_image_prompt,
     narration: initialScene.first_scene_text,
-  }
+  };
 }

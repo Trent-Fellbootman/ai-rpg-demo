@@ -38,9 +38,9 @@ export async function generateNextSceneData(
   const scenesText = scenes
     .map(
       ({ imageDescription, narration, action }, _) => `<scene>
-<image-description>
+<scene-image-description>
 ${imageDescription}
-</image-description>
+</scene-image-description>
 <narration>
 ${narration}
 </narration>
@@ -97,6 +97,14 @@ Your response should be a JSON object with the following properties:
 
 1. \`image_prompt\` - A DETAILED, ENGLISH description of what the player sees on the next scene.
 This will be fed to an image generation model to generate the next scene image.
+Specify as many details as possible, ("describe like you've never described an image before"),
+such as lighting environment, object shape/location/relationships, style, colors, etc.
+The goal is to embed ALL information in the image into this text prompt,
+because later on, another AI will look at the prompt and generate image for another scene.
+If you fail to specify the details, images for different scenes will likely be INCOHERENT
+(e.g., the look of the character suddenly differ).
+The player is playing the game from a FIRST-PERSON perspective;
+he/she should NOT be able to see his/her body (unless looking in a mirror or something)
 2. \`narration\` - The narration for the next scene.
 This should be a BRIEF description of the things that happens next AND that the player should be able to perceive.
 DO NOT include things that the player cannot perceive (the player is playing the game from a first-person perspective).

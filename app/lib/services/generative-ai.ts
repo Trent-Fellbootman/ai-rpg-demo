@@ -84,7 +84,7 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
 //   }
 // }
 export async function generateImage(description: string): Promise<string> {
-  log.debug("Calling AIML API to generate image");
+  log.debug(description, "Calling AIML API to generate image");
 
   const start = performance.now();
 
