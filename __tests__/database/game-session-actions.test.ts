@@ -36,6 +36,34 @@ import {
 import { createGameTemplate } from "@/app/lib/database-actions/game-template-actions";
 
 describe("Game Session Actions", () => {
+  const sampleInitialSceneData = {
+    imageUrl: getFakeImageUrl(2),
+    imageDescription: "Initial scene image",
+    event: "Initial scene event",
+    narration: "You are in a dark forest.",
+    proposedActions: [
+      "Action 1",
+      "Action 2",
+      "Action 3",
+      "Action 4",
+      "Action 5",
+    ],
+  };
+
+  const sampleNewSceneData = {
+    imageUrl: getFakeImageUrl(3),
+    imageDescription: "New scene image",
+    event: "New scene event",
+    narration: "New narration.",
+    proposedActions: [
+      "New action 1",
+      "New action 2",
+      "New action 3",
+      "New action 4",
+      "New action 5",
+    ],
+  };
+
   test.concurrent("should create a game session with valid data", async () => {
     const email = `testuser-${uuidv4()}@example.com`;
     const hashedPassword = "hashedpassword";
@@ -47,12 +75,6 @@ describe("Game Session Actions", () => {
     const description = "A test game session";
     const imageUrl = getFakeImageUrl(1);
     const imageDescription = "Test image";
-    const initialSceneData = {
-      imageUrl: getFakeImageUrl(2),
-      imageDescription: "Initial scene image",
-      event: "Initial scene event",
-      narration: "You are in a dark forest.",
-    };
 
     const sessionId = await createGameSession(
       userId,
@@ -62,7 +84,7 @@ describe("Game Session Actions", () => {
       imageUrl,
       imageDescription,
       null,
-      initialSceneData,
+      sampleInitialSceneData,
     );
 
     expect(sessionId).toBeGreaterThan(0);
@@ -89,10 +111,9 @@ describe("Game Session Actions", () => {
     const scene = scenes[0];
 
     expect(scene).toEqual({
+      ...sampleInitialSceneData,
       imageUrl: expect.any(String),
-      imageDescription: initialSceneData.imageDescription,
-      narration: initialSceneData.narration,
-      event: "Initial scene event",
+      proposedActions: expect.any(Array),
       action: null,
     });
   });
@@ -107,12 +128,6 @@ describe("Game Session Actions", () => {
       const description = "A test game session";
       const imageUrl = getFakeImageUrl(1);
       const imageDescription = "Test image";
-      const initialSceneData = {
-        imageUrl: getFakeImageUrl(2),
-        imageDescription: "Initial scene image",
-        narration: "You are in a dark forest.",
-        event: "Initial scene event"
-      };
 
       await expect(
         createGameSession(
@@ -123,7 +138,7 @@ describe("Game Session Actions", () => {
           imageUrl,
           imageDescription,
           null,
-          initialSceneData,
+          sampleInitialSceneData,
         ),
       ).rejects.toThrowError(DatabaseError);
 
@@ -136,7 +151,7 @@ describe("Game Session Actions", () => {
           imageUrl,
           imageDescription,
           null,
-          initialSceneData,
+          sampleInitialSceneData,
         );
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
@@ -162,23 +177,17 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          event: "Initial scene event",
-          narration: "You are in a dark forest.",
-        },
+        sampleInitialSceneData,
       );
 
       const previousAction = "Go north";
-      const newSceneData = {
-        imageUrl: getFakeImageUrl(3),
-        imageDescription: "Second scene image",
-        narration: "You arrive at a clearing.",
-        event: "New scene event"
-      };
 
-      await addSceneToSession(userId, sessionId, previousAction, newSceneData);
+      await addSceneToSession(
+        userId,
+        sessionId,
+        previousAction,
+        sampleNewSceneData,
+      );
 
       // Get the scenes and check
       const scenes = await getScenesBySession(userId, sessionId);
@@ -186,18 +195,14 @@ describe("Game Session Actions", () => {
       expect(scenes.length).toBe(2);
 
       expect(scenes[0]).toEqual({
+        ...sampleInitialSceneData,
+        action: previousAction,
         imageUrl: expect.any(String),
-        imageDescription: "Initial scene image",
-        narration: "You are in a dark forest.",
-        event: "Initial scene event",
-        action: previousAction, // The first scene's action should now be set
       });
 
       expect(scenes[1]).toEqual({
+        ...sampleNewSceneData,
         imageUrl: expect.any(String),
-        imageDescription: newSceneData.imageDescription,
-        narration: newSceneData.narration,
-        event: "New scene event",
         action: null,
       });
     },
@@ -221,12 +226,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       // Create second user
@@ -237,15 +237,9 @@ describe("Game Session Actions", () => {
       );
 
       const previousAction = "Go north";
-      const newSceneData = {
-        imageUrl: getFakeImageUrl(3),
-        imageDescription: "Second scene image",
-        narration: "You arrive at a clearing.",
-        event: "New scene event"
-      };
 
       await expect(
-        addSceneToSession(userId2, sessionId, previousAction, newSceneData),
+        addSceneToSession(userId2, sessionId, previousAction, sampleNewSceneData),
       ).rejects.toThrowError(DatabaseError);
 
       try {
@@ -253,7 +247,7 @@ describe("Game Session Actions", () => {
           userId2,
           sessionId,
           previousAction,
-          newSceneData,
+          sampleNewSceneData,
         );
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
@@ -280,12 +274,7 @@ describe("Game Session Actions", () => {
       getFakeImageUrl(1),
       "Test image",
       null,
-      {
-        imageUrl: getFakeImageUrl(2),
-        imageDescription: "Initial scene image",
-        narration: "You are in a dark forest.",
-        event: "Initial scene event"
-      },
+      sampleInitialSceneData,
     );
 
     expect(await isSessionLocked(sessionId)).toBe(false);
@@ -324,12 +313,7 @@ describe("Game Session Actions", () => {
       getFakeImageUrl(1),
       "Test image",
       null,
-      {
-        imageUrl: getFakeImageUrl(2),
-        imageDescription: "Initial scene image",
-        narration: "You are in a dark forest.",
-        event: "Initial scene event"
-      },
+      sampleInitialSceneData,
     );
 
     expect(await isSessionLocked(sessionId)).toBe(false);
@@ -371,12 +355,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       expect((await getGameSessionsByUser(userId)).length).toBe(1);
@@ -428,21 +407,14 @@ describe("Game Session Actions", () => {
       getFakeImageUrl(1),
       "Test image",
       null,
-      {
-        imageUrl: getFakeImageUrl(2),
-        imageDescription: "Initial scene image",
-        narration: "You are in a dark forest.",
-        event: "Initial scene event"
-      },
+      sampleInitialSceneData,
     );
 
     const scene = await getSceneBySessionAndIndex(userId, sessionId, 0);
 
     expect(scene).toEqual({
+      ...sampleInitialSceneData,
       imageUrl: expect.any(String),
-      imageDescription: "Initial scene image",
-      narration: "You are in a dark forest.",
-      event: "Initial scene event",
       action: null,
     });
   });
@@ -464,12 +436,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       await expect(
@@ -512,12 +479,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       expect(await doesUserHaveGameSession(userId, sessionId)).toBe(true);
@@ -542,12 +504,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       expect(await getGameSessionsByUser(userId)).toEqual([
@@ -586,12 +543,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       expect(await getGameSessionMetadata(userId, sessionId)).toEqual({
@@ -637,12 +589,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         null,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       await deleteGameSession(userId, sessionId);
@@ -690,12 +637,7 @@ describe("Game Session Actions", () => {
         getFakeImageUrl(1),
         "Test image",
         templateId,
-        {
-          imageUrl: getFakeImageUrl(2),
-          imageDescription: "Initial scene image",
-          narration: "You are in a dark forest.",
-          event: "Initial scene event"
-        },
+        sampleInitialSceneData,
       );
 
       expect(
