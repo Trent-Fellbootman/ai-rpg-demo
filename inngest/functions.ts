@@ -16,6 +16,7 @@ const AddGeneratedSceneInputsSchema = z.object({
   sessionId: z.number(),
   previousAction: z.string(),
   nextScene: z.object({
+    event: z.string(),
     imageUrl: z.string(),
     imageDescription: z.string(),
     narration: z.string(),

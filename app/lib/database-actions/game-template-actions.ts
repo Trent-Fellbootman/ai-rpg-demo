@@ -7,6 +7,10 @@ import { createImageUrl, downloadImageToStorage } from "./utils";
 
 import { imageUrlExpireSeconds } from "@/app-config";
 
+import { logger } from "@/app/lib/logger";
+
+const log = logger.child({ module: "database-actions" });
+
 const prisma = new PrismaClient();
 
 export async function createGameTemplate(

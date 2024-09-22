@@ -111,6 +111,7 @@ export async function createGameSessionFromTemplateAction(
     templateMetadata.imageDescription,
     templateId,
     {
+      event: initialSceneGenerationResponse.event,
       imageDescription: initialSceneGenerationResponse.imageDescription,
       imageUrl: initialSceneGenerationResponse.imageUrl,
       narration: initialSceneGenerationResponse.narration,
@@ -181,9 +182,10 @@ export async function createNewGameSessionAction(
     initialSceneGenerationResponse.coverImageDescription,
     templateId,
     {
+      event: initialSceneGenerationResponse.firstSceneEvent,
       imageDescription: initialSceneGenerationResponse.coverImageDescription,
       imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
-      narration: initialSceneGenerationResponse.firstSceneText,
+      narration: initialSceneGenerationResponse.firstSceneNarration,
     },
   );
 
@@ -311,7 +313,9 @@ Statistics:
 - Scheduling background task for database update: ${databaseUpdateBackgroundTaskSchedulingEnd - nextSceneDataGenerationEnd}ms
 - Total: ${databaseUpdateBackgroundTaskSchedulingEnd - start}ms`);
 
-  return { nextScene: nextScene };
+  const {event, ...playerPerceivableNextSceneData} = nextScene;
+
+  return { nextScene: playerPerceivableNextSceneData };
 }
 
 export async function getSceneViewInitialData(

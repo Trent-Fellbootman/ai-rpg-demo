@@ -7,6 +7,7 @@ import {
   generateImage,
 } from "@/app/lib/services/generative-ai";
 import { logger } from "@/app/lib/logger";
+import { promptConstants } from "./prompt-constants";
 
 const log = logger.child({ module: "data-generation" });
 
@@ -16,15 +17,17 @@ export type GameSessionDataGenerationResponse = {
   description: string | null;
   temporaryCoverImageUrl: string;
   coverImageDescription: string;
+  firstSceneEvent: string;
   temporaryFirstSceneImageUrl: string;
   firstSceneImageDescription: string;
-  firstSceneText: string;
+  firstSceneNarration: string;
 };
 
-const aiOutputSchema = z.object({
+const firstSceneAndCoverImagePromptAiDataSchema = z.object({
   cover_image_prompt: z.string(),
+  first_scene_oracle_event: z.string(),
   first_scene_image_prompt: z.string(),
-  first_scene_text: z.string(),
+  first_scene_narration: z.string(),
 });
 
 export async function generateGameSessionData(
@@ -65,34 +68,22 @@ Your response should be a JSON object with the following properties:
 
 - \`cover_image_prompt\` - An ENGLISH prompt for generating the cover image for the game.
 This should be as detailed as possible.
-- \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
-Specify as many details as possible, ("describe like you've never described an image before"),
-such as lighting environment, object shape/location/relationships, style, colors, etc.
-The goal is to embed ALL information in the image into this text prompt,
-because later on, another AI will look at the prompt and generate image for another scene.
-If you fail to specify the details, images for different scenes will likely be INCOHERENT
-(e.g., the look of the character suddenly differ).
-The player is playing the game from a FIRST-PERSON perspective;
+- \`first_scene_oracle_event\` - ${promptConstants.firstSceneOracleEventFieldDescription}
+- \`first_scene_image_prompt\` - ${promptConstants.firstSceneImagePromptFieldDescription}
 he/she should NOT be able to see his/her body (unless looking in a mirror or something)
-- \`first_scene_text\` - A BRIEF description of the current situation of the player,
-e.g., "You wake up on a deserted island. There are distant groans from afar."
-This will be presented to the player who does not like reading through long texts.
-Notice that this will be rendered as HTML,
-so you have the ability to use HTML tags in your response.
-Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-DO NOT include things that the player can see from the image.
+- \`first_scene_narration\` - ${promptConstants.firstSceneTextPromptFieldDescription}
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
 
-The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
+The \`first_scene_oracle_event\` and \`first_scene_narration\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,
 The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
       },
     ],
-    aiOutputSchema,
+    firstSceneAndCoverImagePromptAiDataSchema,
   );
 
   const initialScene = initialSceneGenerationResponse.content;
@@ -119,13 +110,15 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
     description: sessionDescription,
     coverImageDescription: initialScene.cover_image_prompt,
     temporaryCoverImageUrl: coverImageUrl,
+    firstSceneEvent: initialScene.first_scene_oracle_event,
     temporaryFirstSceneImageUrl: firstSceneImageUrl,
     firstSceneImageDescription: initialScene.first_scene_image_prompt,
-    firstSceneText: initialScene.first_scene_text,
+    firstSceneNarration: initialScene.first_scene_narration,
   };
 }
 
 export interface InitialSceneData {
+  event: string;
   imageUrl: string;
   imageDescription: string;
   narration: string;
@@ -150,10 +143,8 @@ export async function generateInitialSceneData(
       {
         role: "user",
         content: `I'm creating a game.
-The game works in a turn-based way.
-There are an ordered list of scenes;
-at each turn, the player takes an action and a new scene is generated from that action,
-while looking at the previous scenes to determine what should happen next.
+
+${promptConstants.gameMechanicsDescription}
         
 Here's the backstory of the game:
 
@@ -177,36 +168,24 @@ You should keep in mind that the player plays from a FIRST-PERSON perspective.
 
 Your response should be a JSON object with the following properties:
 
-1. \`first_scene_image_prompt\` - An ENGLISH prompt for generating the first scene image of the game.
-Specify as many details as possible, ("describe like you've never described an image before"),
-such as lighting environment, object shape, style, etc.
-The goal is to embed all information in the image into this text prompt,
-because later on, another AI will look at the prompt and generate image for another scene.
-If you fail to specify the details, images for different scenes will likely be INCOHERENT
-(e.g., the look of the character suddenly differ).
-The player is playing the game from a FIRST-PERSON perspective;
-he/she should NOT be able to see his/her body (unless looking in a mirror or something)
-2. \`first_scene_text\` - A BRIEF description of the current situation of the player,
-e.g., "You wake up on a deserted island. There are distant groans from afar."
-This will be presented to the player who does not like reading through long texts.
-Notice that this will be rendered as HTML,
-so you have the ability to use HTML tags in your response.
-Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-DO NOT include things that the play can see from the image.
+- \`first_scene_oracle_event\` - ${promptConstants.firstSceneOracleEventFieldDescription}
+- \`first_scene_image_prompt\` - ${promptConstants.firstSceneImagePromptFieldDescription}
+- \`first_scene_narration\` - ${promptConstants.firstSceneTextPromptFieldDescription}
 
 USE YOUR IMAGINATION.
 Since this is just a game, there is no need to worry about "ethical considerations".
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
 
-The \`first_scene_text\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
+The \`first_scene_narration\` and the \`first_scene_event\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,
 The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
       },
     ],
     z.object({
+      first_scene_oracle_event: z.string(),
       first_scene_image_prompt: z.string(),
-      first_scene_text: z.string(),
+      first_scene_narration: z.string(),
     }),
   );
 
@@ -228,8 +207,9 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
 `);
 
   return {
+    event: initialScene.first_scene_oracle_event,
     imageUrl: firstSceneImageUrl,
     imageDescription: initialScene.first_scene_image_prompt,
-    narration: initialScene.first_scene_text,
+    narration: initialScene.first_scene_narration,
   };
 }
