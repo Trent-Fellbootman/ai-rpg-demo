@@ -757,6 +757,7 @@ describe("Game Template Actions", () => {
     await addComment(userId, template2Id, "Comment 3");
     await addComment(anotherUserId, template2Id, "Comment 4");
 
+    // TODO: create enoungh sample images for this
     // Create game sessions and add scenes (actions)
     const session1Id = await createGameSession(
       userId,
@@ -770,6 +771,7 @@ describe("Game Template Actions", () => {
         imageUrl: getFakeImageUrl(4),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event 1"
       },
     );
 
@@ -777,6 +779,7 @@ describe("Game Template Actions", () => {
       imageUrl: getFakeImageUrl(5),
       imageDescription: "Scene 2 image",
       narration: "You arrive at a clearing.",
+        event: "Initial scene event 2"
     });
 
     const session2Id = await createGameSession(
@@ -791,6 +794,7 @@ describe("Game Template Actions", () => {
         imageUrl: getFakeImageUrl(7),
         imageDescription: "Scene 3 image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event 3"
       },
     );
 
@@ -798,12 +802,14 @@ describe("Game Template Actions", () => {
       imageUrl: getFakeImageUrl(8),
       imageDescription: "Scene 4 image",
       narration: "You see a river.",
+        event: "Initial scene event 4"
     });
 
     await addSceneToSession(userId, session2Id, "Cross the river", {
       imageUrl: getFakeImageUrl(9),
       imageDescription: "Scene 5 image",
       narration: "You reach the other side.",
+        event: "Initial scene event 5"
     });
 
     // Get and validate statistics for template 1
@@ -914,6 +920,7 @@ describe("Game Template Actions", () => {
         imageUrl: getFakeImageUrl(1),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event 1"
       },
     );
 
@@ -929,6 +936,7 @@ describe("Game Template Actions", () => {
         imageUrl: getFakeImageUrl(1),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event 2"
       },
     );
 
@@ -936,6 +944,7 @@ describe("Game Template Actions", () => {
       imageUrl: getFakeImageUrl(2),
       imageDescription: "Scene 2 image",
       narration: "You arrive at a clearing.",
+        event: "Next scene event"
     });
 
     // Simulate visits and pushes by creating records in relevant tables

@@ -58,6 +58,7 @@ model Scene {
   imageUrl            String?
   imageUrlExpiration  DateTime?
   imageDescription    String
+  event               String      @default("")
   narration           String
   action              String?
   orderInSession      Int

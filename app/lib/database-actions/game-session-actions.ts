@@ -13,6 +13,13 @@ import { imageUrlExpireSeconds } from "@/app-config";
 
 const prisma = new PrismaClient();
 
+export interface SceneDataNoAction {
+  imageUrl: string;
+  imageDescription: string;
+  narration: string;
+  event: string;
+}
+
 export async function createGameSession(
   userId: number,
   name: string,
@@ -21,11 +28,7 @@ export async function createGameSession(
   imageUrl: string,
   imageDescription: string,
   parentGameTemplateId: number | null,
-  initialSceneData: {
-    imageUrl: string;
-    imageDescription: string;
-    narration: string;
-  },
+  initialSceneData: SceneDataNoAction,
 ): Promise<number> {
   log.debug("Started creating game session in database");
 
@@ -63,6 +66,7 @@ export async function createGameSession(
               imagePath: firstSceneImagePath,
               imageDescription: initialSceneData.imageDescription,
               narration: initialSceneData.narration,
+              event: initialSceneData.event,
               action: null,
               orderInSession: 0,
             },
@@ -105,11 +109,7 @@ export async function addSceneToSession(
   userId: number,
   sessionId: number,
   previousAction: string,
-  newSceneData: {
-    imageUrl: string;
-    imageDescription: string;
-    narration: string;
-  },
+  newSceneData: SceneDataNoAction,
 ): Promise<void> {
   let imagePath: string;
 
@@ -179,6 +179,7 @@ export async function addSceneToSession(
         imagePath: imagePath,
         imageDescription: newSceneData.imageDescription,
         narration: newSceneData.narration,
+        event: newSceneData.event,
         action: null,
         orderInSession: lastScene.orderInSession + 1,
         gameSessionId: sessionId,
@@ -382,12 +383,7 @@ export async function getSceneBySessionAndIndex(
   userId: number,
   sessionId: number,
   sceneIndex: number,
-): Promise<{
-  imageUrl: string;
-  imageDescription: string;
-  narration: string;
-  action: string | null;
-}> {
+): Promise<SceneData> {
   if (!(await doesUserHaveGameSession(userId, sessionId))) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
@@ -409,6 +405,7 @@ export async function getSceneBySessionAndIndex(
       imageUrlExpiration: true,
       narration: true,
       action: true,
+      event: true,
     },
   });
 
@@ -446,6 +443,7 @@ export async function getSceneBySessionAndIndex(
         imageDescription: scene.imageDescription,
         narration: scene.narration,
         action: scene.action,
+        event: scene.event,
       };
     } catch (error) {
       throw new DatabaseError(
@@ -460,7 +458,12 @@ export async function getSceneBySessionAndIndex(
     imageDescription: scene.imageDescription,
     narration: scene.narration,
     action: scene.action,
+    event: scene.event,
   };
+}
+
+export interface SceneData extends SceneDataNoAction {
+  action: string | null;
 }
 
 /**
@@ -474,12 +477,7 @@ export async function getScenesBySession(
   userId: number,
   sessionId: number,
 ): Promise<
-  {
-    imageUrl: string;
-    imageDescription: string;
-    narration: string;
-    action: string | null;
-  }[]
+  SceneData[]
 > {
   const imageUrlExpiredScenes = await prisma.scene.findMany({
     where: {
@@ -544,6 +542,7 @@ export async function getScenesBySession(
       imageUrl: true,
       imageDescription: true,
       narration: true,
+      event: true,
       action: true,
     },
     orderBy: {
@@ -562,10 +561,8 @@ export async function getScenesBySession(
 
   return scenes.map((scene) => {
     return {
-      imageUrl: scene.imageUrl!,
-      imageDescription: scene.imageDescription,
-      narration: scene.narration,
-      action: scene.action,
+      ...scene,
+      imageUrl: scene.imageUrl!
     };
   });
 }

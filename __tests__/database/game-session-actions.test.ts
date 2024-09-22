@@ -50,6 +50,7 @@ describe("Game Session Actions", () => {
     const initialSceneData = {
       imageUrl: getFakeImageUrl(2),
       imageDescription: "Initial scene image",
+      event: "Initial scene event",
       narration: "You are in a dark forest.",
     };
 
@@ -91,6 +92,7 @@ describe("Game Session Actions", () => {
       imageUrl: expect.any(String),
       imageDescription: initialSceneData.imageDescription,
       narration: initialSceneData.narration,
+      event: "Initial scene event",
       action: null,
     });
   });
@@ -109,6 +111,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event"
       };
 
       await expect(
@@ -162,6 +165,7 @@ describe("Game Session Actions", () => {
         {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
+          event: "Initial scene event",
           narration: "You are in a dark forest.",
         },
       );
@@ -171,6 +175,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(3),
         imageDescription: "Second scene image",
         narration: "You arrive at a clearing.",
+        event: "New scene event"
       };
 
       await addSceneToSession(userId, sessionId, previousAction, newSceneData);
@@ -184,6 +189,7 @@ describe("Game Session Actions", () => {
         imageUrl: expect.any(String),
         imageDescription: "Initial scene image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event",
         action: previousAction, // The first scene's action should now be set
       });
 
@@ -191,6 +197,7 @@ describe("Game Session Actions", () => {
         imageUrl: expect.any(String),
         imageDescription: newSceneData.imageDescription,
         narration: newSceneData.narration,
+        event: "New scene event",
         action: null,
       });
     },
@@ -218,6 +225,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -233,6 +241,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(3),
         imageDescription: "Second scene image",
         narration: "You arrive at a clearing.",
+        event: "New scene event"
       };
 
       await expect(
@@ -275,6 +284,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event"
       },
     );
 
@@ -318,6 +328,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event"
       },
     );
 
@@ -364,6 +375,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -420,6 +432,7 @@ describe("Game Session Actions", () => {
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Initial scene image",
         narration: "You are in a dark forest.",
+        event: "Initial scene event"
       },
     );
 
@@ -429,6 +442,7 @@ describe("Game Session Actions", () => {
       imageUrl: expect.any(String),
       imageDescription: "Initial scene image",
       narration: "You are in a dark forest.",
+      event: "Initial scene event",
       action: null,
     });
   });
@@ -454,6 +468,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -501,6 +516,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -530,6 +546,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -573,6 +590,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -623,6 +641,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
@@ -675,6 +694,7 @@ describe("Game Session Actions", () => {
           imageUrl: getFakeImageUrl(2),
           imageDescription: "Initial scene image",
           narration: "You are in a dark forest.",
+          event: "Initial scene event"
         },
       );
 
