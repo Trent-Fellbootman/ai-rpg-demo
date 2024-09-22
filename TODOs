@@ -1,0 +1,4 @@
+- Optimize next scene generation TTFT (Time To First Token).
+Generate event first, then generate narration and image prompt in parallel from the event.
+Stream the narration to the user.
+This should reduce TTFT to about 2s, and the total processing time to about 6s.
