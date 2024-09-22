@@ -79,6 +79,7 @@ export async function downloadImageToStorage(
 
     blob = await response.blob();
   } catch (error) {
+    log.error(error, `Failed to fetch image from ${imageUrl}`);
     throw new Error(`Failed to fetch image`);
   }
 

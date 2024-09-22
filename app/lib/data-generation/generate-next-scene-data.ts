@@ -108,7 +108,9 @@ Your response should be a JSON object with the following properties:
 
 - \`oracle_event\` - A description of what happened in the first scene.
 Such a description is written from an "oracle" perspective.
-Include both what the player can and cannot perceive.
+And it should be written in a third-person tone (e.g., "The player" instead of "You").
+It should include not only what the happened around the player,
+but also ongoing events in the game world that the player cannot perceive.
 - \`image_prompt\` - A DETAILED, ENGLISH description of what the player sees on the next scene.
 This will be fed to an image generation model to generate the next scene image.
 Specify as many details as possible, ("describe like you've never described an image before"),
@@ -122,13 +124,10 @@ he/she should NOT be able to see his/her body (unless looking in a mirror or som
 - \`narration\` - The narration for the next scene.
 This should be a BRIEF description of the things that happens next AND that the player should be able to perceive.
 DO NOT include things that the player cannot perceive (the player is playing the game from a first-person perspective).
-This will be presented to the player who does NOT like reading through long texts.
+Make it BRIEF; this will be presented to the player who does NOT like reading through long texts.
 Notice that this will be rendered as HTML,
 so you have the ability to use HTML tags in your response.
 Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-NOTICE: The player will be able to see the image, so ONLY include things that the player cannot see (e.g., sounds);
-DO NOT paraphrase \`image_prompt\`.
-In this way, the \`narration\` field should be very short.
 
 These JSON fields should all pertain to the "world state" AFTER the player has taken the action,
 NOT before the action completes.
@@ -138,14 +137,46 @@ Since this is just a game, there is no need to worry about "ethical consideratio
 Use your wildest imaginations to make the game fun
 ("realistic simulation" is not the goal; fun is).
 
-JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.
+You are ENCOURAGED to use your imagination and generate events that are not direct results of player's actions,
+as long as those events are reasonable and logically consistent with the game world.
+For example, how would a character feel if he/she was hurt by the player?
+Could there be secret schemes against the player carried out by some other forces in the game world?
+Could there be random events out of the player's control?
+Natural disasters? Accidents? You name it.
+There could be a lot of hidden storylines going on without being notified by the player
+(and you can track and progress those plots in the \`oracle-event\` fields in scenes.
+just don't evolve too many hidden storylines simultaneously in one scene to avoid making the \`oracle-event\` field too long).
+You should generate events PROACTIVELY instead of passively wait for player input.
+Of course, it is best that the events are related (even if not direct result) to the player's actions
+(e.g., the player killed a pedestrian several scenes ago and now his brother is coming for the player).
+When the time is right, these events will go to the player proactively.
+
+Try to keep the player busy and continuously perceiving "new game content".
+Let "new game content" find the player proactively
+(e.g., "A man with gun shows up, saying that he will avenge his brother by killing you.")
+even if the player is not taking meaningful actions.
+DO NOT make the player have to create game content him/herself by taking actions.
+Keep the gaming experience fresh and new.
+Try to put the player in a situation where he/she MUST take an action because of some impending event
+(e.g., someone trying to kill him/her, someone in the game world talking to the player,
+someone asking for rescue, some natural disaster, etc.).
+
+Player's actions may NOT always succeed.
+E.g., if the player has no weapon, there's man with a gun trying to kill the player,
+then the player cannot escape or kill the man even if he/she takes an action like "kill the man".
+You should ensure that the consequence of the player's action is REASONABLE and POSSIBLE in the game world,
+and you are ALLOWED to make player's actions result in an unexpected way.
 
 The \`oracle_event\` and \`narration\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE USER'S ACTION INPUT.
 However, regardless of the language of the user's action input,
 \`image_prompt\` MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.
 
 Again, the player is playing the game from a FIRST-PERSON perspective;
-he/she should NOT be able to see his/her body (unless looking in a mirror or something)`,
+he/she should NOT be able to see his/her body (unless looking in a mirror or something)
+
+JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.
+
+TRY TO GIVE THE PLAYER NEW GAME CONTENT (A "SURPRISE") ON EVERY SCENE.`,
       },
     ],
     undefined,

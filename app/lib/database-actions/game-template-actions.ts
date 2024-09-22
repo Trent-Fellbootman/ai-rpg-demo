@@ -30,9 +30,10 @@ export async function createGameTemplate(
   try {
     imagePath = await downloadImageToStorage(newGameTemplateData.imageUrl);
   } catch (error) {
+    log.error(error, `Failed to download image to storage`);
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      `Failed to download image`,
+      `Failed to download image to storage`,
     );
   }
 
