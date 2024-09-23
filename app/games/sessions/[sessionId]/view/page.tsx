@@ -10,7 +10,7 @@ export default async function Page({
 
   return (
     <div className="flex justify-center">
-      <div className="max-w-2xl">
+      <div className="w-full max-w-xl">
         <SessionDisplayView sessionId={parseInt(sessionId)} userId={user.id} />
       </div>
     </div>

@@ -4,7 +4,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Card, CardBody } from "@nextui-org/card";
 import { Image } from "@nextui-org/image";
 import { Spacer } from "@nextui-org/spacer";
-
 import "swiper/css";
 import parse from "html-react-parser";
 
@@ -21,18 +20,20 @@ export function SessionDisplayViewClient({
   }[];
 }) {
   return (
-    <Swiper slidesPerView={1} spaceBetween={50}>
-      {Array.from({ length: scenes.length }, (_, index) => (
-        <SwiperSlide key={index}>
-          <SceneCard
-            key={index}
-            action={scenes[index].action}
-            imageUrl={scenes[index].imageUrl}
-            text={scenes[index].narration}
-          />
-        </SwiperSlide>
-      ))}
-    </Swiper>
+    <div className="w-full max-w-full">
+      <Swiper slidesPerView={1} spaceBetween={50} style={{ width: "100%" }}>
+        {Array.from({ length: scenes.length }, (_, index) => (
+          <SwiperSlide key={index}>
+            <SceneCard
+              key={index}
+              action={scenes[index].action}
+              imageUrl={scenes[index].imageUrl}
+              text={scenes[index].narration}
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
   );
 }
 
@@ -49,7 +50,18 @@ async function SceneCard({
     <Card className="w-full p-4 shadow-lg">
       <CardBody>
         <div className="flex justify-center">
-          <Image alt="Card Image" className="w-full" src={imageUrl} />
+          <Image
+            alt="Scene image"
+            className="rounded-xl"
+            height={1024}
+            sizes="100vw"
+            src={imageUrl}
+            style={{
+              width: "100%",
+              height: "auto",
+            }}
+            width={1024}
+          />
         </div>
         <div className="flex flex-col space-y-4 mt-4">
           {/* First text bubble aligned to the left */}

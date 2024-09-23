@@ -1,5 +1,8 @@
 import { SessionDisplayViewClient } from "@/app/ui/game/session-display-view/session-display-view-client";
-import { doesUserHaveGameSession, getScenesBySession } from "@/app/lib/database-actions/game-session-actions";
+import {
+  doesUserHaveGameSession,
+  getScenesBySession,
+} from "@/app/lib/database-actions/game-session-actions";
 
 export async function SessionDisplayView({
   userId,
