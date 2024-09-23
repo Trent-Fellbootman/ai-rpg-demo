@@ -89,10 +89,10 @@ export async function createGameSessionFromTemplateAction(
   const authorizationEnd = performance.now();
 
   // TODO: only get the fields that we really need
-  const templateMetadata = await getGameTemplateMetadataAndStatistics(
+  const templateMetadata = await getGameTemplateMetadataAndStatistics({
     userId,
-    templateId,
-  );
+    gameTemplateId: templateId,
+  });
 
   const templateDataRetrievalEnd = performance.now();
 
@@ -109,22 +109,22 @@ export async function createGameSessionFromTemplateAction(
   const initialSceneDataGenerationEnd = performance.now();
 
   // TODO: optimize for concurrency
-  const newSessionId = await createGameSession(
-    user.id,
-    templateMetadata.name,
-    templateMetadata.backstory,
-    templateMetadata.description,
-    templateMetadata.imageUrl,
-    templateMetadata.imageDescription,
-    templateId,
-    {
+  const newSessionId = await createGameSession({
+    userId: user.id,
+    name: templateMetadata.name,
+    backstory: templateMetadata.backstory,
+    description: templateMetadata.description,
+    imageUrl: templateMetadata.imageUrl,
+    imageDescription: templateMetadata.imageDescription,
+    parentGameTemplateId: templateId,
+    initialSceneData: {
       event: initialSceneGenerationResponse.event,
       imageDescription: initialSceneGenerationResponse.imageDescription,
       imageUrl: initialSceneGenerationResponse.imageUrl,
       narration: initialSceneGenerationResponse.narration,
       proposedActions: initialSceneGenerationResponse.proposedActions,
     },
-  );
+  });
 
   const databaseUpdateEnd = performance.now();
 
@@ -171,32 +171,35 @@ export async function createNewGameSessionAction(
 
   // first create session
   if (result.data.save_as_template) {
-    templateId = await createGameTemplate(user.id, {
-      name: initialSceneGenerationResponse.name,
-      imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
-      imageDescription: initialSceneGenerationResponse.coverImageDescription,
-      description: initialSceneGenerationResponse.description,
-      backStory: initialSceneGenerationResponse.backstory,
-      isPublic: result.data.make_template_public,
+    templateId = await createGameTemplate({
+      userId: user.id,
+      newGameTemplateData: {
+        name: initialSceneGenerationResponse.name,
+        imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
+        imageDescription: initialSceneGenerationResponse.coverImageDescription,
+        description: initialSceneGenerationResponse.description,
+        backStory: initialSceneGenerationResponse.backstory,
+        isPublic: result.data.make_template_public,
+      },
     });
   }
 
-  const newSessionId = await createGameSession(
-    user.id,
-    initialSceneGenerationResponse.name,
-    initialSceneGenerationResponse.backstory,
-    initialSceneGenerationResponse.description,
-    initialSceneGenerationResponse.temporaryCoverImageUrl,
-    initialSceneGenerationResponse.coverImageDescription,
-    templateId,
-    {
+  const newSessionId = await createGameSession({
+    userId: user.id,
+    name: initialSceneGenerationResponse.name,
+    backstory: initialSceneGenerationResponse.backstory,
+    description: initialSceneGenerationResponse.description,
+    imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
+    imageDescription: initialSceneGenerationResponse.coverImageDescription,
+    parentGameTemplateId: templateId,
+    initialSceneData: {
       event: initialSceneGenerationResponse.firstSceneEvent,
       imageDescription: initialSceneGenerationResponse.coverImageDescription,
       imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
       narration: initialSceneGenerationResponse.firstSceneNarration,
       proposedActions: initialSceneGenerationResponse.firstSceneProposedActions,
     },
-  );
+  });
 
   const databaseUpdateEnd = performance.now();
 
@@ -249,7 +252,7 @@ export async function createNextSceneAction(
   }
 
   // check that the user owns the session
-  if (!(await doesUserHaveGameSession(userId, sessionId))) {
+  if (!(await doesUserHaveGameSession({ userId, sessionId }))) {
     throw new Error("User does not own session.");
   }
 
@@ -258,15 +261,15 @@ export async function createNextSceneAction(
   log.debug("Finished authorization check; trying to acquire session lock");
 
   // lock the session before retrieving inputs
-  await tryLockSessionUntilAcquire(sessionId);
+  await tryLockSessionUntilAcquire({ sessionId });
   const lockSessionEnd = performance.now();
 
   log.debug("Session lock acquired; retrieving input data from database");
 
   // retrieve all the scenes in the session
   const [sessionMetadata, scenes] = await Promise.all([
-    getGameSessionMetadata(userId, sessionId),
-    getScenesBySession(userId, sessionId),
+    getGameSessionMetadata({ userId, sessionId }),
+    getScenesBySession({ userId, sessionId }),
   ]);
 
   const inputDataRetrievalEnd = performance.now();
@@ -282,7 +285,7 @@ export async function createNextSceneAction(
       formParseResult.data.action,
     );
   } catch (error) {
-    await unlockSession(sessionId);
+    await unlockSession({ sessionId });
 
     return {
       errors: {
@@ -349,7 +352,11 @@ export async function getSceneViewInitialData(
   const parsedIndex = sceneIndex === "last" ? sessionLength - 1 : sceneIndex;
 
   const [scene] = await Promise.all([
-    getSceneBySessionAndIndex(user.id, sessionId, parsedIndex),
+    getSceneBySessionAndIndex({
+      userId: user.id,
+      sessionId,
+      sceneIndex: parsedIndex,
+    }),
   ]);
 
   return {
@@ -392,7 +399,7 @@ export async function postCommentAction(
 
   const { text } = formParseResult.data;
 
-  await addComment(userId, gameTemplateId, text);
+  await addComment({ userId, gameTemplateId, text });
 
   revalidatePath(getTemplateOverviewPath(gameTemplateId));
 

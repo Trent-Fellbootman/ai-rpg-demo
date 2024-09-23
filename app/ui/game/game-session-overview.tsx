@@ -13,7 +13,10 @@ export default async function GameSessionOverview({
   userId: number;
   sessionId: number;
 }) {
-  const gameSessionMetadata = await getGameSessionMetadata(userId, sessionId);
+  const gameSessionMetadata = await getGameSessionMetadata({
+    userId,
+    sessionId,
+  });
 
   return (
     <div className="flex flex-col">

@@ -6,15 +6,17 @@ import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
 
 import { imageUrlExpireSeconds } from "@/app-config";
-
 import { logger } from "@/app/lib/logger";
 
 const log = logger.child({ module: "database-actions" });
 
 const prisma = new PrismaClient();
 
-export async function createGameTemplate(
-  userId: number,
+export async function createGameTemplate({
+  userId,
+  newGameTemplateData,
+}: {
+  userId: number;
   newGameTemplateData: {
     name: string;
     imageUrl: string;
@@ -22,8 +24,8 @@ export async function createGameTemplate(
     backStory: string;
     description: string | null;
     isPublic: boolean;
-  },
-): Promise<number> {
+  };
+}): Promise<number> {
   let imagePath: string;
 
   // download image to storage
@@ -69,10 +71,13 @@ export async function createGameTemplate(
   }
 }
 
-export async function addLike(
-  userId: number,
-  gameTemplateId: number,
-): Promise<void> {
+export async function addLike({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}): Promise<void> {
   // Check if the game template is public and not deleted
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: { id: gameTemplateId, isPublic: true, deleted: false },
@@ -123,10 +128,13 @@ export async function addLike(
   }
 }
 
-export async function deleteLike(
-  userId: number,
-  gameTemplateId: number,
-): Promise<void> {
+export async function deleteLike({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}): Promise<void> {
   const existingLike = await prisma.gameTemplateLike.findFirst({
     where: {
       userId,
@@ -149,11 +157,15 @@ export async function deleteLike(
 }
 
 // TODO: atomicity issue
-export async function addComment(
-  userId: number,
-  gameTemplateId: number,
-  text: string,
-): Promise<number> {
+export async function addComment({
+  userId,
+  gameTemplateId,
+  text,
+}: {
+  userId: number;
+  gameTemplateId: number;
+  text: string;
+}): Promise<number> {
   // Check if the game template is public and not deleted
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: { id: gameTemplateId, isPublic: true, deleted: false },
@@ -181,10 +193,13 @@ export async function addComment(
   return newComment.id;
 }
 
-export async function deleteGameTemplate(
-  userId: number,
-  templateId: number,
-): Promise<void> {
+export async function deleteGameTemplate({
+  userId,
+  templateId,
+}: {
+  userId: number;
+  templateId: number;
+}): Promise<void> {
   const gameTemplate = await prisma.gameTemplate.findFirst({
     where: {
       id: templateId,
@@ -252,10 +267,12 @@ export async function deleteGameTemplate(
  * @param gameTemplateId - ID of the game template
  * @returns The number of likes
  */
-export async function getGameTemplateLikeCount(
-  gameTemplateId: number,
-): Promise<number> {
-  return await prisma.gameTemplateLike.count({
+export async function getGameTemplateLikeCount({
+  gameTemplateId,
+}: {
+  gameTemplateId: number;
+}): Promise<number> {
+  return prisma.gameTemplateLike.count({
     where: {
       gameTemplateId: gameTemplateId,
       deleted: false,
@@ -263,10 +280,13 @@ export async function getGameTemplateLikeCount(
   });
 }
 
-export async function deleteComment(
-  userId: number,
-  commentId: number,
-): Promise<void> {
+export async function deleteComment({
+  userId,
+  commentId,
+}: {
+  userId: number;
+  commentId: number;
+}): Promise<void> {
   const comment = await prisma.gameTemplateComment.findFirst({
     where: {
       id: commentId,
@@ -303,10 +323,13 @@ export async function deleteComment(
  * @param gameTemplateId
  * @returns
  */
-export async function getComments(
-  userId: number,
-  gameTemplateId: number,
-): Promise<
+export async function getComments({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}): Promise<
   {
     id: number;
     username: string | null;
@@ -356,10 +379,13 @@ export interface GameTemplateMetadata {
   isPublic: boolean;
 }
 
-export async function getGameTemplateMetadataAndStatistics(
-  userId: number,
-  gameTemplateId: number,
-): Promise<GameTemplateMetadata & GameTemplateStatistics> {
+export async function getGameTemplateMetadataAndStatistics({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}): Promise<GameTemplateMetadata & GameTemplateStatistics> {
   const [gameTemplate, statistics] = await Promise.all([
     prisma.gameTemplate.findFirst({
       where: {
@@ -393,7 +419,7 @@ export async function getGameTemplateMetadataAndStatistics(
         },
       },
     }),
-    getGameTemplateStatistics(gameTemplateId),
+    getGameTemplateStatistics({ gameTemplateId }),
   ]);
 
   if (!gameTemplate) {
@@ -463,9 +489,11 @@ export interface GameTemplateStatistics {
   trendingPushCount: number;
 }
 
-export async function getGameTemplatesByUser(
-  userId: number,
-): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
+export async function getGameTemplatesByUser({
+  userId,
+}: {
+  userId: number;
+}): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
   const imageUrlExpiredTemplates = await prisma.gameTemplate.findMany({
     where: {
       userId: userId,
@@ -581,9 +609,11 @@ export async function getGameTemplatesByUser(
   });
 }
 
-export async function refreshGameTemplateImageUrls(
-  ids: number[],
-): Promise<Map<number, string>> {
+export async function refreshGameTemplateImageUrls({
+  ids,
+}: {
+  ids: number[];
+}): Promise<Map<number, string>> {
   try {
     const gameTemplates = await prisma.gameTemplate.findMany({
       where: {
@@ -636,9 +666,11 @@ export async function refreshGameTemplateImageUrls(
 }
 
 // TODO: add authorization
-export async function getGameTemplateStatistics(
-  gameTemplateId: number,
-): Promise<GameTemplateStatistics> {
+export async function getGameTemplateStatistics({
+  gameTemplateId,
+}: {
+  gameTemplateId: number;
+}): Promise<GameTemplateStatistics> {
   const statistics = await prisma.gameTemplateStatistics.findFirst({
     where: {
       id: gameTemplateId,
@@ -655,10 +687,13 @@ export async function getGameTemplateStatistics(
   return statistics;
 }
 
-export async function getRecommendedGameTemplates(
-  userId: number,
-  limit: number = 5,
-): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
+export async function getRecommendedGameTemplates({
+  userId,
+  limit = 5,
+}: {
+  userId: number;
+  limit?: number;
+}): Promise<(GameTemplateMetadata & GameTemplateStatistics)[]> {
   const rawQuery = Prisma.sql`
       SELECT *
       FROM (SELECT DISTINCT
@@ -741,15 +776,15 @@ export async function getRecommendedGameTemplates(
     imageUrls.set(template.id, template.imageUrl);
   });
 
-  const newImageUrls = await refreshGameTemplateImageUrls(
-    gameTemplates
+  const newImageUrls = await refreshGameTemplateImageUrls({
+    ids: gameTemplates
       .filter(
         (template) =>
           template.imageUrl === null ||
           template.imageUrlExpiration! < new Date(),
       )
       .map((template) => template.id),
-  );
+  });
 
   newImageUrls.forEach((newUrl, templateId) => {
     imageUrls.set(templateId, newUrl);
@@ -781,10 +816,13 @@ export async function getRecommendedGameTemplates(
   }));
 }
 
-export async function markGameTemplateAsVisited(
-  userId: number,
-  gameTemplateId: number,
-) {
+export async function markGameTemplateAsVisited({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}) {
   await prisma.$executeRaw`
     INSERT INTO "GameTemplateVisit" ("userId", "gameTemplateId")
     VALUES (${userId}, ${gameTemplateId})
@@ -792,10 +830,13 @@ export async function markGameTemplateAsVisited(
   `;
 }
 
-export async function markGameTemplateAsRecommended(
-  userId: number,
-  gameTemplateId: number,
-) {
+export async function markGameTemplateAsRecommended({
+  userId,
+  gameTemplateId,
+}: {
+  userId: number;
+  gameTemplateId: number;
+}) {
   await prisma.$executeRaw`
     INSERT INTO "GameTemplatePush" ("userId", "gameTemplateId")
     VALUES (${userId}, ${gameTemplateId})

@@ -15,11 +15,15 @@ const log = logger.child({ module: "database-actions" });
 
 const prisma = new PrismaClient();
 
-export async function createUser(
-  email: string,
-  hashedPassword: string,
-  name?: string,
-): Promise<number> {
+export async function createUser({
+  email,
+  hashedPassword,
+  name,
+}: {
+  email: string;
+  hashedPassword: string;
+  name?: string;
+}): Promise<number> {
   try {
     const user = await prisma.user.create({
       data: {
@@ -56,7 +60,7 @@ export async function createUser(
   }
 }
 
-export async function getUserFromEmail(email: string): Promise<{
+export async function getUserFromEmail({ email }: { email: string }): Promise<{
   id: number;
   name: string | null;
   email: string;
@@ -92,5 +96,5 @@ export async function getCurrentUser() {
 
   const email = session!.user!.email!;
 
-  return (await getUserFromEmail(email))!;
+  return (await getUserFromEmail({ email }))!;
 }

@@ -24,12 +24,12 @@ export default async function GameTemplateOverview({
   templateId: number;
 }) {
   // TODO: make this an inngest function
-  await markGameTemplateAsVisited(userId, templateId);
+  await markGameTemplateAsVisited({ userId, gameTemplateId: templateId });
 
-  const gameTemplateMetadata = await getGameTemplateMetadataAndStatistics(
+  const gameTemplateMetadata = await getGameTemplateMetadataAndStatistics({
     userId,
-    templateId,
-  );
+    gameTemplateId: templateId,
+  });
 
   return (
     <div className="flex flex-col">

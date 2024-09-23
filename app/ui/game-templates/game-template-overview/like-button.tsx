@@ -30,10 +30,10 @@ export function LikeButton({
     setIsProcessing(true);
 
     if (isLiked) {
-      await deleteLike(userId, gameTemplateId);
+      await deleteLike({ userId, gameTemplateId });
       setLikeCount(likeCount - 1);
     } else {
-      await addLike(userId, gameTemplateId);
+      await addLike({ userId, gameTemplateId });
       setLikeCount(likeCount + 1);
     }
 

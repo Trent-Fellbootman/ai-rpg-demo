@@ -46,11 +46,11 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should create and delete a game template with valid data",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
       const newGameTemplateData = {
         name: "Test Template",
@@ -61,15 +61,18 @@ describe("Game Template Actions", () => {
         isPublic: true,
       };
 
-      const templateId = await createGameTemplate(userId, newGameTemplateData);
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData,
+      });
 
       expect(templateId).toBeGreaterThan(0);
 
       // Retrieve the template
-      const template = await getGameTemplateMetadataAndStatistics(
+      const template = await getGameTemplateMetadataAndStatistics({
         userId,
-        templateId,
-      );
+        gameTemplateId: templateId,
+      });
 
       expect(template).toEqual(
         expect.objectContaining({
@@ -84,14 +87,20 @@ describe("Game Template Actions", () => {
         }),
       );
 
-      await deleteGameTemplate(userId, templateId);
+      await deleteGameTemplate({ userId, templateId });
 
       await expect(
-        getGameTemplateMetadataAndStatistics(userId, templateId),
+        getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: templateId,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadataAndStatistics(userId, templateId);
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: templateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -107,16 +116,16 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "users can only access public templates and delete their own templates",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-      const otherUserId = await createUser(
-        `otheruser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Other User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
+      const otherUserId = await createUser({
+        email: `otheruser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Other User",
+      });
 
       const newPublicGameTemplateData = {
         name: "Public Test Template",
@@ -136,17 +145,20 @@ describe("Game Template Actions", () => {
         isPublic: false,
       };
 
-      const publicTemplateId = await createGameTemplate(
+      const publicTemplateId = await createGameTemplate({
         userId,
-        newPublicGameTemplateData,
-      );
-      const privateTemplateId = await createGameTemplate(
+        newGameTemplateData: newPublicGameTemplateData,
+      });
+      const privateTemplateId = await createGameTemplate({
         userId,
-        newPrivateGameTemplateData,
-      );
+        newGameTemplateData: newPrivateGameTemplateData,
+      });
 
       expect(
-        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: publicTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPublicGameTemplateData.name,
@@ -161,10 +173,10 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateMetadataAndStatistics(
-          otherUserId,
-          publicTemplateId,
-        ),
+        await getGameTemplateMetadataAndStatistics({
+          userId: otherUserId,
+          gameTemplateId: publicTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPublicGameTemplateData.name,
@@ -179,7 +191,10 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: privateTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPrivateGameTemplateData.name,
@@ -194,14 +209,17 @@ describe("Game Template Actions", () => {
       );
 
       await expect(
-        getGameTemplateMetadataAndStatistics(otherUserId, privateTemplateId),
+        getGameTemplateMetadataAndStatistics({
+          userId: otherUserId,
+          gameTemplateId: privateTemplateId,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadataAndStatistics(
-          otherUserId,
-          privateTemplateId,
-        );
+        await getGameTemplateMetadataAndStatistics({
+          userId: otherUserId,
+          gameTemplateId: privateTemplateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -213,11 +231,17 @@ describe("Game Template Actions", () => {
       }
 
       await expect(
-        deleteGameTemplate(otherUserId, publicTemplateId),
+        deleteGameTemplate({
+          userId: otherUserId,
+          templateId: publicTemplateId,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await deleteGameTemplate(otherUserId, publicTemplateId);
+        await deleteGameTemplate({
+          userId: otherUserId,
+          templateId: publicTemplateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -227,7 +251,10 @@ describe("Game Template Actions", () => {
       }
 
       try {
-        await deleteGameTemplate(otherUserId, privateTemplateId);
+        await deleteGameTemplate({
+          userId: otherUserId,
+          templateId: privateTemplateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -238,7 +265,10 @@ describe("Game Template Actions", () => {
 
       // check that game template is still accessible
       expect(
-        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: publicTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPublicGameTemplateData.name,
@@ -253,10 +283,10 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateMetadataAndStatistics(
-          otherUserId,
-          publicTemplateId,
-        ),
+        await getGameTemplateMetadataAndStatistics({
+          userId: otherUserId,
+          gameTemplateId: publicTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPublicGameTemplateData.name,
@@ -271,7 +301,10 @@ describe("Game Template Actions", () => {
       );
 
       expect(
-        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: privateTemplateId,
+        }),
       ).toEqual(
         expect.objectContaining({
           name: newPrivateGameTemplateData.name,
@@ -286,15 +319,21 @@ describe("Game Template Actions", () => {
       );
 
       // remove the templates
-      await deleteGameTemplate(userId, publicTemplateId);
-      await deleteGameTemplate(userId, privateTemplateId);
+      await deleteGameTemplate({ userId, templateId: publicTemplateId });
+      await deleteGameTemplate({ userId, templateId: privateTemplateId });
 
       await expect(
-        getGameTemplateMetadataAndStatistics(userId, publicTemplateId),
+        getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: publicTemplateId,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getGameTemplateMetadataAndStatistics(userId, publicTemplateId);
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: publicTemplateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -306,10 +345,16 @@ describe("Game Template Actions", () => {
       }
 
       await expect(
-        getGameTemplateMetadataAndStatistics(userId, privateTemplateId),
+        getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: privateTemplateId,
+        }),
       ).rejects.toThrowError(DatabaseError);
       try {
-        await getGameTemplateMetadataAndStatistics(userId, privateTemplateId);
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: privateTemplateId,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -337,11 +382,14 @@ describe("Game Template Actions", () => {
       };
 
       await expect(
-        createGameTemplate(invalidUserId, newGameTemplateData),
+        createGameTemplate({ userId: invalidUserId, newGameTemplateData }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await createGameTemplate(invalidUserId, newGameTemplateData);
+        await createGameTemplate({
+          userId: invalidUserId,
+          newGameTemplateData,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -355,28 +403,37 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should add and delete a like to a public game template",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
       });
 
-      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
-      await addLike(userId, templateId);
-      expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
+      });
 
-      await expect(addLike(userId, templateId)).rejects.toThrow(DatabaseError);
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(0);
+      await addLike({ userId, gameTemplateId: templateId });
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(1);
+
+      await expect(
+        addLike({ userId, gameTemplateId: templateId }),
+      ).rejects.toThrow(DatabaseError);
       try {
-        await addLike(userId, templateId);
+        await addLike({ userId, gameTemplateId: templateId });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -387,16 +444,20 @@ describe("Game Template Actions", () => {
         );
       }
 
-      expect(await getGameTemplateLikeCount(templateId)).toBe(1);
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(1);
 
-      await deleteLike(userId, templateId);
-      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
+      await deleteLike({ userId, gameTemplateId: templateId });
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(0);
 
-      await expect(deleteLike(userId, templateId)).rejects.toThrow(
-        DatabaseError,
-      );
+      await expect(
+        deleteLike({ userId, gameTemplateId: templateId }),
+      ).rejects.toThrow(DatabaseError);
       try {
-        await deleteLike(userId, templateId);
+        await deleteLike({ userId, gameTemplateId: templateId });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -406,39 +467,46 @@ describe("Game Template Actions", () => {
       }
 
       // do `addLike` and `deleteLike` a second time to test the behavior of soft deletion
-      await addLike(userId, templateId);
-      expect(await getGameTemplateLikeCount(templateId)).toBe(1);
-      await deleteLike(userId, templateId);
-      expect(await getGameTemplateLikeCount(templateId)).toBe(0);
+      await addLike({ userId, gameTemplateId: templateId });
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(1);
+      await deleteLike({ userId, gameTemplateId: templateId });
+      expect(
+        await getGameTemplateLikeCount({ gameTemplateId: templateId }),
+      ).toBe(0);
     },
   );
 
   test.concurrent(
     "should throw Conflict error when adding a like that already exists",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
       });
 
-      await addLike(userId, templateId);
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
+      });
 
-      await expect(addLike(userId, templateId)).rejects.toThrowError(
-        DatabaseError,
-      );
+      await addLike({ userId, gameTemplateId: templateId });
+
+      await expect(
+        addLike({ userId, gameTemplateId: templateId }),
+      ).rejects.toThrowError(DatabaseError);
 
       try {
-        await addLike(userId, templateId);
+        await addLike({ userId, gameTemplateId: templateId });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -452,27 +520,30 @@ describe("Game Template Actions", () => {
   );
 
   test.concurrent("should add and delete a comment", async () => {
-    const userId = await createUser(
-      `testuser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Test User",
-    );
+    const userId = await createUser({
+      email: `testuser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Test User",
+    });
 
-    const templateId = await createGameTemplate(userId, {
-      name: "Test Template",
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: "Template image",
-      backStory: "This is a test backstory.",
-      description: "A test template",
-      isPublic: true,
+    const templateId = await createGameTemplate({
+      userId,
+      newGameTemplateData: {
+        name: "Test Template",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template image",
+        backStory: "This is a test backstory.",
+        description: "A test template",
+        isPublic: true,
+      },
     });
 
     const commentText = "This is a test comment";
 
-    await addComment(userId, templateId, commentText);
+    await addComment({ userId, gameTemplateId: templateId, text: commentText });
 
     // Retrieve comments
-    const comments = await getComments(userId, templateId);
+    const comments = await getComments({ userId, gameTemplateId: templateId });
 
     expect(comments.length).toBe(1);
     const comment = comments[0];
@@ -487,9 +558,12 @@ describe("Game Template Actions", () => {
       createdAt: expect.any(Date),
     });
 
-    await deleteComment(userId, comment.id);
+    await deleteComment({ userId, commentId: comment.id });
 
-    const newComments = await getComments(userId, templateId);
+    const newComments = await getComments({
+      userId,
+      gameTemplateId: templateId,
+    });
 
     expect(newComments.length).toBe(0);
   });
@@ -497,25 +571,28 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should get a public game template without comments",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
       });
 
-      const template = await getGameTemplateMetadataAndStatistics(
+      const templateId = await createGameTemplate({
         userId,
-        templateId,
-      );
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
+      });
+
+      const template = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
 
       expect(template).toEqual(
         expect.objectContaining({
@@ -535,72 +612,91 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should retrieve game template metadata and count likes & comments correctly",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const anotherUserId = await createUser(
-        `anotheruser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Another User",
-      );
+      const anotherUserId = await createUser({
+        email: `anotheruser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Another User",
+      });
 
       // create a public template
-      const publicTemplateId = await createGameTemplate(userId, {
-        name: "Public Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Public Template image",
-        backStory: "This is a public test backstory.",
-        description: "A public test template",
-        isPublic: true,
+      const publicTemplateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Public Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Public Template image",
+          backStory: "This is a public test backstory.",
+          description: "A public test template",
+          isPublic: true,
+        },
       });
 
       // create another public template
-      const publicTemplateId2 = await createGameTemplate(userId, {
-        name: "Public Test Template 2",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Public Template image 2",
-        backStory: "This is a public test backstory 2.",
-        description: "A public test template 2",
-        isPublic: true,
+      const publicTemplateId2 = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Public Test Template 2",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Public Template image 2",
+          backStory: "This is a public test backstory 2.",
+          description: "A public test template 2",
+          isPublic: true,
+        },
       });
 
       // create a private template
-      const privateTemplateId = await createGameTemplate(userId, {
-        name: "Private Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Private Template image",
-        backStory: "This is a private test backstory.",
-        description: "A private test template",
-        isPublic: false,
+      const privateTemplateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Private Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Private Template image",
+          backStory: "This is a private test backstory.",
+          description: "A private test template",
+          isPublic: false,
+        },
       });
 
       // like the first public template
-      await addLike(userId, publicTemplateId);
+      await addLike({ userId, gameTemplateId: publicTemplateId });
 
       // like the second public template then delete it
-      await addLike(userId, publicTemplateId2);
-      await addLike(anotherUserId, publicTemplateId2);
-      await deleteLike(userId, publicTemplateId2);
-      await deleteLike(anotherUserId, publicTemplateId2);
+      await addLike({ userId, gameTemplateId: publicTemplateId2 });
+      await addLike({
+        userId: anotherUserId,
+        gameTemplateId: publicTemplateId2,
+      });
+      await deleteLike({ userId, gameTemplateId: publicTemplateId2 });
+      await deleteLike({
+        userId: anotherUserId,
+        gameTemplateId: publicTemplateId2,
+      });
 
       // add a comment to the second public template
       const commentText = "This is a test comment";
 
-      await addComment(userId, publicTemplateId2, commentText);
+      await addComment({
+        userId,
+        gameTemplateId: publicTemplateId2,
+        text: commentText,
+      });
 
-      const commentId = await addComment(
-        anotherUserId,
-        publicTemplateId2,
-        commentText,
-      );
+      const commentId = await addComment({
+        userId: anotherUserId,
+        gameTemplateId: publicTemplateId2,
+        text: commentText,
+      });
 
-      await deleteComment(anotherUserId, commentId);
+      await deleteComment({ userId: anotherUserId, commentId });
 
       // retrieve the metadata
-      const templatesMetadata = await getGameTemplatesByUser(userId);
+      const templatesMetadata = await getGameTemplatesByUser({ userId });
 
       // should be first public template, then second public template, then private template
       expect(templatesMetadata).toEqual([
@@ -647,57 +743,79 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should get the correct like count & status and comment count for game template metadata",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
       });
 
-      let metadata = await getGameTemplateMetadataAndStatistics(
+      const templateId = await createGameTemplate({
         userId,
-        templateId,
-      );
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
+      });
+
+      let metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
 
       expect(metadata.undeletedLikeCount).toBe(0);
       expect(metadata.isLiked).toBe(false);
       expect(metadata.undeletedCommentCount).toBe(0);
 
-      await addLike(userId, templateId);
-      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      await addLike({ userId, gameTemplateId: templateId });
+      metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
       expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
       expect(metadata.undeletedCommentCount).toBe(0);
 
-      await deleteLike(userId, templateId);
-      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      await deleteLike({ userId, gameTemplateId: templateId });
+      metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
       expect(metadata.undeletedLikeCount).toBe(0);
       expect(metadata.isLiked).toBe(false);
       expect(metadata.undeletedCommentCount).toBe(0);
 
-      await addLike(userId, templateId);
-      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      await addLike({ userId, gameTemplateId: templateId });
+      metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
       expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
       expect(metadata.undeletedCommentCount).toBe(0);
 
-      const commentId = await addComment(userId, templateId, "Test comment");
+      const commentId = await addComment({
+        userId,
+        gameTemplateId: templateId,
+        text: "Test comment",
+      });
 
-      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
       expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
       expect(metadata.undeletedCommentCount).toBe(1);
 
-      await deleteComment(userId, commentId);
-      metadata = await getGameTemplateMetadataAndStatistics(userId, templateId);
+      await deleteComment({ userId, commentId });
+      metadata = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
       expect(metadata.undeletedLikeCount).toBe(1);
       expect(metadata.isLiked).toBe(true);
       expect(metadata.undeletedCommentCount).toBe(0);
@@ -705,115 +823,157 @@ describe("Game Template Actions", () => {
   );
 
   test.concurrent("should calculate statistics correctly", async () => {
-    const userId = await createUser(
-      `testuser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Test User",
-    );
-
-    const anotherUserId = await createUser(
-      `anotheruser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Another User",
-    );
-
-    // Create two game templates
-    const template1Id = await createGameTemplate(userId, {
-      name: "Template 1",
-      imageUrl: getFakeImageUrl(1),
-      imageDescription: "Template 1 image",
-      backStory: "This is template 1 backstory.",
-      description: "Template 1 description",
-      isPublic: true,
+    const userId = await createUser({
+      email: `testuser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Test User",
     });
 
-    const template2Id = await createGameTemplate(userId, {
-      name: "Template 2",
-      imageUrl: getFakeImageUrl(2),
-      imageDescription: "Template 2 image",
-      backStory: "This is template 2 backstory.",
-      description: "Template 2 description",
-      isPublic: true,
+    const anotherUserId = await createUser({
+      email: `anotheruser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Another User",
+    });
+
+    // Create two game templates
+    const template1Id = await createGameTemplate({
+      userId,
+      newGameTemplateData: {
+        name: "Template 1",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Template 1 image",
+        backStory: "This is template 1 backstory.",
+        description: "Template 1 description",
+        isPublic: true,
+      },
+    });
+
+    const template2Id = await createGameTemplate({
+      userId,
+      newGameTemplateData: {
+        name: "Template 2",
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: "Template 2 image",
+        backStory: "This is template 2 backstory.",
+        description: "Template 2 description",
+        isPublic: true,
+      },
     });
 
     // Add and delete likes
-    await addLike(userId, template1Id);
-    await addLike(anotherUserId, template1Id);
-    await deleteLike(anotherUserId, template1Id);
+    await addLike({ userId, gameTemplateId: template1Id });
+    await addLike({ userId: anotherUserId, gameTemplateId: template1Id });
+    await deleteLike({ userId: anotherUserId, gameTemplateId: template1Id });
 
-    await addLike(userId, template2Id);
-    await addLike(anotherUserId, template2Id);
+    await addLike({ userId, gameTemplateId: template2Id });
+    await addLike({ userId: anotherUserId, gameTemplateId: template2Id });
 
     // Add and delete comments
-    const comment1Id = await addComment(userId, template1Id, "Comment 1");
-    const comment2Id = await addComment(
-      anotherUserId,
-      template1Id,
-      "Comment 2",
-    );
+    const comment1Id = await addComment({
+      userId,
+      gameTemplateId: template1Id,
+      text: "Comment 1",
+    });
+    const comment2Id = await addComment({
+      userId: anotherUserId,
+      gameTemplateId: template1Id,
+      text: "Comment 2",
+    });
 
-    await deleteComment(anotherUserId, comment2Id);
+    await deleteComment({ userId: anotherUserId, commentId: comment2Id });
 
-    await addComment(userId, template2Id, "Comment 3");
-    await addComment(anotherUserId, template2Id, "Comment 4");
+    await addComment({
+      userId,
+      gameTemplateId: template2Id,
+      text: "Comment 3",
+    });
+    await addComment({
+      userId: anotherUserId,
+      gameTemplateId: template2Id,
+      text: "Comment 4",
+    });
+
+    const sampleProposedActions = ["action 1", "action 2", "action 3"];
 
     // TODO: create enoungh sample images for this
     // Create game sessions and add scenes (actions)
-    const session1Id = await createGameSession(
+    const session1Id = await createGameSession({
       userId,
-      "Session 1",
-      "Session 1 backstory",
-      "Session 1 description",
-      getFakeImageUrl(3),
-      "Session 1 image",
-      template1Id,
-      {
+      name: "Session 1",
+      backstory: "Session 1 backstory",
+      description: "Session 1 description",
+      imageUrl: getFakeImageUrl(3),
+      imageDescription: "Session 1 image",
+      parentGameTemplateId: template1Id,
+      initialSceneData: {
         imageUrl: getFakeImageUrl(4),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
-        event: "Initial scene event 1"
+        event: "Initial scene event 1",
+        proposedActions: sampleProposedActions,
       },
-    );
-
-    await addSceneToSession(userId, session1Id, "Go north", {
-      imageUrl: getFakeImageUrl(5),
-      imageDescription: "Scene 2 image",
-      narration: "You arrive at a clearing.",
-        event: "Initial scene event 2"
     });
 
-    const session2Id = await createGameSession(
+    await addSceneToSession({
       userId,
-      "Session 2",
-      "Session 2 backstory",
-      "Session 2 description",
-      getFakeImageUrl(6),
-      "Session 2 image",
-      template2Id,
-      {
+      sessionId: session1Id,
+      previousAction: "Go north",
+      newSceneData: {
+        imageUrl: getFakeImageUrl(5),
+        imageDescription: "Scene 2 image",
+        narration: "You arrive at a clearing.",
+        event: "Initial scene event 2",
+        proposedActions: sampleProposedActions,
+      },
+    });
+
+    const session2Id = await createGameSession({
+      userId,
+      name: "Session 2",
+      backstory: "Session 2 backstory",
+      description: "Session 2 description",
+      imageUrl: getFakeImageUrl(6),
+      imageDescription: "Session 2 image",
+      parentGameTemplateId: template2Id,
+      initialSceneData: {
         imageUrl: getFakeImageUrl(7),
         imageDescription: "Scene 3 image",
         narration: "You are in a dark forest.",
-        event: "Initial scene event 3"
+        event: "Initial scene event 3",
+        proposedActions: sampleProposedActions,
       },
-    );
-
-    await addSceneToSession(userId, session2Id, "Go east", {
-      imageUrl: getFakeImageUrl(8),
-      imageDescription: "Scene 4 image",
-      narration: "You see a river.",
-        event: "Initial scene event 4"
     });
 
-    await addSceneToSession(userId, session2Id, "Cross the river", {
-      imageUrl: getFakeImageUrl(9),
-      imageDescription: "Scene 5 image",
-      narration: "You reach the other side.",
-        event: "Initial scene event 5"
+    await addSceneToSession({
+      userId,
+      sessionId: session2Id,
+      previousAction: "Go east",
+      newSceneData: {
+        imageUrl: getFakeImageUrl(8),
+        imageDescription: "Scene 4 image",
+        narration: "You see a river.",
+        event: "Initial scene event 4",
+        proposedActions: sampleProposedActions,
+      },
+    });
+
+    await addSceneToSession({
+      userId,
+      sessionId: session2Id,
+      previousAction: "Cross the river",
+      newSceneData: {
+        imageUrl: getFakeImageUrl(9),
+        imageDescription: "Scene 5 image",
+        narration: "You reach the other side.",
+        event: "Initial scene event 5",
+        proposedActions: sampleProposedActions,
+      },
     });
 
     // Get and validate statistics for template 1
-    const statistics1 = await getGameTemplateStatistics(template1Id);
+    const statistics1 = await getGameTemplateStatistics({
+      gameTemplateId: template1Id,
+    });
 
     expect(statistics1).toEqual({
       id: template1Id,
@@ -828,7 +988,9 @@ describe("Game Template Actions", () => {
     });
 
     // Get and validate statistics for template 2
-    const statistics2 = await getGameTemplateStatistics(template2Id);
+    const statistics2 = await getGameTemplateStatistics({
+      gameTemplateId: template2Id,
+    });
 
     expect(statistics2).toEqual({
       id: template2Id,
@@ -844,7 +1006,7 @@ describe("Game Template Actions", () => {
   });
 
   // This test must be invoked separately from other because it depends on the global state
-  test.skip("should correctly recommend game templates based on the exclusion and score rules", async () => {
+  test.only("should correctly recommend game templates based on the exclusion and score rules", async () => {
     // Generate unique emails using UUID
     const user1Email = `user1-${uuidv4()}@example.com`;
     const user2Email = `user2-${uuidv4()}@example.com`;
@@ -853,11 +1015,31 @@ describe("Game Template Actions", () => {
     const user5Email = `user5-${uuidv4()}@example.com`;
 
     // Create multiple users
-    const user1Id = await createUser(user1Email, "hashedpassword", "User 1");
-    const user2Id = await createUser(user2Email, "hashedpassword", "User 2");
-    const user3Id = await createUser(user3Email, "hashedpassword", "User 3");
-    const user4Id = await createUser(user4Email, "hashedpassword", "User 4");
-    const user5Id = await createUser(user5Email, "hashedpassword", "User 5");
+    const user1Id = await createUser({
+      email: user1Email,
+      hashedPassword: "hashedpassword",
+      name: "User 1",
+    });
+    const user2Id = await createUser({
+      email: user2Email,
+      hashedPassword: "hashedpassword",
+      name: "User 2",
+    });
+    const user3Id = await createUser({
+      email: user3Email,
+      hashedPassword: "hashedpassword",
+      name: "User 3",
+    });
+    const user4Id = await createUser({
+      email: user4Email,
+      hashedPassword: "hashedpassword",
+      name: "User 4",
+    });
+    const user5Id = await createUser({
+      email: user5Email,
+      hashedPassword: "hashedpassword",
+      name: "User 5",
+    });
 
     // Template data
     const templateData = {
@@ -869,82 +1051,113 @@ describe("Game Template Actions", () => {
     };
 
     // Create multiple game templates for user1
-    const template1Id = await createGameTemplate(user3Id, {
-      ...templateData,
-      name: "Template 1",
+    const template1Id = await createGameTemplate({
+      userId: user3Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Template 1",
+      },
     });
 
-    const template2Id = await createGameTemplate(user3Id, {
-      ...templateData,
-      name: "Template 2",
+    const template2Id = await createGameTemplate({
+      userId: user3Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Template 2",
+      },
     });
 
-    const template3Id = await createGameTemplate(user3Id, {
-      ...templateData,
-      name: "Template 3",
+    const template3Id = await createGameTemplate({
+      userId: user3Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Template 3",
+      },
     });
 
-    const template4Id = await createGameTemplate(user3Id, {
-      ...templateData,
-      name: "Template 4",
+    const template4Id = await createGameTemplate({
+      userId: user3Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Template 4",
+      },
     });
 
     // Create a private template for user1
-    await createGameTemplate(user1Id, {
-      ...templateData,
-      name: "Private Template",
-      isPublic: false,
+    await createGameTemplate({
+      userId: user1Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Private Template",
+        isPublic: false,
+      },
     });
 
-    await createGameTemplate(user2Id, {
-      ...templateData,
-      name: "Private Template",
-      isPublic: false,
+    await createGameTemplate({
+      userId: user2Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Private Template",
+        isPublic: false,
+      },
     });
 
-    await createGameTemplate(user3Id, {
-      ...templateData,
-      name: "Private Template",
-      isPublic: false,
+    await createGameTemplate({
+      userId: user3Id,
+      newGameTemplateData: {
+        ...templateData,
+        name: "Private Template",
+        isPublic: false,
+      },
     });
 
-    const session2Id = await createGameSession(
-      user4Id,
-      "Template 2 derived session",
-      "Backstory",
-      "Description",
-      getFakeImageUrl(0),
-      "Image description",
-      template2Id,
-      {
+    const sampleProposedActions = ["action 1", "action 2", "action 3"];
+
+    const session2Id = await createGameSession({
+      userId: user4Id,
+      name: "Template 2 derived session",
+      backstory: "Backstory",
+      description: "Description",
+      imageUrl: getFakeImageUrl(0),
+      imageDescription: "Image description",
+      parentGameTemplateId: template2Id,
+      initialSceneData: {
         imageUrl: getFakeImageUrl(1),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
-        event: "Initial scene event 1"
+        event: "Initial scene event 1",
+        proposedActions: sampleProposedActions,
       },
-    );
+    });
 
-    const anotherSession2Id = await createGameSession(
-      user4Id,
-      "Template 2 derived session",
-      "Backstory",
-      "Description",
-      getFakeImageUrl(0),
-      "Image description",
-      template2Id,
-      {
+    const anotherSession2Id = await createGameSession({
+      userId: user4Id,
+      name: "Template 2 derived session",
+      backstory: "Backstory",
+      description: "Description",
+      imageUrl: getFakeImageUrl(0),
+      imageDescription: "Image description",
+      parentGameTemplateId: template2Id,
+      initialSceneData: {
         imageUrl: getFakeImageUrl(1),
         imageDescription: "Scene 1 image",
         narration: "You are in a dark forest.",
-        event: "Initial scene event 2"
+        event: "Initial scene event 2",
+        proposedActions: sampleProposedActions,
       },
-    );
+    });
 
-    await addSceneToSession(user4Id, session2Id, "Go north", {
-      imageUrl: getFakeImageUrl(2),
-      imageDescription: "Scene 2 image",
-      narration: "You arrive at a clearing.",
-        event: "Next scene event"
+    await addSceneToSession({
+      userId: user4Id,
+      sessionId: session2Id,
+      previousAction: "Go north",
+      newSceneData: {
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: "Scene 2 image",
+        narration: "You arrive at a clearing.",
+        event: "Next scene event",
+        proposedActions: sampleProposedActions,
+      },
     });
 
     // Simulate visits and pushes by creating records in relevant tables
@@ -964,11 +1177,19 @@ describe("Game Template Actions", () => {
     });
 
     // User2 likes and comments on template 1 and 2
-    await addLike(user2Id, template1Id);
-    await addLike(user2Id, template2Id);
-    await addLike(user1Id, template4Id);
-    await addComment(user2Id, template1Id, "Great template!");
-    await addComment(user2Id, template2Id, "Nice work!");
+    await addLike({ userId: user2Id, gameTemplateId: template1Id });
+    await addLike({ userId: user2Id, gameTemplateId: template2Id });
+    await addLike({ userId: user1Id, gameTemplateId: template4Id });
+    await addComment({
+      userId: user2Id,
+      gameTemplateId: template1Id,
+      text: "Great template!",
+    });
+    await addComment({
+      userId: user2Id,
+      gameTemplateId: template2Id,
+      text: "Nice work!",
+    });
 
     // Expected exclusions
     // User 1: Template 2 (visited), template 4 (liked)
@@ -991,26 +1212,26 @@ describe("Game Template Actions", () => {
     // User 5: Template 4, 2, 1 (truncating template 3)
 
     // Test the recommendation system
-    const user1RecommendedTemplates = await getRecommendedGameTemplates(
-      user1Id,
-      3,
-    );
-    const user2RecommendedTemplates = await getRecommendedGameTemplates(
-      user2Id,
-      3,
-    );
-    const user3RecommendedTemplates = await getRecommendedGameTemplates(
-      user3Id,
-      3,
-    );
-    const user4RecommendedTemplates = await getRecommendedGameTemplates(
-      user4Id,
-      3,
-    );
-    const user5RecommendedTemplates = await getRecommendedGameTemplates(
-      user5Id,
-      3,
-    );
+    const user1RecommendedTemplates = await getRecommendedGameTemplates({
+      userId: user1Id,
+      limit: 3,
+    });
+    const user2RecommendedTemplates = await getRecommendedGameTemplates({
+      userId: user2Id,
+      limit: 3,
+    });
+    const user3RecommendedTemplates = await getRecommendedGameTemplates({
+      userId: user3Id,
+      limit: 3,
+    });
+    const user4RecommendedTemplates = await getRecommendedGameTemplates({
+      userId: user4Id,
+      limit: 3,
+    });
+    const user5RecommendedTemplates = await getRecommendedGameTemplates({
+      userId: user5Id,
+      limit: 3,
+    });
 
     const expectedTemplate1 = {
       id: template1Id,
@@ -1114,39 +1335,48 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should mark a game template as visited and update statistics",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
       });
 
       // Get initial statistics
-      const initialStatistics = await getGameTemplateStatistics(templateId);
+      const initialStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const initialVisitCount = initialStatistics.visitCount;
 
       // Mark the template as visited
-      await markGameTemplateAsVisited(userId, templateId);
+      await markGameTemplateAsVisited({ userId, gameTemplateId: templateId });
 
       // Get updated statistics
-      const updatedStatistics = await getGameTemplateStatistics(templateId);
+      const updatedStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const updatedVisitCount = updatedStatistics.visitCount;
 
       expect(updatedVisitCount).toBe(initialVisitCount + 1);
 
       // Try marking the same template as visited again
-      await markGameTemplateAsVisited(userId, templateId);
+      await markGameTemplateAsVisited({ userId, gameTemplateId: templateId });
 
       // Get final statistics
-      const finalStatistics = await getGameTemplateStatistics(templateId);
+      const finalStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const finalVisitCount = finalStatistics.visitCount;
 
       // The visit count should not increase because it's the same user visiting the same template
@@ -1157,39 +1387,54 @@ describe("Game Template Actions", () => {
   test.concurrent(
     "should mark a game template as recommended and update statistics",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
       });
 
       // Get initial statistics
-      const initialStatistics = await getGameTemplateStatistics(templateId);
+      const initialStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const initialPushCount = initialStatistics.trendingPushCount;
 
       // Mark the template as recommended
-      await markGameTemplateAsRecommended(userId, templateId);
+      await markGameTemplateAsRecommended({
+        userId,
+        gameTemplateId: templateId,
+      });
 
       // Get updated statistics
-      const updatedStatistics = await getGameTemplateStatistics(templateId);
+      const updatedStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const updatedPushCount = updatedStatistics.trendingPushCount;
 
       expect(updatedPushCount).toBe(initialPushCount + 1);
 
       // Try marking the same template as recommended again
-      await markGameTemplateAsRecommended(userId, templateId);
+      await markGameTemplateAsRecommended({
+        userId,
+        gameTemplateId: templateId,
+      });
 
       // Get final statistics
-      const finalStatistics = await getGameTemplateStatistics(templateId);
+      const finalStatistics = await getGameTemplateStatistics({
+        gameTemplateId: templateId,
+      });
       const finalPushCount = finalStatistics.trendingPushCount;
 
       // The push count should not increase because it's the same user recommending the same template

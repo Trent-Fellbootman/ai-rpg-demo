@@ -10,12 +10,17 @@ import GameTemplateCardsView from "@/app/ui/game-templates/game-template-cards-v
 export async function RecommendedGameTemplatesView() {
   const user = await getCurrentUser();
 
-  const recommendedGameTemplates = await getRecommendedGameTemplates(user.id);
+  const recommendedGameTemplates = await getRecommendedGameTemplates({
+    userId: user.id,
+  });
 
   // TODO: make this an inngest function and optimize to reduce number of queries
   await Promise.all(
     recommendedGameTemplates.map((template) =>
-      markGameTemplateAsRecommended(user.id, template.id),
+      markGameTemplateAsRecommended({
+        userId: user.id,
+        gameTemplateId: template.id,
+      }),
     ),
   );
 

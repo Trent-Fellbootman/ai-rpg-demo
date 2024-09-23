@@ -68,7 +68,7 @@ describe("Game Session Actions", () => {
     const email = `testuser-${uuidv4()}@example.com`;
     const hashedPassword = "hashedpassword";
     const name = "Test User";
-    const userId = await createUser(email, hashedPassword, name);
+    const userId = await createUser({ email, hashedPassword, name });
 
     const gameSessionName = "Test Game Session";
     const backstory = "Once upon a time...";
@@ -76,21 +76,21 @@ describe("Game Session Actions", () => {
     const imageUrl = getFakeImageUrl(1);
     const imageDescription = "Test image";
 
-    const sessionId = await createGameSession(
+    const sessionId = await createGameSession({
       userId,
-      gameSessionName,
+      name: gameSessionName,
       backstory,
       description,
       imageUrl,
       imageDescription,
-      null,
-      sampleInitialSceneData,
-    );
+      parentGameTemplateId: null,
+      initialSceneData: sampleInitialSceneData,
+    });
 
     expect(sessionId).toBeGreaterThan(0);
 
     // Check that the session exists and retrieve it
-    const sessions = await getGameSessionsByUser(userId);
+    const sessions = await getGameSessionsByUser({ userId });
 
     expect(sessions.length).toBe(1);
     const session = sessions[0];
@@ -105,7 +105,7 @@ describe("Game Session Actions", () => {
     });
 
     // Get the scenes
-    const scenes = await getScenesBySession(userId, sessionId);
+    const scenes = await getScenesBySession({ userId, sessionId });
 
     expect(scenes.length).toBe(1);
     const scene = scenes[0];
@@ -130,29 +130,29 @@ describe("Game Session Actions", () => {
       const imageDescription = "Test image";
 
       await expect(
-        createGameSession(
-          invalidUserId,
-          gameSessionName,
+        createGameSession({
+          userId: invalidUserId,
+          name: gameSessionName,
           backstory,
           description,
           imageUrl,
           imageDescription,
-          null,
-          sampleInitialSceneData,
-        ),
+          parentGameTemplateId: null,
+          initialSceneData: sampleInitialSceneData,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await createGameSession(
-          invalidUserId,
-          gameSessionName,
+        await createGameSession({
+          userId: invalidUserId,
+          name: gameSessionName,
           backstory,
           description,
           imageUrl,
           imageDescription,
-          null,
-          sampleInitialSceneData,
-        );
+          parentGameTemplateId: null,
+          initialSceneData: sampleInitialSceneData,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -167,30 +167,34 @@ describe("Game Session Actions", () => {
     "should add a scene to a session that the user owns",
     async () => {
       const email = `testuser-${uuidv4()}@example.com`;
-      const userId = await createUser(email, "hashedpassword", "Test User");
+      const userId = await createUser({
+        email,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
       const previousAction = "Go north";
 
-      await addSceneToSession(
+      await addSceneToSession({
         userId,
         sessionId,
         previousAction,
-        sampleNewSceneData,
-      );
+        newSceneData: sampleNewSceneData,
+      });
 
       // Get the scenes and check
-      const scenes = await getScenesBySession(userId, sessionId);
+      const scenes = await getScenesBySession({ userId, sessionId });
 
       expect(scenes.length).toBe(2);
 
@@ -212,43 +216,48 @@ describe("Game Session Actions", () => {
     "should throw Unauthorized error when adding a scene to a session that the user does not own",
     async () => {
       // Create first user and session
-      const userId1 = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User 1",
-      );
+      const userId1 = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User 1",
+      });
 
-      const sessionId = await createGameSession(
-        userId1,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+      const sessionId = await createGameSession({
+        userId: userId1,
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
       // Create second user
-      const userId2 = await createUser(
-        `testuser${Date.now() + 1}@example.com`,
-        "hashedpassword",
-        "Test User 2",
-      );
+      const userId2 = await createUser({
+        email: `testuser${Date.now() + 1}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User 2",
+      });
 
       const previousAction = "Go north";
 
       await expect(
-        addSceneToSession(userId2, sessionId, previousAction, sampleNewSceneData),
+        addSceneToSession({
+          userId: userId2,
+          sessionId,
+          previousAction,
+          newSceneData: sampleNewSceneData,
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await addSceneToSession(
-          userId2,
+        await addSceneToSession({
+          userId: userId2,
           sessionId,
           previousAction,
-          sampleNewSceneData,
-        );
+          newSceneData: sampleNewSceneData,
+        });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -260,64 +269,64 @@ describe("Game Session Actions", () => {
   );
 
   test.concurrent("should lock and unlock a session", async () => {
-    const userId = await createUser(
-      `testuser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Test User",
-    );
+    const userId = await createUser({
+      email: `testuser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Test User",
+    });
 
-    const sessionId = await createGameSession(
+    const sessionId = await createGameSession({
       userId,
-      "Test Game Session",
-      "Once upon a time...",
-      "A test game session",
-      getFakeImageUrl(1),
-      "Test image",
-      null,
-      sampleInitialSceneData,
-    );
+      name: "Test Game Session",
+      backstory: "Once upon a time...",
+      description: "A test game session",
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: "Test image",
+      parentGameTemplateId: null,
+      initialSceneData: sampleInitialSceneData,
+    });
 
-    expect(await isSessionLocked(sessionId)).toBe(false);
+    expect(await isSessionLocked({ sessionId })).toBe(false);
 
-    const locked = await tryLockSession(sessionId);
+    const locked = await tryLockSession({ sessionId });
 
     expect(locked).toBe(true);
-    expect(await isSessionLocked(sessionId)).toBe(true);
+    expect(await isSessionLocked({ sessionId })).toBe(true);
 
-    const lockedAgain = await tryLockSession(sessionId);
+    const lockedAgain = await tryLockSession({ sessionId });
 
     expect(lockedAgain).toBe(false);
-    expect(await isSessionLocked(sessionId)).toBe(true);
+    expect(await isSessionLocked({ sessionId })).toBe(true);
 
-    await unlockSession(sessionId);
-    expect(await isSessionLocked(sessionId)).toBe(false);
+    await unlockSession({ sessionId });
+    expect(await isSessionLocked({ sessionId })).toBe(false);
 
-    const lockedAfterUnlock = await tryLockSession(sessionId);
+    const lockedAfterUnlock = await tryLockSession({ sessionId });
 
     expect(lockedAfterUnlock).toBe(true);
-    expect(await isSessionLocked(sessionId)).toBe(true);
+    expect(await isSessionLocked({ sessionId })).toBe(true);
   });
 
   test.concurrent("should repeat try locking until success", async () => {
-    const userId = await createUser(
-      `testuser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Test User",
-    );
+    const userId = await createUser({
+      email: `testuser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Test User",
+    });
 
-    const sessionId = await createGameSession(
+    const sessionId = await createGameSession({
       userId,
-      "Test Game Session",
-      "Once upon a time...",
-      "A test game session",
-      getFakeImageUrl(1),
-      "Test image",
-      null,
-      sampleInitialSceneData,
-    );
+      name: "Test Game Session",
+      backstory: "Once upon a time...",
+      description: "A test game session",
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: "Test image",
+      parentGameTemplateId: null,
+      initialSceneData: sampleInitialSceneData,
+    });
 
-    expect(await isSessionLocked(sessionId)).toBe(false);
-    expect(await tryLockSession(sessionId)).toBe(true);
+    expect(await isSessionLocked({ sessionId })).toBe(false);
+    expect(await tryLockSession({ sessionId })).toBe(true);
 
     let acquired = false;
 
@@ -325,10 +334,14 @@ describe("Game Session Actions", () => {
       (async () => {
         await new Promise((resolve) => setTimeout(resolve, 500));
         expect(acquired).toBe(false);
-        await unlockSession(sessionId);
+        await unlockSession({ sessionId });
       })(),
       (async () => {
-        await tryLockSessionUntilAcquire(sessionId, 100, 1_000);
+        await tryLockSessionUntilAcquire({
+          sessionId,
+          intervalMs: 100,
+          timeoutMs: 1_000,
+        });
         acquired = true;
       })(),
     ]);
@@ -339,41 +352,41 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "should delete a game session that the user owns",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      expect((await getGameSessionsByUser(userId)).length).toBe(0);
+      expect((await getGameSessionsByUser({ userId })).length).toBe(0);
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
-      expect((await getGameSessionsByUser(userId)).length).toBe(1);
+      expect((await getGameSessionsByUser({ userId })).length).toBe(1);
 
-      await deleteGameSession(userId, sessionId);
+      await deleteGameSession({ userId, sessionId });
 
-      expect((await getGameSessionsByUser(userId)).length).toBe(0);
+      expect((await getGameSessionsByUser({ userId })).length).toBe(0);
     },
   );
 
   test.concurrent(
     "should throw NotFound error when getting length of non-existent session",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
       const sessionId = 999999; // Assuming this session ID doesn't exist
 
       await expect(
@@ -393,24 +406,28 @@ describe("Game Session Actions", () => {
   );
 
   test.concurrent("should get a scene by session and index", async () => {
-    const userId = await createUser(
-      `testuser-${uuidv4()}@example.com`,
-      "hashedpassword",
-      "Test User",
-    );
+    const userId = await createUser({
+      email: `testuser-${uuidv4()}@example.com`,
+      hashedPassword: "hashedpassword",
+      name: "Test User",
+    });
 
-    const sessionId = await createGameSession(
+    const sessionId = await createGameSession({
       userId,
-      "Test Game Session",
-      "Once upon a time...",
-      "A test game session",
-      getFakeImageUrl(1),
-      "Test image",
-      null,
-      sampleInitialSceneData,
-    );
+      name: "Test Game Session",
+      backstory: "Once upon a time...",
+      description: "A test game session",
+      imageUrl: getFakeImageUrl(1),
+      imageDescription: "Test image",
+      parentGameTemplateId: null,
+      initialSceneData: sampleInitialSceneData,
+    });
 
-    const scene = await getSceneBySessionAndIndex(userId, sessionId, 0);
+    const scene = await getSceneBySessionAndIndex({
+      userId,
+      sessionId,
+      sceneIndex: 0,
+    });
 
     expect(scene).toEqual({
       ...sampleInitialSceneData,
@@ -422,29 +439,29 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "should throw NotFound error when getting a scene with invalid index",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
       await expect(
-        getSceneBySessionAndIndex(userId, sessionId, 1),
+        getSceneBySessionAndIndex({ userId, sessionId, sceneIndex: 1 }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await getSceneBySessionAndIndex(userId, sessionId, 1);
+        await getSceneBySessionAndIndex({ userId, sessionId, sceneIndex: 1 });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -460,54 +477,56 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "Users should only own the sessions that they own",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-      const otherUserId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
+      const otherUserId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
-      expect(await doesUserHaveGameSession(userId, sessionId)).toBe(true);
-      expect(await doesUserHaveGameSession(otherUserId, sessionId)).toBe(false);
+      expect(await doesUserHaveGameSession({ userId, sessionId })).toBe(true);
+      expect(
+        await doesUserHaveGameSession({ userId: otherUserId, sessionId }),
+      ).toBe(false);
     },
   );
 
   test.concurrent(
     "should retrieve the correct metadata of the sessions belong to a user",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
-      expect(await getGameSessionsByUser(userId)).toEqual([
+      expect(await getGameSessionsByUser({ userId })).toEqual([
         {
           id: sessionId,
           name: "Test Game Session",
@@ -523,30 +542,30 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "user should be able to get the metadata of their own sessions only",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const otherUserId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const otherUserId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
-      expect(await getGameSessionMetadata(userId, sessionId)).toEqual({
+      expect(await getGameSessionMetadata({ userId, sessionId })).toEqual({
         name: "Test Game Session",
         backstory: "Once upon a time...",
         description: "A test game session",
@@ -556,10 +575,10 @@ describe("Game Session Actions", () => {
       });
 
       await expect(
-        getGameSessionMetadata(otherUserId, sessionId),
+        getGameSessionMetadata({ userId: otherUserId, sessionId }),
       ).rejects.toThrow(DatabaseError);
       try {
-        await getGameSessionMetadata(otherUserId, sessionId);
+        await getGameSessionMetadata({ userId: otherUserId, sessionId });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -575,30 +594,30 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "user cannot get the metadata of a deleted session",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
 
-      const sessionId = await createGameSession(
+      const sessionId = await createGameSession({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        null,
-        sampleInitialSceneData,
-      );
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: null,
+        initialSceneData: sampleInitialSceneData,
+      });
 
-      await deleteGameSession(userId, sessionId);
+      await deleteGameSession({ userId, sessionId });
 
-      await expect(getGameSessionMetadata(userId, sessionId)).rejects.toThrow(
-        DatabaseError,
-      );
+      await expect(
+        getGameSessionMetadata({ userId, sessionId }),
+      ).rejects.toThrow(DatabaseError);
       try {
-        await getGameSessionMetadata(userId, sessionId);
+        await getGameSessionMetadata({ userId, sessionId });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -614,34 +633,37 @@ describe("Game Session Actions", () => {
   test.concurrent(
     "create game session should set template ID field correctly",
     async () => {
-      const userId = await createUser(
-        `testuser-${uuidv4()}@example.com`,
-        "hashedpassword",
-        "Test User",
-      );
-
-      const templateId = await createGameTemplate(userId, {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
       });
 
-      const sessionId = await createGameSession(
+      const templateId = await createGameTemplate({
         userId,
-        "Test Game Session",
-        "Once upon a time...",
-        "A test game session",
-        getFakeImageUrl(1),
-        "Test image",
-        templateId,
-        sampleInitialSceneData,
-      );
+        newGameTemplateData: {
+          name: "Test Template",
+          imageUrl: getFakeImageUrl(1),
+          imageDescription: "Template image",
+          backStory: "This is a test backstory.",
+          description: "A test template",
+          isPublic: true,
+        },
+      });
+
+      const sessionId = await createGameSession({
+        userId,
+        name: "Test Game Session",
+        backstory: "Once upon a time...",
+        description: "A test game session",
+        imageUrl: getFakeImageUrl(1),
+        imageDescription: "Test image",
+        parentGameTemplateId: templateId,
+        initialSceneData: sampleInitialSceneData,
+      });
 
       expect(
-        (await getGameSessionMetadata(userId, sessionId)).parentTemplateId,
+        (await getGameSessionMetadata({ userId, sessionId })).parentTemplateId,
       ).toBe(templateId);
     },
   );

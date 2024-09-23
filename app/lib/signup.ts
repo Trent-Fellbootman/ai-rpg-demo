@@ -38,7 +38,7 @@ export async function signup(formData: FormData): Promise<Response> {
 
   // signup the user
   try {
-    await createUser(result.data.email, hashedPassword);
+    await createUser({ email: result.data.email, hashedPassword });
   } catch (error) {
     return { message: `An error occurred: ${error}` };
   }

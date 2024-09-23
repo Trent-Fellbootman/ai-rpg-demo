@@ -9,7 +9,7 @@ import { getGameSessionsByUser } from "@/app/lib/database-actions/game-session-a
 export default async function GameCardsView() {
   const userId = (await getCurrentUser()).id;
 
-  const userSessions = await getGameSessionsByUser(userId);
+  const userSessions = await getGameSessionsByUser({ userId });
 
   if (userSessions.length === 0) {
     return (

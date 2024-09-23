@@ -5,7 +5,7 @@ import { getGameTemplatesByUser } from "@/app/lib/database-actions/game-template
 export async function MyGameTemplatesView() {
   const userId = (await getCurrentUser()).id;
 
-  const templates = await getGameTemplatesByUser(userId);
+  const templates = await getGameTemplatesByUser({ userId });
 
   if (templates.length === 0) {
     return (

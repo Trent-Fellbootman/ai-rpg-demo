@@ -49,7 +49,9 @@ export const writeGeneratedSceneAndUnlockDatabaseAction =
 
       log.debug("converted input data");
 
-      const sessionLocked = await isSessionLocked(data.sessionId);
+      const sessionLocked = await isSessionLocked({
+        sessionId: data.sessionId,
+      });
 
       if (!sessionLocked) {
         throw new Error("Expected session to be locked, but it is not!");
@@ -58,17 +60,17 @@ export const writeGeneratedSceneAndUnlockDatabaseAction =
       log.debug("Checked that session is currently locked");
 
       // update database
-      await addSceneToSession(
-        data.userId,
-        data.sessionId,
-        data.previousAction,
-        data.nextScene,
-      );
+      await addSceneToSession({
+        userId: data.userId,
+        sessionId: data.sessionId,
+        previousAction: data.previousAction,
+        newSceneData: data.nextScene,
+      });
 
       log.debug("Wrote generated scene to database and storage");
 
       // unlock session
-      await unlockSession(data.sessionId);
+      await unlockSession({ sessionId: data.sessionId });
 
       log.debug("Unlocked session; operation complete");
 

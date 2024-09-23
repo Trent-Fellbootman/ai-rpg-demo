@@ -9,7 +9,7 @@ export async function CommentsList({
   userId: number;
   templateId: number;
 }) {
-  const comments = await getComments(userId, templateId);
+  const comments = await getComments({ userId, gameTemplateId: templateId });
 
   return (
     <div className="flex flex-col w-full space-y-4">

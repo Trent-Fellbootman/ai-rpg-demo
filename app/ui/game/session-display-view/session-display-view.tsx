@@ -11,13 +11,13 @@ export async function SessionDisplayView({
   userId: number;
   sessionId: number;
 }) {
-  if (!(await doesUserHaveGameSession(userId, sessionId))) {
+  if (!(await doesUserHaveGameSession({ userId, sessionId }))) {
     throw new Error("User does not own session.");
   }
 
   // TODO: we're not checking lock status here
 
-  const scenesMetadata = await getScenesBySession(userId, sessionId);
+  const scenesMetadata = await getScenesBySession({ userId, sessionId });
 
   const scenes = scenesMetadata.map((item, _) => ({
     imageUrl: item.imageUrl,

@@ -1,5 +1,4 @@
 import { describe, test, expect } from "vitest";
-import { PrismaClient } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -10,8 +9,6 @@ import {
   DatabaseError,
   DatabaseErrorType,
 } from "@/app/lib/database-actions/error-types";
-
-const prisma = new PrismaClient();
 
 describe("User Actions", () => {
   // beforeEach(async () => {
@@ -29,12 +26,12 @@ describe("User Actions", () => {
     const hashedPassword = "hashedpassword";
     const name = "Test User";
 
-    const userId = await createUser(email, hashedPassword, name);
+    const userId = await createUser({ email, hashedPassword, name });
 
     expect(userId).toBeGreaterThan(0);
 
     // Retrieve the user and check data
-    const user = await getUserFromEmail(email);
+    const user = await getUserFromEmail({ email });
 
     expect(user).toEqual({
       id: userId,
@@ -51,14 +48,14 @@ describe("User Actions", () => {
       const hashedPassword = "hashedpassword";
       const name = "Test User";
 
-      await createUser(email, hashedPassword, name);
+      await createUser({ email, hashedPassword, name });
 
       await expect(
-        createUser(email, hashedPassword, name),
+        createUser({ email, hashedPassword, name }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
-        await createUser(email, hashedPassword, name);
+        await createUser({ email, hashedPassword, name });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;
@@ -74,9 +71,9 @@ describe("User Actions", () => {
     const hashedPassword = "hashedpassword";
     const name = "Test User";
 
-    const userId = await createUser(email, hashedPassword, name);
+    const userId = await createUser({ email, hashedPassword, name });
 
-    const user = await getUserFromEmail(email);
+    const user = await getUserFromEmail({ email });
 
     expect(user).toEqual({
       id: userId,
@@ -91,10 +88,12 @@ describe("User Actions", () => {
     async () => {
       const email = `nonexisting-${uuidv4()}@example.com`;
 
-      await expect(getUserFromEmail(email)).rejects.toThrowError(DatabaseError);
+      await expect(getUserFromEmail({ email })).rejects.toThrowError(
+        DatabaseError,
+      );
 
       try {
-        await getUserFromEmail(email);
+        await getUserFromEmail({ email });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
         const dbError = error as DatabaseError;

@@ -5,11 +5,10 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { DatabaseError, DatabaseErrorType } from "./error-types";
 import { createImageUrl, downloadImageToStorage } from "./utils";
 
+import { imageUrlExpireSeconds } from "@/app-config";
 import { logger } from "@/app/lib/logger";
 
 const log = logger.child({ module: "database-actions" });
-
-import { imageUrlExpireSeconds } from "@/app-config";
 
 const prisma = new PrismaClient();
 
@@ -21,16 +20,25 @@ export interface SceneDataNoAction {
   proposedActions: string[];
 }
 
-export async function createGameSession(
-  userId: number,
-  name: string,
-  backstory: string,
-  description: string | null,
-  imageUrl: string,
-  imageDescription: string,
-  parentGameTemplateId: number | null,
-  initialSceneData: SceneDataNoAction,
-): Promise<number> {
+export async function createGameSession({
+  userId,
+  name,
+  backstory,
+  description,
+  imageUrl,
+  imageDescription,
+  parentGameTemplateId,
+  initialSceneData,
+}: {
+  userId: number;
+  name: string;
+  backstory: string;
+  description: string | null;
+  imageUrl: string;
+  imageDescription: string;
+  parentGameTemplateId: number | null;
+  initialSceneData: SceneDataNoAction;
+}): Promise<number> {
   log.debug("Started creating game session in database");
 
   log.debug("Downloading images to storage");
@@ -107,12 +115,17 @@ export async function createGameSession(
  * @param newSceneData
  */
 // TODO: telling the user that the session exist might be a security concern
-export async function addSceneToSession(
-  userId: number,
-  sessionId: number,
-  previousAction: string,
-  newSceneData: SceneDataNoAction,
-): Promise<void> {
+export async function addSceneToSession({
+  userId,
+  sessionId,
+  previousAction,
+  newSceneData,
+}: {
+  userId: number;
+  sessionId: number;
+  previousAction: string;
+  newSceneData: SceneDataNoAction;
+}): Promise<void> {
   let imagePath: string;
 
   try {
@@ -120,7 +133,7 @@ export async function addSceneToSession(
   } catch (error) {
     throw new DatabaseError(
       DatabaseErrorType.InternalError,
-      `Failed to download image`,
+      `Failed to download image to storage`,
     );
   }
 
@@ -197,7 +210,11 @@ export async function addSceneToSession(
  * @param sessionId
  * @returns
  */
-export async function tryLockSession(sessionId: number): Promise<boolean> {
+export async function tryLockSession({
+  sessionId,
+}: {
+  sessionId: number;
+}): Promise<boolean> {
   const result = await prisma.gameSession.updateMany({
     where: {
       id: sessionId,
@@ -212,15 +229,19 @@ export async function tryLockSession(sessionId: number): Promise<boolean> {
   return result.count === 1;
 }
 
-export async function tryLockSessionUntilAcquire(
-  sessionId: number,
-  intervalMs: number = 99,
-  timeoutMs: number = 59_000,
-): Promise<void> {
+export async function tryLockSessionUntilAcquire({
+  sessionId,
+  intervalMs = 99,
+  timeoutMs = 59_000,
+}: {
+  sessionId: number;
+  intervalMs?: number;
+  timeoutMs?: number;
+}): Promise<void> {
   const startTime = Date.now();
 
   while (true) {
-    const acquired = await tryLockSession(sessionId);
+    const acquired = await tryLockSession({ sessionId });
 
     if (acquired) {
       return;
@@ -237,7 +258,11 @@ export async function tryLockSessionUntilAcquire(
   }
 }
 
-export async function isSessionLocked(sessionId: number): Promise<boolean> {
+export async function isSessionLocked({
+  sessionId,
+}: {
+  sessionId: number;
+}): Promise<boolean> {
   const session = await prisma.gameSession.findFirst({
     where: { id: sessionId, deleted: false },
     select: { isLocked: true },
@@ -253,7 +278,11 @@ export async function isSessionLocked(sessionId: number): Promise<boolean> {
   return session.isLocked;
 }
 
-export async function unlockSession(sessionId: number): Promise<void> {
+export async function unlockSession({
+  sessionId,
+}: {
+  sessionId: number;
+}): Promise<void> {
   const result = await prisma.gameSession.updateMany({
     where: {
       id: sessionId,
@@ -273,10 +302,13 @@ export async function unlockSession(sessionId: number): Promise<void> {
   }
 }
 
-export async function deleteGameSession(
-  userId: number,
-  sessionId: number,
-): Promise<void> {
+export async function deleteGameSession({
+  userId,
+  sessionId,
+}: {
+  userId: number;
+  sessionId: number;
+}): Promise<void> {
   const gameSession = await prisma.gameSession.findFirst({
     where: {
       id: sessionId,
@@ -332,10 +364,13 @@ export async function deleteGameSession(
  * @param sessionId
  * @returns
  */
-export async function doesUserHaveGameSession(
-  userId: number,
-  sessionId: number,
-): Promise<boolean> {
+export async function doesUserHaveGameSession({
+  userId,
+  sessionId,
+}: {
+  userId: number;
+  sessionId: number;
+}): Promise<boolean> {
   const gameSession = await prisma.gameSession.findFirst({
     where: {
       id: sessionId,
@@ -363,7 +398,7 @@ export async function getGameSessionLength(
   });
 
   if (count === 0) {
-    if (!(await doesUserHaveGameSession(userId, sessionId))) {
+    if (!(await doesUserHaveGameSession({ userId, sessionId }))) {
       throw new DatabaseError(
         DatabaseErrorType.NotFound,
         "Game session not found under user",
@@ -382,12 +417,16 @@ export async function getGameSessionLength(
  * @param sceneIndex - Index of the scene in the session (orderInSession)
  * @returns The scene object
  */
-export async function getSceneBySessionAndIndex(
-  userId: number,
-  sessionId: number,
-  sceneIndex: number,
-): Promise<SceneData> {
-  if (!(await doesUserHaveGameSession(userId, sessionId))) {
+export async function getSceneBySessionAndIndex({
+  userId,
+  sessionId,
+  sceneIndex,
+}: {
+  userId: number;
+  sessionId: number;
+  sceneIndex: number;
+}): Promise<SceneData> {
+  if (!(await doesUserHaveGameSession({ userId, sessionId }))) {
     throw new DatabaseError(
       DatabaseErrorType.NotFound,
       "Failed to find game session under user",
@@ -479,12 +518,13 @@ export interface SceneData extends SceneDataNoAction {
  * @param sessionId - ID of the game session
  * @returns An array of scenes
  */
-export async function getScenesBySession(
-  userId: number,
-  sessionId: number,
-): Promise<
-  SceneData[]
-> {
+export async function getScenesBySession({
+  userId,
+  sessionId,
+}: {
+  userId: number;
+  sessionId: number;
+}): Promise<SceneData[]> {
   const imageUrlExpiredScenes = await prisma.scene.findMany({
     where: {
       gameSessionId: sessionId,
@@ -558,7 +598,7 @@ export async function getScenesBySession(
   });
 
   if (scenes.length === 0) {
-    if (!(await doesUserHaveGameSession(userId, sessionId))) {
+    if (!(await doesUserHaveGameSession({ userId, sessionId }))) {
       throw new DatabaseError(
         DatabaseErrorType.NotFound,
         "Failed to find game session under user",
@@ -569,7 +609,7 @@ export async function getScenesBySession(
   return scenes.map((scene) => {
     return {
       ...scene,
-      imageUrl: scene.imageUrl!
+      imageUrl: scene.imageUrl!,
     };
   });
 }
@@ -580,7 +620,11 @@ export async function getScenesBySession(
  * @param userId - ID of the user
  * @returns An array of game sessions
  */
-export async function getGameSessionsByUser(userId: number): Promise<
+export async function getGameSessionsByUser({
+  userId,
+}: {
+  userId: number;
+}): Promise<
   {
     id: number;
     name: string;
@@ -668,10 +712,13 @@ export async function getGameSessionsByUser(userId: number): Promise<
   });
 }
 
-export async function getGameSessionMetadata(
-  userId: number,
-  sessionId: number,
-): Promise<{
+export async function getGameSessionMetadata({
+  userId,
+  sessionId,
+}: {
+  userId: number;
+  sessionId: number;
+}): Promise<{
   name: string;
   backstory: string;
   description: string | null;
