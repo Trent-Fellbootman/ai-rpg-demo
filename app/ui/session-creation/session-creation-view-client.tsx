@@ -58,38 +58,40 @@ export default function SessionCreationViewClient({
     <div className="flex flex-col space-y-4 w-full">
       {/* Title */}
       <p className="text-center text-3xl">Create a new session</p>
-      <div className="flex flex-row space-x-4 w-full">
+      <div className="flex flex-col sm:flex-row space-x-4 w-full">
         {/* Sample setups */}
-        <div className="flex flex-col rounded-xl bg-content1 p-4 max-w-sm">
+        <div className="flex flex-col rounded-xl bg-content1 p-4 w-full sm:max-w-sm">
           <p className="text-xl font-bold text-center">
             Try these example setups!
           </p>
           <Spacer y={2} />
-          <div className="flex flex-col space-y-2">
-            {sampleSetups.map((item, index) => (
-              <Card
-                key={index}
-                isHoverable
-                isPressable
-                className="bg-content2"
-                onPress={(_) => {
-                  setSessionName(item.name);
-                  setSessionDescription(item.description ?? "");
-                  setBackStory(item.backStory);
-                }}
-              >
-                <CardBody>
-                  <div className="flex flex-col">
-                    <p className="text-large font-bold line-clamp-1">
-                      {item.name}
-                    </p>
-                    {item.description && (
-                      <p className="line-clamp-3">{item.description}</p>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+          <div className="max-h-32 sm:max-h-full overflow-scroll">
+            <div className="flex flex-col space-y-2">
+              {sampleSetups.map((item, index) => (
+                <Card
+                  key={index}
+                  isHoverable
+                  isPressable
+                  className="bg-content2"
+                  onPress={(_) => {
+                    setSessionName(item.name);
+                    setSessionDescription(item.description ?? "");
+                    setBackStory(item.backStory);
+                  }}
+                >
+                  <CardBody>
+                    <div className="flex flex-col">
+                      <p className="text-large font-bold line-clamp-1">
+                        {item.name}
+                      </p>
+                      {item.description && (
+                        <p className="line-clamp-3">{item.description}</p>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
         {/* Session Creation Form */}
