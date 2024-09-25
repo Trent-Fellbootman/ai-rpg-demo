@@ -8,6 +8,7 @@ export const constants = {
   newSessionPagePath: "/games/sessions/new",
   gameTemplatesPagesRootPath: "/games/templates",
   gameTemplatesDashboardPagePath: "/games/templates",
+  generateNextSceneApiPath: "/api/generate-next-scene",
 };
 
 /**

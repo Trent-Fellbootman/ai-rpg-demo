@@ -2,16 +2,15 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ZodObject, infer as ZodInfer } from "zod";
 import dotenv from "dotenv";
+import { performance } from "next/dist/compiled/@edge-runtime/primitives";
 
 dotenv.config();
 
-import { performance } from "next/dist/compiled/@edge-runtime/primitives";
-
 import { logger } from "@/app/lib/logger";
 
-import * as process from "node:process";
-
 const log = logger.child({ module: "generative-ai" });
+
+const defaultModelName = "gpt-4o-mini";
 
 const openai = new OpenAI();
 
@@ -29,7 +28,7 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
   const start = performance.now();
 
   const response = await openai.beta.chat.completions.parse({
-    model: "gpt-4o-mini",
+    model: defaultModelName,
     messages: messages,
     response_format:
       responseFormat === undefined
@@ -53,6 +52,22 @@ export async function generateChatMessage<T extends ZodObject<any> | undefined>(
       role: message.role,
       content: responseFormat === undefined ? message.content : message.parsed,
     } as ChatMessage<T extends ZodObject<any> ? ZodInfer<T> : string>;
+  }
+}
+
+export async function* generateChatMessageStream(
+  messages: ChatMessage<string>[],
+): AsyncGenerator<string> {
+  const stream = await openai.chat.completions.create({
+    model: defaultModelName,
+    messages,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const message = chunk.choices[0].delta.content || "";
+
+    yield message;
   }
 }
 

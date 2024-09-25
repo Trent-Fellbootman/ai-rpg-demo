@@ -1006,7 +1006,7 @@ describe("Game Template Actions", () => {
   });
 
   // This test must be invoked separately from other because it depends on the global state
-  test.only("should correctly recommend game templates based on the exclusion and score rules", async () => {
+  test.skip("should correctly recommend game templates based on the exclusion and score rules", async () => {
     // Generate unique emails using UUID
     const user1Email = `user1-${uuidv4()}@example.com`;
     const user2Email = `user2-${uuidv4()}@example.com`;

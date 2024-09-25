@@ -22,6 +22,7 @@ import {
 } from "./data-generation/generate-session-data";
 import {
   generateNextSceneData,
+  GenerateNextSceneDataInProgressUpdate,
   NextSceneGenerationResponse,
 } from "./data-generation/generate-next-scene-data";
 import {
@@ -213,42 +214,25 @@ export async function createNewGameSessionAction(
   redirect(getScenePlayPagePath(newSessionId, null));
 }
 
-const CreateNextSceneActionFormSchema = z.object({
-  action: z.string().min(1, "Action must be non-empty!"),
-});
-
-export type CreateNextSceneActionResponse = {
-  errors?: {
-    fieldErrors?: {
-      [Key in keyof z.infer<typeof CreateNextSceneActionFormSchema>]?: string[];
-    };
-    message?: string;
-  };
-  nextScene?: {
-    proposedActions: string[];
-    narration: string;
-    imageUrl: string;
-  };
-};
-
-export async function createNextSceneAction(
-  userId: number,
-  sessionId: number,
-  formData: FormData,
-): Promise<CreateNextSceneActionResponse> {
+export async function createNextSceneAction({
+  userId,
+  sessionId,
+  action,
+  onInProgressUpdate,
+}: {
+  userId: number;
+  sessionId: number;
+  action: string;
+  onInProgressUpdate?: (
+    inProgressUpdateEvent: GenerateNextSceneDataInProgressUpdate,
+  ) => void;
+}): Promise<void> {
   log.debug("Started generating next scene action");
 
   const start = performance.now();
 
-  // Validate form fields using zod
-  const formParseResult = CreateNextSceneActionFormSchema.safeParse(
-    Object.fromEntries(formData.entries()),
-  );
-
-  if (!formParseResult.success) {
-    return {
-      errors: { fieldErrors: formParseResult.error.flatten().fieldErrors },
-    };
+  if (action === "") {
+    throw new Error("Empty action is not allowed!");
   }
 
   // check that the user owns the session
@@ -279,19 +263,16 @@ export async function createNextSceneAction(
   let nextScene: NextSceneGenerationResponse;
 
   try {
-    nextScene = await generateNextSceneData(
-      sessionMetadata.backstory,
-      scenes,
-      formParseResult.data.action,
-    );
+    nextScene = await generateNextSceneData({
+      backstory: sessionMetadata.backstory,
+      scenes: scenes,
+      currentAction: action,
+      onInProgressUpdate,
+    });
   } catch (error) {
     await unlockSession({ sessionId });
 
-    return {
-      errors: {
-        message: `An error occurred when generating the next scene: ${error}`,
-      },
-    };
+    throw new Error(`Error occurred when generating next scene data: ${error}`);
   }
 
   const nextSceneDataGenerationEnd = performance.now();
@@ -302,7 +283,7 @@ export async function createNextSceneAction(
   const inngestEventData = {
     userId,
     sessionId,
-    previousAction: formParseResult.data.action,
+    previousAction: action,
     nextScene,
   };
 
@@ -325,16 +306,9 @@ Statistics:
 - Next scene data generation: ${nextSceneDataGenerationEnd - inputDataRetrievalEnd}ms
 - Scheduling background task for database update: ${databaseUpdateBackgroundTaskSchedulingEnd - nextSceneDataGenerationEnd}ms
 - Total: ${databaseUpdateBackgroundTaskSchedulingEnd - start}ms`);
-
-  const { event, ...playerPerceivableNextSceneData } = nextScene;
-
-  return { nextScene: playerPerceivableNextSceneData };
 }
 
-export async function getSceneViewInitialData(
-  sessionId: number,
-  sceneIndex: number | "last",
-): Promise<{
+export interface SceneViewInitialData {
   userId: number;
   sceneIndex: number;
   sessionLength: number;
@@ -343,7 +317,12 @@ export async function getSceneViewInitialData(
   narration: string;
   action: string | null;
   proposedActions: string[];
-}> {
+};
+
+export async function getSceneViewInitialData(
+  sessionId: number,
+  sceneIndex: number | "last",
+): Promise<SceneViewInitialData> {
   const user = (await getCurrentUser())!;
 
   // TODO: optimize to remove this query
