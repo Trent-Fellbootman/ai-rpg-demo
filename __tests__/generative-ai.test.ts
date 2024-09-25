@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import {
   generateChatMessage,
+  generateChatMessageStream,
   generateImage,
 } from "@/app/lib/services/generative-ai";
 
@@ -48,6 +49,29 @@ describe("Generative AI", () => {
       };
 
       expect(message.content).toEqual(expectedOutput);
+    },
+    30000,
+  );
+
+  it.concurrent(
+    "chat completion is able to do basic math correctly (structured outputs)",
+    async () => {
+      let content = "";
+      let chunks = 0;
+
+      for await (const chunk of generateChatMessageStream([
+        {
+          role: "user",
+          content:
+            "What is the product of 13 and 15? Output a number ONLY and NOTHING ELSE.",
+        },
+      ])) {
+        chunks++;
+        content += chunk;
+      }
+
+      expect(content).toEqual("195");
+      expect(chunks > 2).toBe(true);
     },
     30000,
   );

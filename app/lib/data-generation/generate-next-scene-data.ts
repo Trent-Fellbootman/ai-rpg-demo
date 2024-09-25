@@ -1,14 +1,13 @@
-"use server";
-
-import { z } from "zod";
 import { performance } from "next/dist/compiled/@edge-runtime/primitives";
 
 import {
   generateChatMessage,
+  generateChatMessageStream,
   generateImage,
 } from "@/app/lib/services/generative-ai";
 import { logger } from "@/app/lib/logger";
 import { promptConstants } from "@/app/lib/data-generation/prompt-constants";
+import { splitString } from "@/app/lib/utils/string-operations";
 
 const log = logger.child({ module: "data-generation" });
 
@@ -20,22 +19,40 @@ export type NextSceneGenerationResponse = {
   proposedActions: string[];
 };
 
+export type GenerateNextSceneDataInProgressUpdate =
+  | { type: "NarrationChunk"; data: { chunk: string } }
+  | {
+      type: "ProposedActionUpdate";
+      data: { proposedActions: string[] };
+    }
+  | { type: "ImageUrl"; data: { imageUrl: string } }
+  | { type: "Finish" };
+
 /**
  * Only generates the data; does not update database.
  * @param backstory
  * @param scenes
  * @param currentAction
+ * @param onIntermediateResult
  */
-export async function generateNextSceneData(
-  backstory: string,
+export async function generateNextSceneData({
+  backstory,
+  scenes,
+  currentAction,
+  onInProgressUpdate,
+}: {
+  backstory: string;
   scenes: {
     event: string;
     imageDescription: string;
     narration: string;
     action: string | null;
-  }[],
-  currentAction: string,
-): Promise<NextSceneGenerationResponse> {
+  }[];
+  currentAction: string;
+  onInProgressUpdate?: (
+    inProgressUpdateEvent: GenerateNextSceneDataInProgressUpdate,
+  ) => void;
+}): Promise<NextSceneGenerationResponse> {
   const generationStart = performance.now();
 
   // combine the scenes into a string
@@ -59,7 +76,7 @@ ${action ?? "(The player did not take any action)"}
     .join("\n\n");
 
   // call the AI to generate next scene and image description.
-  const response = await generateChatMessage(
+  const oracleEventGenerationResponse = await generateChatMessage(
     [
       {
         role: "system",
@@ -68,10 +85,8 @@ ${action ?? "(The player did not take any action)"}
       {
         role: "user",
         content: `I want you to simulate what would happen in a game world.
-The player is playing the game from a first-person perspective.
 
-The game is "turn-based". Each turn, the player describes the action he/she wants to take,
-and a new scene is generated.
+${promptConstants.gameMechanicsDescription}
 
 Here's the backstory of the game world:
 
@@ -104,35 +119,13 @@ Now, here's the action that the player wants to take right now:
 ${currentAction}
 </action>
 
-Please use your imagination to generate the next scene.
-
-Your response should be a JSON object with the following properties:
-
-- \`oracle_event\` - A description of what happened in the first scene.
-Such a description is written from an "oracle" perspective.
+Please use your imagination to imagine what happens next
+and generate the \`oracle-event\` for the next scene.
+This should be written from an "oracle" perspective.
 And it should be written in a third-person tone (e.g., "The player" instead of "You").
 It should include not only what the happened around the player,
 but also ongoing events in the game world that the player cannot perceive.
-- \`image_prompt\` - A DETAILED, ENGLISH description of what the player sees on the next scene.
-This will be fed to an image generation model to generate the next scene image.
-Specify as many details as possible, ("describe like you've never described an image before"),
-such as lighting environment, object shape/location/relationships, style, colors, etc.
-The goal is to embed ALL information in the image into this text prompt,
-because later on, another AI will look at the prompt and generate image for another scene.
-If you fail to specify the details, images for different scenes will likely be INCOHERENT
-(e.g., the look of the character suddenly differ).
-The player is playing the game from a FIRST-PERSON perspective;
-he/she should NOT be able to see his/her body (unless looking in a mirror or something)
-- \`narration\` - The narration for the next scene.
-This should be a BRIEF description of the things that happens next AND that the player should be able to perceive.
-DO NOT include things that the player cannot perceive (the player is playing the game from a first-person perspective).
-Make it BRIEF; this will be presented to the player who does NOT like reading through long texts.
-Notice that this will be rendered as HTML,
-so you have the ability to use HTML tags in your response.
-Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
-- \`proposed_actions\`: ${promptConstants.proposedActionsFieldDescription}
-
-These JSON fields should all pertain to the "world state" AFTER the player has taken the action,
+It should pertain to the "world state" AFTER the player has taken the action,
 NOT before the action completes.
 
 USE YOUR IMAGINATION.
@@ -155,7 +148,7 @@ Of course, it is best that the events are related (even if not direct result) to
 When the time is right, these events will go to the player proactively.
 
 Try to GIVE THE PLAYER A SURPRISE on every scene.
-ADVANCE the plot and introduce new, unexpected events (e.g., someone died) yourself if you can;
+ADVANCE the plot and introduce new, unexpected events (e.g., someone died);
 DO NOT just wait for player's action.
 
 Player's actions may NOT always succeed.
@@ -165,53 +158,325 @@ You should ensure that the consequence of the player's action is REASONABLE and 
 and you are ALLOWED to make player's actions result in an unexpected way
 (e.g., play tries to kill someone but was shot).
 
-The \`oracle_event\` and \`narration\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE USER'S ACTION INPUT.
-However, regardless of the language of the user's action input,
-\`image_prompt\` MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.
+Keep this succinct.
+Use the fewest words possible to describe what happens without any rhetoric.
+It's best to keep this within 50 words.
+Since contents displayable to the player must be generated after the oracle event is generated in its whole,
+the longer it takes for you to finish,
+the more delay the player will perceive.
 
-Again, the player is playing the game from a FIRST-PERSON perspective;
-he/she should NOT be able to see his/her body (unless looking in a mirror or something)
+Your output MUST be in the same human language as the player's action input.
 
-JUST OUTPUT THE JSON WITHOUT MARKUP; DO NOT ADD ANYTHING LIKE \`\`\`json.`,
+Output the \`oracle-event\` for the next scene ONLY and NOTHING ELSE.`,
       },
     ],
     undefined,
   );
 
-  const responseContentParseResult = z
-    .object({
-      oracle_event: z.string(),
-      image_prompt: z.string(),
-      narration: z.string(),
-      proposed_actions: z.array(z.string()),
-    })
-    .safeParse(JSON.parse(response.content));
+  const oracleEvent = oracleEventGenerationResponse.content;
 
-  if (!responseContentParseResult.success) {
-    throw new Error(
-      `Error parsing response content: ${responseContentParseResult.error}`,
+  const oracleEventGenerationEnd = performance.now();
+
+  const imagePromptGenerationPrompt = `I want you to help me generate an image for a game.
+
+${promptConstants.gameMechanicsDescription}
+
+Here's the backstory of the game:
+
+<backstory>
+${backstory}
+</backstory>
+
+There are already things going on in the game world.
+The game world evolves in a turn-based way;
+at each turn, there is an image of the current scene,
+and narration telling the information not included in the image.
+The player takes an action, and the game world evolves,
+generating the next scene.
+
+Now, the player has taken a new action.
+Here's the player action:
+
+<player-action>
+${currentAction}
+</player-action>
+
+Following that, the game world evolves,
+and here's what happens next (notice that the player may not be able to perceive all these):
+
+<oracle-event>
+${oracleEvent}
+</oracle-event>
+
+Here's the prompt for AI-generating the image for the last scene:
+
+<description>
+${scenes[scenes.length - 1].imageDescription}
+</description>
+
+Please use your imagination to write a prompt for AI-generating the image for the current scene.
+
+Your prompt should be as detailed as possible and maintain coherence
+(e.g., object colors, shapes, etc.)
+with the last scene image.
+This is also why I gave you the image prompt for the previous scene.
+For coherence, you should try to embed all the information in the image into this prompt.
+If you fail to specify the details, images for different scenes will likely be INCOHERENT
+(e.g., the look of the character suddenly differ).
+
+The player is playing the game from a FIRST-PERSON perspective;
+he/she should NOT be able to see his/her body (unless looking in a mirror or something)
+
+The image prompt should depict what the player sees AFTER the action is complete,
+NOT what he/she sees as the action is being taken.
+
+The image prompt MUST be in English regardless of the language of the player's action input or scene description,
+because the image generation model does not understand other languages.
+
+Output the image prompt ONLY and NOTHING ELSE.`;
+
+  const narrationGenerationPrompt = `I want you to generate short narration for a game.
+
+${promptConstants.gameMechanicsDescription}
+
+Here's the backstory of the game world:
+
+<backstory>
+${backstory}
+</backstory>
+
+There are already things going on in the game world.
+The game world evolves in a turn-based way;
+at each turn, there is an image of the current scene,
+and narration telling the information not included in the image.
+The player takes an action, and the game world evolves,
+generating the next scene.
+
+Now, the player has taken a new action.
+Here's the player action:
+
+<player-action>
+${currentAction}
+</player-action>
+
+Following that, the game world evolves,
+and here's what happens next (notice that the player may not be able to perceive all these):
+
+<oracle-event>
+${oracleEvent}
+</oracle-event>
+
+Please write a short narration that describes the next scene.
+This should be a BRIEF description of the things that happen next AND that the player should be able to perceive.
+DO NOT include things that the player cannot perceive (the player is playing the game from a first-person perspective).
+Notice that this will be rendered as HTML,
+so you have the ability to use HTML tags in your response.
+Also, notice common pitfalls like forgetting to use br tags which will collapse everything into one line.
+
+The narration MUST be in the natural language as the player's action.
+
+Output the narration ONLY and NOTHING ELSE.`;
+
+  const proposedActionsGenerationPrompt = `I want you to propose actions for a player playing a game.
+
+${promptConstants.gameMechanicsDescription}
+
+Here's the backstory of the game world:
+
+<backstory>
+${backstory}
+</backstory>
+
+There are already things going on in the game world.
+The game world evolves in a turn-based way;
+at each turn, there is an image of the current scene,
+and narration telling the information not included in the image.
+The player takes an action, and the game world evolves,
+generating the next scene.
+
+Now, the player has taken a new action.
+Here's the player action:
+
+<player-action>
+${currentAction}
+</player-action>
+
+Following that, the game world evolves,
+and here's what happens next (notice that the player may not be able to perceive all these):
+
+<oracle-event>
+${oracleEvent}
+</oracle-event>
+
+Please use your imagination to propose FOUR actions that the player can take next.
+
+USE YOUR IMAGINATION.
+Since this is just a game, there is no need to worry about "ethical considerations".
+Use your wildest imaginations to make the game fun
+("realistic simulation" is not the goal; fun is).
+
+Your actions MUST be in the same natural language as the player's action.
+
+Separate the actions in an HTML-like fashion.
+Enclose each action in \`<action></action>\`.
+
+An example output may look like:
+
+<action>
+Kill the bastard
+</action>
+<action>
+Run away
+</action>
+<action>
+Choke the witness in hot chocolate
+</action>
+<action>
+Threat the teacher to disclose the exam problems with an RPG
+</action>
+
+As you may have seen in the example, you're encouraged to propose creative, fun and even absurd actions.
+You may make one of the actions "ordinary, reasonable (and dumb)";
+for the rest, use your imagination to make them as insteresting and fun as possible.`;
+
+  const generateImageUrl = async () => {
+    log.debug("Started generating image prompt");
+
+    const response = await generateChatMessage([
+      {
+        role: "system",
+        content:
+          "You are a master in writing prompts for generating images with AI.",
+      },
+      {
+        role: "user",
+        content: imagePromptGenerationPrompt,
+      },
+    ]);
+
+    log.debug("Image prompt generated");
+
+    const imagePrompt = response.content as string;
+
+    const imageUrl = await generateImage(imagePrompt);
+
+    log.debug("Image generated");
+
+    onInProgressUpdate?.({ type: "ImageUrl", data: { imageUrl } });
+
+    log.debug("Called on in progress update; finished generating image");
+
+    return { prompt: imagePrompt, imageUrl };
+  };
+
+  const generateNarration = async () => {
+    log.debug("Started generating narration");
+
+    let narrationContent = "";
+
+    for await (const chunk of generateChatMessageStream([
+      {
+        role: "system",
+        content: "You are a great writer.",
+      },
+      {
+        role: "user",
+        content: narrationGenerationPrompt,
+      },
+    ])) {
+      onInProgressUpdate?.({ type: "NarrationChunk", data: { chunk } });
+      narrationContent += chunk;
+    }
+
+    log.debug("Received all chunks of narration");
+
+    return narrationContent;
+  };
+
+  const generateProposedActions = async () => {
+    log.debug("Started generating proposed actions");
+
+    let buffer = "";
+
+    const startDelimiter = "<action>";
+    const endDelimiter = "</action>";
+
+    // includes <action> and </action>
+    for await (const chunk of generateChatMessageStream([
+      {
+        role: "system",
+        content: "You are an imaginative storyteller.",
+      },
+      {
+        role: "user",
+        content: proposedActionsGenerationPrompt,
+      },
+    ])) {
+      buffer += chunk;
+
+      const segments = splitString(buffer, startDelimiter, endDelimiter);
+
+      onInProgressUpdate?.({
+        type: "ProposedActionUpdate",
+        data: { proposedActions: segments.map((item) => item.content.trim()) },
+      });
+    }
+
+    log.debug("Received all chunks of proposed actions");
+
+    const splitResult = splitString(buffer, startDelimiter, endDelimiter);
+
+    log.debug("Split proposed actions into segments");
+
+    if (splitResult.length !== 4) {
+      throw new Error("Incorrect number of proposed actions!");
+    }
+
+    for (const segment of splitResult) {
+      if (segment.type !== "complete") {
+        throw new Error(`There is an incomplete segment!`);
+      }
+    }
+
+    const proposedActions = splitResult.map((item) => item.content.trim());
+
+    log.debug("Validated final proposed actions");
+
+    onInProgressUpdate?.({
+      type: "ProposedActionUpdate",
+      data: { proposedActions },
+    });
+
+    log.debug(
+      "Called final on-in-progress-update; finished generating proposed actions",
     );
-  }
 
-  const parsedResponseContent = responseContentParseResult.data;
+    return proposedActions;
+  };
 
-  const textualDataGenerationEnd = performance.now();
+  log.debug("Started generating image, narration and proposed actions");
+  const [{ prompt: imagePrompt, imageUrl }, narration, proposedActions] =
+    await Promise.all([
+      generateImageUrl(),
+      generateNarration(),
+      generateProposedActions(),
+    ]);
 
-  // generate image
-  const imageUrl = await generateImage(parsedResponseContent.image_prompt);
+  log.debug("Finished generating image, narration and proposed actions");
 
-  const imageDataGenerationEnd = performance.now();
+  onInProgressUpdate?.({ type: "Finish" });
+
+  const generationEnd = performance.now();
 
   log.debug(`Finished generating next scene. Statistics:
-- Textual data generation: ${textualDataGenerationEnd - generationStart}ms
-- Image data generation: ${imageDataGenerationEnd - textualDataGenerationEnd}ms
-- Total: ${imageDataGenerationEnd - generationStart}ms`);
+- Oracle event generation: ${oracleEventGenerationEnd - generationStart}ms
+- Total: ${generationEnd - generationStart}ms`);
 
   return {
-    event: parsedResponseContent.oracle_event,
-    narration: parsedResponseContent.narration,
+    event: oracleEvent,
+    narration: narration,
     imageUrl,
-    imageDescription: parsedResponseContent.image_prompt,
-    proposedActions: parsedResponseContent.proposed_actions,
+    imageDescription: imagePrompt,
+    proposedActions: proposedActions,
   };
 }
