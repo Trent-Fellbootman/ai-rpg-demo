@@ -14,11 +14,13 @@ export function LikeButton({
   gameTemplateId,
   currentLiked,
   currentLikeCount,
+  iconClassName,
 }: {
   userId: number;
   gameTemplateId: number;
   currentLiked: boolean;
   currentLikeCount: number;
+  iconClassName?: string;
 }) {
   const [isLiked, setIsLiked] = useState<boolean>(currentLiked);
   const [likeCount, setLikeCount] = useState<number>(currentLikeCount);
@@ -53,7 +55,10 @@ export function LikeButton({
           type="submit"
           variant="light"
         >
-          <HeartIcon color={isLiked ? "red" : "white"} />
+          <HeartIcon
+            className={iconClassName}
+            color={isLiked ? "red" : "white"}
+          />
         </Button>
       </form>
       <p className="text-xl">{likeCount}</p>
