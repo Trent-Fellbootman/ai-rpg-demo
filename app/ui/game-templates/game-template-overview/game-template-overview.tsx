@@ -39,7 +39,7 @@ export default async function GameTemplateOverview({
       />
       <Spacer y={2} />
       <p className="text-3xl">{gameTemplateMetadata.name}</p>
-      // statistics bar
+      {/*statistics bar*/}
       {gameTemplateMetadata.isPublic && (
         <div className="flex flex-col">
           <Spacer y={4} />
@@ -62,8 +62,8 @@ export default async function GameTemplateOverview({
                   currentLikeCount={gameTemplateMetadata.undeletedLikeCount}
                   currentLiked={gameTemplateMetadata.isLiked}
                   gameTemplateId={templateId}
-                  userId={userId}
                   iconClassName="w-6 sm:w-8"
+                  userId={userId}
                 />
                 <div className="flex flex-row items-center space-x-2">
                   <div className="w-6 sm:w-8">
@@ -88,14 +88,12 @@ export default async function GameTemplateOverview({
           </Card>
         </div>
       )}
-
       {gameTemplateMetadata.description && (
         <div className="flex flex-col">
           <Spacer y={4} />
           <p>{gameTemplateMetadata.description}</p>
         </div>
       )}
-
       {!gameTemplateMetadata.isPublic && (
         <div className="flex flex-col">
           <Spacer y={4} />
@@ -109,7 +107,6 @@ export default async function GameTemplateOverview({
           </CreateGameSessionButton>
         </div>
       )}
-
       {gameTemplateMetadata.isPublic && (
         <div className="flex flex-col">
           <Spacer y={8} />
