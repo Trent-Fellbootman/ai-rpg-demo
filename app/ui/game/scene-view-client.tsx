@@ -120,7 +120,10 @@ export default function SceneViewClient({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey) {
       event.preventDefault(); // Prevents adding a new line
-      takeAction(action);
+
+      if (!isProcessingAction) {
+        takeAction(action);
+      }
     }
   };
 
@@ -187,6 +190,7 @@ export default function SceneViewClient({
                 <div className="flex flex-row items-center">
                   <div className="flex flex-col flex-1">
                     <Textarea
+                      isReadOnly={isProcessingAction}
                       label="Action"
                       maxRows={6}
                       minRows={3}
