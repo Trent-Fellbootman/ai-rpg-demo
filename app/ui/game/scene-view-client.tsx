@@ -120,7 +120,10 @@ export default function SceneViewClient({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey) {
       event.preventDefault(); // Prevents adding a new line
-      takeAction(action);
+
+      if (!isProcessingAction) {
+        takeAction(action);
+      }
     }
   };
 
@@ -130,8 +133,7 @@ export default function SceneViewClient({
         <Image
           alt="Scene image"
           className="rounded-xl"
-          height={1024}
-          sizes="100vw"
+          height={768}
           src={imageUrl}
           style={{
             width: "100%",
@@ -141,7 +143,12 @@ export default function SceneViewClient({
         />
       ) : (
         <Skeleton>
-          <div className="w-full aspect-square" />
+          <div
+            className="w-full aspect-square"
+            style={{
+              aspectRatio: "4/3",
+            }}
+          />
         </Skeleton>
       )}
       <Spacer y={2} />
@@ -187,6 +194,7 @@ export default function SceneViewClient({
                 <div className="flex flex-row items-center">
                   <div className="flex flex-col flex-1">
                     <Textarea
+                      isReadOnly={isProcessingAction}
                       label="Action"
                       maxRows={6}
                       minRows={3}

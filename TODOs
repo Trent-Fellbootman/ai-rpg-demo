@@ -1,7 +1,6 @@
-- Optimize next scene generation TTFT (Time To First Token).
-Generate event first, then generate narration and image prompt in parallel from the event.
-Stream the narration to the user.
-This should reduce TTFT to about 2s, and the total processing time to about 6s.
+- Add better handling for empty action input when generating next scene
+(currently it clears the view and throws an error, preventing the user from taking further actions)
+- Likes and comments are not updated correctly when user navigates away from the game template overview
 - Allow games to specify a win condition.
 This would make things more interesting
 and the very-hard-to-beat games would probably enhance the social networking effect

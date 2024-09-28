@@ -10,7 +10,7 @@ export default async function Page({
 
   return (
     <div className="flex justify-center">
-      <div className="max-w-2xl">
+      <div className="max-w-2xl w-full">
         <GameTemplateOverview
           templateId={parseInt(templateId)}
           userId={user.id}
