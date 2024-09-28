@@ -133,8 +133,7 @@ export default function SceneViewClient({
         <Image
           alt="Scene image"
           className="rounded-xl"
-          height={1024}
-          sizes="100vw"
+          height={768}
           src={imageUrl}
           style={{
             width: "100%",
@@ -144,7 +143,12 @@ export default function SceneViewClient({
         />
       ) : (
         <Skeleton>
-          <div className="w-full aspect-square" />
+          <div
+            className="w-full aspect-square"
+            style={{
+              aspectRatio: "4/3",
+            }}
+          />
         </Skeleton>
       )}
       <Spacer y={2} />
