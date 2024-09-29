@@ -414,7 +414,7 @@ export async function getGameTemplateMetadataAndStatistics({
 }: {
   userId: number;
   gameTemplateId: number;
-}): Promise<GameTemplateMetadataWithFirstScene & GameTemplateStatistics> {
+}): Promise<GameTemplateMetadataWithFirstScene & GameTemplateStatistics & {isOwnedByUser: boolean}> {
   const [gameTemplate, statistics] = await Promise.all([
     prisma.gameTemplate.findFirst({
       where: {
@@ -439,6 +439,7 @@ export async function getGameTemplateMetadataAndStatistics({
         backstory: true,
         description: true,
         isPublic: true,
+        userId: true,
         firstSceneNarration: true,
         firstSceneImagePath: true,
         firstSceneImageDescription: true,
@@ -468,7 +469,7 @@ export async function getGameTemplateMetadataAndStatistics({
     gameTemplate.imageUrlExpiration &&
     gameTemplate.imageUrlExpiration! > new Date()
   ) {
-    const { likes, imageUrlExpiration, ...metadata } = gameTemplate;
+    const { likes, imageUrlExpiration, userId: ownerId, ...metadata } = gameTemplate;
 
     const {
       firstSceneProposedActions,
@@ -492,6 +493,7 @@ export async function getGameTemplateMetadataAndStatistics({
       },
       imageUrl: gameTemplate.imageUrl!,
       isLiked: likes.some((like) => like.userId === userId),
+      isOwnedByUser: userId === ownerId,
     };
   }
 
@@ -513,7 +515,7 @@ export async function getGameTemplateMetadataAndStatistics({
       },
     });
 
-    const { likes, imageUrlExpiration, ...metadata } = gameTemplate;
+    const { likes, imageUrlExpiration, userId: ownerId, ...metadata } = gameTemplate;
 
     const {
       firstSceneProposedActions,
@@ -537,6 +539,7 @@ export async function getGameTemplateMetadataAndStatistics({
         proposedActions: firstSceneProposedActions,
       },
       isLiked: likes.some((like) => like.userId === userId),
+      isOwnedByUser: userId === ownerId,
     };
   } catch (error) {
     throw new DatabaseError(

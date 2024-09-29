@@ -36,6 +36,7 @@ import { signIn } from "@/auth";
 import {
   addComment,
   createGameTemplate,
+  deleteGameTemplate,
   getGameTemplateMetadataAndStatistics,
 } from "@/app/lib/database-actions/game-template-actions";
 import { createImageUrl } from "@/app/lib/database-actions/utils";
@@ -398,9 +399,30 @@ export async function deleteGameSessionAction({
 }: {
   userId: number;
   sessionId: number;
-}) {
+}): Promise<DeleteGameSessionActionResponse> {
   try {
     await deleteGameSession({ userId, sessionId });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: `${error}` };
+  }
+}
+
+export interface DeleteGameTemplateActionResponse {
+  success: boolean;
+  error?: string;
+}
+
+export async function deleteGameTemplateAction({
+  userId,
+  templateId,
+}: {
+  userId: number;
+  templateId: number;
+}): Promise<DeleteGameTemplateActionResponse> {
+  try {
+    await deleteGameTemplate({ userId, templateId });
 
     return { success: true };
   } catch (error) {

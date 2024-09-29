@@ -193,6 +193,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       await deleteGameTemplate({ userId, templateId });
@@ -256,6 +257,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       expect(
@@ -270,6 +272,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: false,
       });
 
       expect(
@@ -284,6 +287,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       await expect(
@@ -354,6 +358,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       expect(
@@ -368,6 +373,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: false,
       });
 
       expect(
@@ -382,6 +388,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       // remove the templates
@@ -644,6 +651,7 @@ describe("Game Template Actions", () => {
       expect(template).toEqual({
         ...anyStatistics,
         ...testGameTemplateMetadataWithFirstSceneExpect,
+        isOwnedByUser: true,
         imageUrl: expect.any(String),
         undeletedCommentCount: 0,
         isLiked: false,
