@@ -80,11 +80,11 @@ model GameTemplate {
   imageDescription           String
   imageUrl                   String?
   imageUrlExpiration         DateTime?
-  firstSceneEvent            String                @default("Placeholder first scene event")
-  firstSceneImagePath        String                @default("Placeholder first scene image path")
-  firstSceneImageDescription String                @default("Placeholder first scene image description")
-  firstSceneNarration        String                @default("Placeholder first scene narration")
-  firstSceneProposedActions  String[]              @default(["Placeholder first scene proposed action"])
+  firstSceneEvent            String
+  firstSceneImagePath        String
+  firstSceneImageDescription String
+  firstSceneNarration        String
+  firstSceneProposedActions  String[]
   creationTimestamp          DateTime              @default(now())
   deleted                    Boolean               @default(false)
   deletionTimestamp          DateTime?
