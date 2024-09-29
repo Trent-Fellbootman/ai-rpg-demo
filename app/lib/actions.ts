@@ -171,7 +171,7 @@ export async function createNewGameSessionAction(
   // TODO: optimize for concurrency
   let templateId: number | null = null;
 
-  // first create session
+  // first create game template
   if (result.data.save_as_template) {
     templateId = await createGameTemplate({
       userId: user.id,
@@ -180,8 +180,17 @@ export async function createNewGameSessionAction(
         imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
         imageDescription: initialSceneGenerationResponse.coverImageDescription,
         description: initialSceneGenerationResponse.description,
-        backStory: initialSceneGenerationResponse.backstory,
+        backstory: initialSceneGenerationResponse.backstory,
         isPublic: result.data.make_template_public,
+        firstSceneData: {
+          event: initialSceneGenerationResponse.firstSceneEvent,
+          imageDescription:
+            initialSceneGenerationResponse.firstSceneImageDescription,
+          imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
+          narration: initialSceneGenerationResponse.firstSceneNarration,
+          proposedActions:
+            initialSceneGenerationResponse.firstSceneProposedActions,
+        },
       },
     });
   }
@@ -196,7 +205,8 @@ export async function createNewGameSessionAction(
     parentGameTemplateId: templateId,
     initialSceneData: {
       event: initialSceneGenerationResponse.firstSceneEvent,
-      imageDescription: initialSceneGenerationResponse.coverImageDescription,
+      imageDescription:
+        initialSceneGenerationResponse.firstSceneImageDescription,
       imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
       narration: initialSceneGenerationResponse.firstSceneNarration,
       proposedActions: initialSceneGenerationResponse.firstSceneProposedActions,

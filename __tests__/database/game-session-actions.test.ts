@@ -36,6 +36,22 @@ import {
 import { createGameTemplate } from "@/app/lib/database-actions/game-template-actions";
 
 describe("Game Session Actions", () => {
+  const testGameTemplateData = {
+    name: "Test Template",
+    imageUrl: getFakeImageUrl(1),
+    imageDescription: "Template image",
+    backstory: "This is a test backstory.",
+    description: "A test template",
+    isPublic: true,
+    firstSceneData: {
+      event: "Test event",
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Test image description",
+      narration: "Test narration",
+      proposedActions: ["Test action 1", "Test action 2", "Test action 3"],
+    },
+  };
+
   const sampleInitialSceneData = {
     imageUrl: getFakeImageUrl(2),
     imageDescription: "Initial scene image",
@@ -642,11 +658,7 @@ describe("Game Session Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
