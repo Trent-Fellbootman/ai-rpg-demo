@@ -1,12 +1,12 @@
 export const sampleSessionCreationTemplates: {
   name: string;
   description?: string;
-  backStory: string;
+  backstory: string;
 }[] = [
   {
     name: `Be With You After The Apocalypse`,
     description: `Rescue your crush and escape the zombie-infested school!`,
-    backStory: `You are a female middle school student and you have a crush on a boy in your class.
+    backstory: `You are a female middle school student and you have a crush on a boy in your class.
 But you're too shy and never confessed your emotions.
 One day, a mysterious virus stroke the entire city, turning every human into a zombie, except those who are immune
 - which happen to be you and your crush (but the player didn't know that her crush is also immune initially).
@@ -38,6 +38,6 @@ if the actions that the player takes does not do so.`,
   },
   {
     name: "Sample Session (no description)",
-    backStory: "Sample back story",
+    backstory: "Sample back story",
   },
 ];

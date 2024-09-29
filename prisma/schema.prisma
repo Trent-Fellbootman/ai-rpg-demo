@@ -72,25 +72,30 @@ model Scene {
 }
 
 model GameTemplate {
-  id                 Int                   @id @default(autoincrement())
-  name               String
-  backstory          String
-  description        String?
-  imagePath          String
-  imageDescription   String
-  imageUrl           String?
-  imageUrlExpiration DateTime?
-  creationTimestamp  DateTime              @default(now())
-  deleted            Boolean               @default(false)
-  deletionTimestamp  DateTime?
-  isPublic           Boolean               @default(false)
-  user               User                  @relation(fields: [userId], references: [id])
-  userId             Int
-  likes              GameTemplateLike[]
-  comments           GameTemplateComment[]
-  childGameSessions  GameSession[]
-  userVisits         GameTemplateVisit[]
-  userPushes         GameTemplatePush[]
+  id                         Int                   @id @default(autoincrement())
+  name                       String
+  backstory                  String
+  description                String?
+  imagePath                  String
+  imageDescription           String
+  imageUrl                   String?
+  imageUrlExpiration         DateTime?
+  firstSceneEvent            String
+  firstSceneImagePath        String
+  firstSceneImageDescription String
+  firstSceneNarration        String
+  firstSceneProposedActions  String[]
+  creationTimestamp          DateTime              @default(now())
+  deleted                    Boolean               @default(false)
+  deletionTimestamp          DateTime?
+  isPublic                   Boolean               @default(false)
+  user                       User                  @relation(fields: [userId], references: [id])
+  userId                     Int
+  likes                      GameTemplateLike[]
+  comments                   GameTemplateComment[]
+  childGameSessions          GameSession[]
+  userVisits                 GameTemplateVisit[]
+  userPushes                 GameTemplatePush[]
 }
 
 model GameTemplateVisit {

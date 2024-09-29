@@ -21,7 +21,7 @@ export default function SessionCreationViewClient({
   sampleSetups: {
     name: string;
     description?: string;
-    backStory: string;
+    backstory: string;
   }[];
 }) {
   const [errorState, setErrorState] = React.useState<
@@ -49,7 +49,7 @@ export default function SessionCreationViewClient({
   const [sessionName, setSessionName] = React.useState<string>("");
   const [sessionDescription, setSessionDescription] =
     React.useState<string>("");
-  const [backStory, setBackStory] = React.useState<string>("");
+  const [backstory, setBackStory] = React.useState<string>("");
   const [saveAsTemplate, setSaveAsTemplate] = React.useState<boolean>(true);
   const [makeTemplatePublic, setMakeTemplatePublic] =
     React.useState<boolean>(true);
@@ -76,7 +76,7 @@ export default function SessionCreationViewClient({
                   onPress={(_) => {
                     setSessionName(item.name);
                     setSessionDescription(item.description ?? "");
-                    setBackStory(item.backStory);
+                    setBackStory(item.backstory);
                   }}
                 >
                   <CardBody>
@@ -153,7 +153,7 @@ export default function SessionCreationViewClient({
                 }
                 maxRows={8}
                 minRows={5}
-                value={backStory}
+                value={backstory}
                 onChange={(e) => setBackStory(e.target.value)}
               />
               {errorState?.fieldErrors?.back_story &&

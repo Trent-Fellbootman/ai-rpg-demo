@@ -43,6 +43,124 @@ import {
 } from "@/app/lib/database-actions/game-session-actions";
 
 describe("Game Template Actions", () => {
+  const testGameTemplateData = {
+    name: "Test Template",
+    imageUrl: getFakeImageUrl(1),
+    imageDescription: "Template image",
+    backstory: "This is a test backstory.",
+    description: "A test template",
+    isPublic: true,
+    firstSceneData: {
+      event: "Test event",
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Test image description",
+      narration: "Test narration",
+      proposedActions: ["Test action 1", "Test action 2", "Test action 3"],
+    },
+  };
+
+  const {
+    firstSceneData: { imageUrl, ...firstSceneDataPruned },
+    ...testGameTemplateMetadataPruned
+  } = testGameTemplateData;
+
+  const testGameTemplateMetadataWithFirstSceneExpect = {
+    firstSceneData: {
+      ...firstSceneDataPruned,
+      imagePath: expect.any(String),
+    },
+    ...testGameTemplateMetadataPruned,
+    imagePath: expect.any(String),
+    id: expect.any(Number),
+  };
+
+  const testPublicGameTemplateData = {
+    name: "Public Test Template",
+    imageUrl: getFakeImageUrl(1),
+    imageDescription: "Public Template image",
+    backstory: "Public This is a test backstory.",
+    description: "Public A test template",
+    isPublic: true,
+    firstSceneData: {
+      event: "Public event",
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Public image description",
+      narration: "Public narration",
+      proposedActions: [
+        "Public action 1",
+        "Public action 2",
+        "Public action 3",
+      ],
+    },
+  };
+
+  const {
+    firstSceneData: {
+      imageUrl: testPublicImageUrl,
+      ...publicFirstSceneDataPruned
+    },
+    ...testPublicGameTemplateMetadataPruned
+  } = testPublicGameTemplateData;
+
+  const testPublicGameTemplateMetadataWithFirstSceneExpect = {
+    firstSceneData: {
+      ...publicFirstSceneDataPruned,
+      imagePath: expect.any(String),
+    },
+    ...testPublicGameTemplateMetadataPruned,
+    imagePath: expect.any(String),
+    id: expect.any(Number),
+  };
+
+  const testPrivateGameTemplateData = {
+    name: "Private Test Template",
+    imageUrl: getFakeImageUrl(1),
+    imageDescription: "Private Template image",
+    backstory: "Private This is a test backstory.",
+    description: "Private A test template",
+    isPublic: false,
+    firstSceneData: {
+      event: "Private event",
+      imageUrl: getFakeImageUrl(2),
+      imageDescription: "Private image description",
+      narration: "Private narration",
+      proposedActions: [
+        "Private action 1",
+        "Private action 2",
+        "Private action 3",
+      ],
+    },
+  };
+
+  const {
+    firstSceneData: {
+      imageUrl: testPrivateImageUrl,
+      ...privateFirstSceneDataPruned
+    },
+    ...testPrivateGameTemplateMetadataPruned
+  } = testPrivateGameTemplateData;
+
+  const testPrivateGameTemplateMetadataWithFirstSceneExpect = {
+    firstSceneData: {
+      ...privateFirstSceneDataPruned,
+      imagePath: expect.any(String),
+    },
+    ...testPrivateGameTemplateMetadataPruned,
+    imagePath: expect.any(String),
+    id: expect.any(Number),
+  };
+
+  const anyStatistics = {
+    childSessionsCount: expect.any(Number),
+    childSessionsUserActionsCount: expect.any(Number),
+    historicalCommentCount: expect.any(Number),
+    historicalLikeCount: expect.any(Number),
+    trendingPushCount: expect.any(Number),
+    undeletedCommentCount: expect.any(Number),
+    undeletedLikeCount: expect.any(Number),
+    visitCount: expect.any(Number),
+  };
+
   test.concurrent(
     "should create and delete a game template with valid data",
     async () => {
@@ -52,18 +170,12 @@ describe("Game Template Actions", () => {
         name: "Test User",
       });
 
-      const newGameTemplateData = {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
-      };
-
       const templateId = await createGameTemplate({
         userId,
-        newGameTemplateData,
+        newGameTemplateData: {
+          ...testGameTemplateData,
+          isPublic: true,
+        },
       });
 
       expect(templateId).toBeGreaterThan(0);
@@ -74,18 +186,14 @@ describe("Game Template Actions", () => {
         gameTemplateId: templateId,
       });
 
-      expect(template).toEqual(
-        expect.objectContaining({
-          name: newGameTemplateData.name,
-          backstory: newGameTemplateData.backStory,
-          description: newGameTemplateData.description,
-          imageDescription: newGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      expect(template).toEqual({
+        ...anyStatistics,
+        ...testGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       await deleteGameTemplate({ userId, templateId });
 
@@ -127,31 +235,13 @@ describe("Game Template Actions", () => {
         name: "Other User",
       });
 
-      const newPublicGameTemplateData = {
-        name: "Public Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Public Template image",
-        backStory: "Public This is a test backstory.",
-        description: "Public A test template",
-        isPublic: true,
-      };
-
-      const newPrivateGameTemplateData = {
-        name: "Private Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Private Template image",
-        backStory: "Private This is a test backstory.",
-        description: "Private A test template",
-        isPublic: false,
-      };
-
       const publicTemplateId = await createGameTemplate({
         userId,
-        newGameTemplateData: newPublicGameTemplateData,
+        newGameTemplateData: testPublicGameTemplateData,
       });
       const privateTemplateId = await createGameTemplate({
         userId,
-        newGameTemplateData: newPrivateGameTemplateData,
+        newGameTemplateData: testPrivateGameTemplateData,
       });
 
       expect(
@@ -159,54 +249,42 @@ describe("Game Template Actions", () => {
           userId,
           gameTemplateId: publicTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPublicGameTemplateData.name,
-          backstory: newPublicGameTemplateData.backStory,
-          description: newPublicGameTemplateData.description,
-          imageDescription: newPublicGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPublicGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       expect(
         await getGameTemplateMetadataAndStatistics({
           userId: otherUserId,
           gameTemplateId: publicTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPublicGameTemplateData.name,
-          backstory: newPublicGameTemplateData.backStory,
-          description: newPublicGameTemplateData.description,
-          imageDescription: newPublicGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPublicGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       expect(
         await getGameTemplateMetadataAndStatistics({
           userId,
           gameTemplateId: privateTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPrivateGameTemplateData.name,
-          backstory: newPrivateGameTemplateData.backStory,
-          description: newPrivateGameTemplateData.description,
-          imageDescription: newPrivateGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPrivateGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       await expect(
         getGameTemplateMetadataAndStatistics({
@@ -269,54 +347,42 @@ describe("Game Template Actions", () => {
           userId,
           gameTemplateId: publicTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPublicGameTemplateData.name,
-          backstory: newPublicGameTemplateData.backStory,
-          description: newPublicGameTemplateData.description,
-          imageDescription: newPublicGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPublicGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       expect(
         await getGameTemplateMetadataAndStatistics({
           userId: otherUserId,
           gameTemplateId: publicTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPublicGameTemplateData.name,
-          backstory: newPublicGameTemplateData.backStory,
-          description: newPublicGameTemplateData.description,
-          imageDescription: newPublicGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPublicGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       expect(
         await getGameTemplateMetadataAndStatistics({
           userId,
           gameTemplateId: privateTemplateId,
         }),
-      ).toEqual(
-        expect.objectContaining({
-          name: newPrivateGameTemplateData.name,
-          backstory: newPrivateGameTemplateData.backStory,
-          description: newPrivateGameTemplateData.description,
-          imageDescription: newPrivateGameTemplateData.imageDescription,
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      ).toEqual({
+        ...anyStatistics,
+        ...testPrivateGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
 
       // remove the templates
       await deleteGameTemplate({ userId, templateId: publicTemplateId });
@@ -372,23 +438,20 @@ describe("Game Template Actions", () => {
     async () => {
       const invalidUserId = 999999;
 
-      const newGameTemplateData = {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
-        isPublic: true,
-      };
-
       await expect(
-        createGameTemplate({ userId: invalidUserId, newGameTemplateData }),
+        createGameTemplate({
+          userId: invalidUserId,
+          newGameTemplateData: {
+            ...testPrivateGameTemplateData,
+            isPublic: true,
+          },
+        }),
       ).rejects.toThrowError(DatabaseError);
 
       try {
         await createGameTemplate({
           userId: invalidUserId,
-          newGameTemplateData,
+          newGameTemplateData: testGameTemplateData,
         });
       } catch (error) {
         expect(error).toBeInstanceOf(DatabaseError);
@@ -412,11 +475,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
@@ -490,11 +549,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
@@ -529,11 +584,7 @@ describe("Game Template Actions", () => {
     const templateId = await createGameTemplate({
       userId,
       newGameTemplateData: {
-        name: "Test Template",
-        imageUrl: getFakeImageUrl(1),
-        imageDescription: "Template image",
-        backStory: "This is a test backstory.",
-        description: "A test template",
+        ...testGameTemplateData,
         isPublic: true,
       },
     });
@@ -580,11 +631,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
@@ -594,18 +641,14 @@ describe("Game Template Actions", () => {
         gameTemplateId: templateId,
       });
 
-      expect(template).toEqual(
-        expect.objectContaining({
-          name: "Test Template",
-          backstory: "This is a test backstory.",
-          description: "A test template",
-          imageDescription: "Template image",
-          imageUrl: expect.any(String),
-          undeletedCommentCount: 0,
-          isLiked: false,
-          undeletedLikeCount: 0,
-        }),
-      );
+      expect(template).toEqual({
+        ...anyStatistics,
+        ...testGameTemplateMetadataWithFirstSceneExpect,
+        imageUrl: expect.any(String),
+        undeletedCommentCount: 0,
+        isLiked: false,
+        undeletedLikeCount: 0,
+      });
     },
   );
 
@@ -631,9 +674,20 @@ describe("Game Template Actions", () => {
           name: "Public Test Template",
           imageUrl: getFakeImageUrl(1),
           imageDescription: "Public Template image",
-          backStory: "This is a public test backstory.",
+          backstory: "This is a public test backstory.",
           description: "A public test template",
           isPublic: true,
+          firstSceneData: {
+            event: "Public event",
+            imageUrl: getFakeImageUrl(2),
+            imageDescription: "Public image description",
+            narration: "Public narration",
+            proposedActions: [
+              "Public action 1",
+              "Public action 2",
+              "Public action 3",
+            ],
+          },
         },
       });
 
@@ -644,9 +698,20 @@ describe("Game Template Actions", () => {
           name: "Public Test Template 2",
           imageUrl: getFakeImageUrl(1),
           imageDescription: "Public Template image 2",
-          backStory: "This is a public test backstory 2.",
+          backstory: "This is a public test backstory 2.",
           description: "A public test template 2",
           isPublic: true,
+          firstSceneData: {
+            event: "Public event",
+            imageUrl: getFakeImageUrl(2),
+            imageDescription: "Public image description",
+            narration: "Public narration",
+            proposedActions: [
+              "Public action 1",
+              "Public action 2",
+              "Public action 3",
+            ],
+          },
         },
       });
 
@@ -657,9 +722,20 @@ describe("Game Template Actions", () => {
           name: "Private Test Template",
           imageUrl: getFakeImageUrl(1),
           imageDescription: "Private Template image",
-          backStory: "This is a private test backstory.",
+          backstory: "This is a private test backstory.",
           description: "A private test template",
           isPublic: false,
+          firstSceneData: {
+            event: "Private event",
+            imageUrl: getFakeImageUrl(2),
+            imageDescription: "Private image description",
+            narration: "Private narration",
+            proposedActions: [
+              "Private action 1",
+              "Private action 2",
+              "Private action 3",
+            ],
+          },
         },
       });
 
@@ -700,7 +776,8 @@ describe("Game Template Actions", () => {
 
       // should be first public template, then second public template, then private template
       expect(templatesMetadata).toEqual([
-        expect.objectContaining({
+        {
+          ...anyStatistics,
           id: publicTemplateId,
           name: "Public Test Template",
           isPublic: true,
@@ -711,8 +788,9 @@ describe("Game Template Actions", () => {
           backstory: "This is a public test backstory.",
           imageUrl: expect.any(String),
           imageDescription: "Public Template image",
-        }),
-        expect.objectContaining({
+        },
+        {
+          ...anyStatistics,
           id: publicTemplateId2,
           name: "Public Test Template 2",
           isPublic: true,
@@ -723,8 +801,9 @@ describe("Game Template Actions", () => {
           backstory: "This is a public test backstory 2.",
           imageUrl: expect.any(String),
           imageDescription: "Public Template image 2",
-        }),
-        expect.objectContaining({
+        },
+        {
+          ...anyStatistics,
           id: privateTemplateId,
           name: "Private Test Template",
           isPublic: false,
@@ -735,7 +814,7 @@ describe("Game Template Actions", () => {
           backstory: "This is a private test backstory.",
           imageUrl: expect.any(String),
           imageDescription: "Private Template image",
-        }),
+        },
       ]);
     },
   );
@@ -752,11 +831,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
@@ -842,9 +917,20 @@ describe("Game Template Actions", () => {
         name: "Template 1",
         imageUrl: getFakeImageUrl(1),
         imageDescription: "Template 1 image",
-        backStory: "This is template 1 backstory.",
+        backstory: "This is template 1 backstory.",
         description: "Template 1 description",
         isPublic: true,
+        firstSceneData: {
+          event: "Public event",
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Public image description",
+          narration: "Public narration",
+          proposedActions: [
+            "Public action 1",
+            "Public action 2",
+            "Public action 3",
+          ],
+        },
       },
     });
 
@@ -854,9 +940,20 @@ describe("Game Template Actions", () => {
         name: "Template 2",
         imageUrl: getFakeImageUrl(2),
         imageDescription: "Template 2 image",
-        backStory: "This is template 2 backstory.",
+        backstory: "This is template 2 backstory.",
         description: "Template 2 description",
         isPublic: true,
+        firstSceneData: {
+          event: "Public event",
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Public image description",
+          narration: "Public narration",
+          proposedActions: [
+            "Public action 1",
+            "Public action 2",
+            "Public action 3",
+          ],
+        },
       },
     });
 
@@ -869,7 +966,7 @@ describe("Game Template Actions", () => {
     await addLike({ userId: anotherUserId, gameTemplateId: template2Id });
 
     // Add and delete comments
-    const comment1Id = await addComment({
+    await addComment({
       userId,
       gameTemplateId: template1Id,
       text: "Comment 1",
@@ -1045,9 +1142,20 @@ describe("Game Template Actions", () => {
     const templateData = {
       imageUrl: getFakeImageUrl(0),
       imageDescription: "Description",
-      backStory: "Backstory",
+      backstory: "Backstory",
       description: "Description",
       isPublic: true,
+      firstSceneData: {
+        event: "Public event",
+        imageUrl: getFakeImageUrl(2),
+        imageDescription: "Public image description",
+        narration: "Public narration",
+        proposedActions: [
+          "Public action 1",
+          "Public action 2",
+          "Public action 3",
+        ],
+      },
     };
 
     // Create multiple game templates for user1
@@ -1130,7 +1238,7 @@ describe("Game Template Actions", () => {
       },
     });
 
-    const anotherSession2Id = await createGameSession({
+    await createGameSession({
       userId: user4Id,
       name: "Template 2 derived session",
       backstory: "Backstory",
@@ -1300,16 +1408,16 @@ describe("Game Template Actions", () => {
 
     // Validate the results
     expect(user1RecommendedTemplates).toEqual([
-      expect.objectContaining(expectedTemplate1),
-      expect.objectContaining(expectedTemplate3),
+      { ...anyStatistics, ...expectedTemplate1 },
+      { ...anyStatistics, ...expectedTemplate3 },
       expect.anything(),
     ]);
     expect([template2Id, template4Id]).toContainEqual(
       user1RecommendedTemplates[2].id,
     );
     expect(user2RecommendedTemplates).toEqual([
-      expect.objectContaining(expectedTemplate4),
-      expect.objectContaining(expectedTemplate3),
+      { ...anyStatistics, ...expectedTemplate4 },
+      { ...anyStatistics, ...expectedTemplate3 },
       expect.anything(),
     ]);
     expect([template1Id, template2Id]).toContainEqual(
@@ -1321,14 +1429,14 @@ describe("Game Template Actions", () => {
       expect.anything(),
     ]);
     expect(user4RecommendedTemplates).toEqual([
-      expect.objectContaining(expectedTemplate4),
-      expect.objectContaining(expectedTemplate1),
-      expect.objectContaining(expectedTemplate3),
+      { ...anyStatistics, ...expectedTemplate4 },
+      { ...anyStatistics, ...expectedTemplate1 },
+      { ...anyStatistics, ...expectedTemplate3 },
     ]);
     expect(user5RecommendedTemplates).toEqual([
-      expect.objectContaining(expectedTemplate4),
-      expect.objectContaining(expectedTemplate2),
-      expect.objectContaining(expectedTemplate1),
+      { ...anyStatistics, ...expectedTemplate4 },
+      { ...anyStatistics, ...expectedTemplate2 },
+      { ...anyStatistics, ...expectedTemplate1 },
     ]);
   });
 
@@ -1344,11 +1452,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });
@@ -1396,11 +1500,7 @@ describe("Game Template Actions", () => {
       const templateId = await createGameTemplate({
         userId,
         newGameTemplateData: {
-          name: "Test Template",
-          imageUrl: getFakeImageUrl(1),
-          imageDescription: "Template image",
-          backStory: "This is a test backstory.",
-          description: "A test template",
+          ...testGameTemplateData,
           isPublic: true,
         },
       });

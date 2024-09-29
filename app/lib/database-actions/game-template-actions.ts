@@ -21,16 +21,27 @@ export async function createGameTemplate({
     name: string;
     imageUrl: string;
     imageDescription: string;
-    backStory: string;
+    backstory: string;
     description: string | null;
     isPublic: boolean;
+    firstSceneData: {
+      event: string;
+      imageUrl: string;
+      imageDescription: string;
+      narration: string;
+      proposedActions: string[];
+    };
   };
 }): Promise<number> {
-  let imagePath: string;
+  let coverImagePath: string;
+  let firstSceneImagePath: string;
 
   // download image to storage
   try {
-    imagePath = await downloadImageToStorage(newGameTemplateData.imageUrl);
+    [coverImagePath, firstSceneImagePath] = await Promise.all([
+      downloadImageToStorage(newGameTemplateData.imageUrl),
+      downloadImageToStorage(newGameTemplateData.firstSceneData.imageUrl),
+    ]);
   } catch (error) {
     log.error(error, `Failed to download image to storage`);
     throw new DatabaseError(
@@ -43,12 +54,19 @@ export async function createGameTemplate({
     const gameTemplate = await prisma.gameTemplate.create({
       data: {
         name: newGameTemplateData.name,
-        backstory: newGameTemplateData.backStory,
+        backstory: newGameTemplateData.backstory,
         description: newGameTemplateData.description,
-        imagePath: imagePath,
+        imagePath: coverImagePath,
         imageDescription: newGameTemplateData.imageDescription,
         isPublic: newGameTemplateData.isPublic,
         userId,
+        firstSceneEvent: newGameTemplateData.firstSceneData.event,
+        firstSceneImageDescription:
+          newGameTemplateData.firstSceneData.imageDescription,
+        firstSceneImagePath,
+        firstSceneNarration: newGameTemplateData.firstSceneData.narration,
+        firstSceneProposedActions:
+          newGameTemplateData.firstSceneData.proposedActions,
       },
       select: {
         id: true,
@@ -379,13 +397,24 @@ export interface GameTemplateMetadata {
   isPublic: boolean;
 }
 
+export interface GameTemplateMetadataWithFirstScene
+  extends GameTemplateMetadata {
+  firstSceneData: {
+    event: string;
+    imagePath: string;
+    imageDescription: string;
+    narration: string;
+    proposedActions: string[];
+  };
+}
+
 export async function getGameTemplateMetadataAndStatistics({
   userId,
   gameTemplateId,
 }: {
   userId: number;
   gameTemplateId: number;
-}): Promise<GameTemplateMetadata & GameTemplateStatistics> {
+}): Promise<GameTemplateMetadataWithFirstScene & GameTemplateStatistics> {
   const [gameTemplate, statistics] = await Promise.all([
     prisma.gameTemplate.findFirst({
       where: {
@@ -401,6 +430,7 @@ export async function getGameTemplateMetadataAndStatistics({
         ],
       },
       select: {
+        id: true,
         name: true,
         imageUrl: true,
         imagePath: true,
@@ -409,6 +439,11 @@ export async function getGameTemplateMetadataAndStatistics({
         backstory: true,
         description: true,
         isPublic: true,
+        firstSceneNarration: true,
+        firstSceneImagePath: true,
+        firstSceneImageDescription: true,
+        firstSceneEvent: true,
+        firstSceneProposedActions: true,
         likes: {
           select: {
             userId: true,
@@ -433,11 +468,28 @@ export async function getGameTemplateMetadataAndStatistics({
     gameTemplate.imageUrlExpiration &&
     gameTemplate.imageUrlExpiration! > new Date()
   ) {
-    const { likes, ...metadata } = gameTemplate;
+    const { likes, imageUrlExpiration, ...metadata } = gameTemplate;
+
+    const {
+      firstSceneProposedActions,
+      firstSceneEvent,
+      firstSceneNarration,
+      firstSceneImageDescription,
+      firstSceneImagePath,
+      ...metadataPruned
+    } = metadata;
 
     return {
-      ...metadata,
+      ...metadataPruned,
       ...statistics,
+      id: gameTemplate.id,
+      firstSceneData: {
+        event: firstSceneEvent,
+        imagePath: firstSceneImagePath,
+        imageDescription: firstSceneImageDescription,
+        narration: firstSceneNarration,
+        proposedActions: firstSceneProposedActions,
+      },
       imageUrl: gameTemplate.imageUrl!,
       isLiked: likes.some((like) => like.userId === userId),
     };
@@ -461,12 +513,29 @@ export async function getGameTemplateMetadataAndStatistics({
       },
     });
 
-    const { likes, ...metadata } = gameTemplate;
+    const { likes, imageUrlExpiration, ...metadata } = gameTemplate;
+
+    const {
+      firstSceneProposedActions,
+      firstSceneEvent,
+      firstSceneNarration,
+      firstSceneImageDescription,
+      firstSceneImagePath,
+      ...metadataPruned
+    } = metadata;
 
     return {
-      ...metadata,
+      ...metadataPruned,
       ...statistics,
+      id: gameTemplate.id,
       imageUrl: url,
+      firstSceneData: {
+        event: firstSceneEvent,
+        imagePath: firstSceneImagePath,
+        imageDescription: firstSceneImageDescription,
+        narration: firstSceneNarration,
+        proposedActions: firstSceneProposedActions,
+      },
       isLiked: likes.some((like) => like.userId === userId),
     };
   } catch (error) {
