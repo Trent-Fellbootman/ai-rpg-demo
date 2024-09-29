@@ -57,8 +57,10 @@ export function GameSessionDeleteButton({
             <>
               <ModalBody>
                 <p>
-                  Are you sure to delete this game session? This cannot be
-                  undone!
+                  Are you sure to delete this game session?{" "}
+                  <text className="text-red-500 font-bold">
+                    This cannot be undone!
+                  </text>
                 </p>
               </ModalBody>
               <ModalFooter>

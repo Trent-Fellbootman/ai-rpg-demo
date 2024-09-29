@@ -9,7 +9,7 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@nextui-org/modal";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 import { deleteGameTemplateAction } from "@/app/lib/actions";
 import { constants } from "@/app/lib/utils/path";
@@ -17,9 +17,11 @@ import { constants } from "@/app/lib/utils/path";
 export function GameTemplateDeleteButton({
   userId,
   templateId,
+  children,
 }: {
   userId: number;
   templateId: number;
+  children?: ReactNode;
 }) {
   const router = useRouter();
 
@@ -38,7 +40,7 @@ export function GameTemplateDeleteButton({
     if (result.success) {
       // successfully deleted the game session;
       // redirect to the game sessions dashboard page
-      router.push(constants.gameSessionsDashboardPagePath);
+      router.push(constants.gameTemplatesDashboardPagePath);
     } else {
       setError(result.error);
     }
@@ -49,7 +51,7 @@ export function GameTemplateDeleteButton({
   return (
     <>
       <Button color="danger" radius="full" variant="bordered" onPress={onOpen}>
-        Delete
+        {children}
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
@@ -57,8 +59,10 @@ export function GameTemplateDeleteButton({
             <>
               <ModalBody>
                 <p>
-                  Are you sure to delete this game template? This cannot be
-                  undone!
+                  Are you sure to delete this game template?{" "}
+                  <text className="text-red-500 font-bold">
+                    This cannot be undone!
+                  </text>
                 </p>
               </ModalBody>
               <ModalFooter>

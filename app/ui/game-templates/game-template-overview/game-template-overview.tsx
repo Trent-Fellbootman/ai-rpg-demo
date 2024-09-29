@@ -15,6 +15,7 @@ import { CommentInputForm } from "@/app/ui/game-templates/game-template-overview
 import { CommentsList } from "@/app/ui/game-templates/game-template-overview/comments-list";
 import { LikeButton } from "@/app/ui/game-templates/game-template-overview/like-button";
 import { CreateGameSessionButton } from "@/app/ui/game-templates/game-template-overview/create-game-session-button";
+import { GameTemplateDeleteButton } from "@/app/ui/game-templates/game-template-delete-button";
 
 export default async function GameTemplateOverview({
   userId,
@@ -30,6 +31,7 @@ export default async function GameTemplateOverview({
     userId,
     gameTemplateId: templateId,
   });
+  const userOwnsTemplate = gameTemplateMetadata.isOwnedByUser;
 
   return (
     <div className="flex flex-col">
@@ -106,6 +108,16 @@ export default async function GameTemplateOverview({
             </div>
           </CreateGameSessionButton>
         </div>
+      )}
+      {userOwnsTemplate && (
+        <>
+          <Spacer y={4} />
+          <div className="flex flex-row justify-end">
+            <GameTemplateDeleteButton templateId={templateId} userId={userId}>
+              Delete game template
+            </GameTemplateDeleteButton>
+          </div>
+        </>
       )}
       {gameTemplateMetadata.isPublic && (
         <div className="flex flex-col">
