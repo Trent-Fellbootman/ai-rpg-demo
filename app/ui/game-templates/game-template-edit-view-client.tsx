@@ -97,59 +97,6 @@ export default function GameTemplateEditViewClient({
   const [firstSceneProposedActions, setFirstSceneProposedActions] = useState<
     string[]
   >(prefilledFields.firstSceneData?.proposedActions ?? []);
-  const [coverImageGenerationInProgress, setCoverImageGenerationInProgress] =
-    useState<boolean>(false);
-  const [coverImageGenerationError, setCoverImageGenerationError] = useState<
-    string | undefined
-  >(undefined);
-
-  const [
-    firstSceneImageGenerationInProgress,
-    setFirstSceneImageGenerationInProgress,
-  ] = useState<boolean>(false);
-
-  const [firstSceneImageGenerationError, setFirstSceneImageGenerationError] =
-    useState<string | undefined>(undefined);
-
-  const generateCoverImage = async () => {
-    setCoverImageGenerationInProgress(true);
-
-    setCoverImageGenerationError(undefined);
-
-    const result = await generateAiImageAction({
-      prompt: coverImageDescription,
-    });
-
-    if (result.imageUrl) {
-      setCoverImageUrl(result.imageUrl);
-    }
-
-    if (result.error) {
-      setCoverImageGenerationError(result.error);
-    }
-
-    setCoverImageGenerationInProgress(false);
-  };
-
-  const generateFirstSceneImage = async () => {
-    setFirstSceneImageGenerationInProgress(true);
-
-    setFirstSceneImageGenerationError(undefined);
-
-    const result = await generateAiImageAction({
-      prompt: firstSceneImageDescription,
-    });
-
-    if (result.imageUrl) {
-      setFirstSceneImageUrl(result.imageUrl);
-    }
-
-    if (result.error) {
-      setFirstSceneImageGenerationError(result.error);
-    }
-
-    setFirstSceneImageGenerationInProgress(false);
-  };
 
   return (
     <div className="flex flex-col space-y-4 w-full">
@@ -195,8 +142,10 @@ export default function GameTemplateEditViewClient({
         <div className="flex-grow">
           <form onSubmit={formAction}>
             <div className="space-y-2 flex-col w-full">
-              <div className="flex flex-row w-full">
-                <div className="flex flex-col flex-grow">
+              {/* Metadata */}
+              <>
+                <p className="text-2xl">Template Metadata</p>
+                <div className="flex flex-col flex-grow space-y-2">
                   <FormField
                     fieldDisplayName="Name"
                     fieldSerializeName="name"
@@ -204,7 +153,7 @@ export default function GameTemplateEditViewClient({
                     maxRows={1}
                     minRows={1}
                     value={sessionName}
-                    onChange={(e) => setSessionName(e.target.value)}
+                    onValueChange={(value) => setSessionName(value)}
                   />
                   {errorState?.fieldErrors?.name &&
                     errorState?.fieldErrors.name.map((error: string) => (
@@ -228,79 +177,129 @@ export default function GameTemplateEditViewClient({
                     maxRows={8}
                     minRows={3}
                     value={sessionDescription}
-                    onChange={(e) => setSessionDescription(e.target.value)}
+                    onValueChange={(value) => setSessionDescription(value)}
                   />
-                  <p className="text-large">Cover Image</p>
-                  <div className="flex flex-row space-x-2">
-                    <div className="flex flex-col space-y-2 flex-grow">
-                      <Textarea
-                        label="Image Description"
-                        value={coverImageDescription}
-                        onValueChange={(value) =>
-                          setCoverImageDescription(value)
-                        }
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex flex-row justify-start">
+                      <p className="text-large">Cover Image</p>
+                      <StyledTooltip
+                        placement="right"
+                        tooltipContent="The cover image."
                       />
-                      {coverImageGenerationError && (
-                        <p className="text-sm text-red-500">
-                          {coverImageGenerationError}
-                        </p>
-                      )}
-                      <Button
-                        color="primary"
-                        isLoading={coverImageGenerationInProgress}
-                        variant="solid"
-                        onPress={async (e) => {
-                          await generateCoverImage();
-                        }}
-                      >
-                        Regenerate Cover Image
-                      </Button>
                     </div>
-                    <div className="max-w-sm h-full">
-                      <Image alt={coverImageDescription} src={coverImageUrl} />
-                    </div>
+                    <ImageEditView
+                      imageDescription={coverImageDescription}
+                      imageUrl={coverImageUrl}
+                      onImageDescriptionChange={(value) => {
+                        setCoverImageDescription(value);
+                      }}
+                      onSuccessfulGeneration={(imageUrl) => {
+                        setCoverImageUrl(imageUrl);
+                      }}
+                    />
                   </div>
                 </div>
-              </div>
-              <FormField
-                fieldDisplayName="Backstory"
-                fieldSerializeName="back_story"
-                fieldTooltipContent={
-                  <div className="max-w-md flex flex-col space-y-1">
-                    <p>The background story.</p>
-                    <p>
-                      May include character setup, world setup, storyline, plot,
-                      etc.
+                <FormField
+                  fieldDisplayName="Backstory"
+                  fieldSerializeName="back_story"
+                  fieldTooltipContent={
+                    <div className="max-w-md flex flex-col space-y-1">
+                      <p>The background story.</p>
+                      <p>
+                        May include character setup, world setup, storyline,
+                        plot, etc.
+                      </p>
+                      <p>
+                        The backstory guides the AI in generating scenes, and
+                        experienced users can use this to adjust gameplay
+                        experience and logic.
+                      </p>
+                      <p>
+                        Will not be visible by default, as viewing it may spoil
+                        the story.
+                      </p>
+                    </div>
+                  }
+                  maxRows={8}
+                  minRows={5}
+                  value={backstory}
+                  onValueChange={(value) => setBackstory(value)}
+                />
+                {errorState?.fieldErrors?.back_story &&
+                  errorState?.fieldErrors.back_story.map((error: string) => (
+                    <p key={error} className="mt-2 text-sm text-red-500">
+                      {error}
                     </p>
-                    <p>
-                      The backstory guides the AI in generating scenes, and
-                      experienced users can use this to adjust gameplay
-                      experience and logic.
-                    </p>
-                    <p>
-                      Will not be visible by default, as viewing it may spoil
-                      the story.
-                    </p>
+                  ))}
+              </>
+              {/* Initial Scene */}
+              <>
+                <p className="text-2xl">Initial Scene</p>
+                <FormField
+                  fieldDisplayName="Oracle Event"
+                  fieldSerializeName="oracleEvent"
+                  fieldTooltipContent={
+                    <div className="max-w-lg w-full flex flex-col space-y-1">
+                      <p>
+                        The oracle event lists everything happening the game
+                        world in the initial scene, including both what the
+                        player can and cannot perceive.
+                      </p>
+                      <p>
+                        Oracle events are invisible to the player but affect how
+                        later scenes are generated by AI.
+                      </p>
+                    </div>
+                  }
+                  maxRows={8}
+                  minRows={3}
+                  value={firstSceneEvent}
+                  onValueChange={(value) => setFirstSceneEvent(value)}
+                />
+                {/* TODO: Handle HTML formatting */}
+                <FormField
+                  fieldDisplayName="Narration"
+                  fieldSerializeName="narration"
+                  fieldTooltipContent={
+                    <div className="max-w-lg w-full flex flex-col space-y-1">
+                      <p>
+                        Narration is the text that the player sees in each
+                        scene.
+                      </p>
+                    </div>
+                  }
+                  maxRows={8}
+                  minRows={3}
+                  value={firstSceneNarration}
+                  onValueChange={(value) => setFirstSceneNarration(value)}
+                />
+                <div className="flex flex-col space-y-2">
+                  <div className="flex flex-row justify-start">
+                    <p className="text-large">Scene Image</p>
+                    <StyledTooltip
+                      placement="right"
+                      tooltipContent="A scene image is the image that the player sees in a scene."
+                    />
                   </div>
-                }
-                maxRows={8}
-                minRows={5}
-                value={backstory}
-                onChange={(e) => setBackstory(e.target.value)}
-              />
-              {errorState?.fieldErrors?.back_story &&
-                errorState?.fieldErrors.back_story.map((error: string) => (
-                  <p key={error} className="mt-2 text-sm text-red-500">
-                    {error}
-                  </p>
-                ))}
+                  <ImageEditView
+                    imageDescription={firstSceneImageDescription}
+                    imageUrl={firstSceneImageUrl}
+                    onImageDescriptionChange={(value) =>
+                      setFirstSceneImageDescription(value)
+                    }
+                    onSuccessfulGeneration={(imageUrl) =>
+                      setFirstSceneImageUrl(imageUrl)
+                    }
+                  />
+                </div>
+              </>
               <Checkbox
                 isSelected={makeTemplatePublic}
                 name="make_template_public"
                 onValueChange={setMakeTemplatePublic}
               >
                 <div className="flex flex-row items-center">
-                  <p>Make template public</p>
+                  <p>Public Template</p>
                   <StyledTooltip
                     placement="top"
                     tooltipContent={
@@ -341,7 +340,7 @@ function FormField({
   minRows,
   maxRows,
   value,
-  onChange,
+  onValueChange,
 }: {
   fieldDisplayName: string;
   fieldSerializeName: string;
@@ -349,7 +348,7 @@ function FormField({
   minRows: number;
   maxRows: number;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onValueChange: (value: string) => void;
 }) {
   return (
     <div className="flex flex-col">
@@ -363,7 +362,7 @@ function FormField({
         minRows={minRows}
         name={fieldSerializeName}
         value={value}
-        onChange={onChange}
+        onValueChange={onValueChange}
       />
     </div>
   );
@@ -387,5 +386,64 @@ function StyledTooltip({
         <InfoIcon />
       </Button>
     </Tooltip>
+  );
+}
+
+function ImageEditView({
+  imageUrl,
+  imageDescription,
+  onImageDescriptionChange,
+  onSuccessfulGeneration,
+}: {
+  imageUrl?: string;
+  imageDescription: string;
+  onImageDescriptionChange?: (value: string) => void;
+  onSuccessfulGeneration?: (imageUrl: string) => void;
+}) {
+  const [inProgress, setInProgress] = useState<boolean>(false);
+  const [error, setError] = useState<string | undefined>(undefined);
+
+  const generateImage = async () => {
+    setInProgress(true);
+    setError(undefined);
+
+    const result = await generateAiImageAction({
+      prompt: imageDescription,
+    });
+
+    if (result.imageUrl) {
+      onSuccessfulGeneration?.(result.imageUrl);
+    }
+    if (result.error) {
+      setError(result.error);
+    }
+
+    setInProgress(false);
+  };
+
+  return (
+    <div className="flex flex-row space-x-2">
+      <div className="flex flex-col space-y-2 flex-grow">
+        <Textarea
+          label="Image Description"
+          value={imageDescription}
+          onValueChange={onImageDescriptionChange}
+        />
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <Button
+          color="primary"
+          isLoading={inProgress}
+          variant="solid"
+          onPress={async (e) => {
+            await generateImage();
+          }}
+        >
+          Regenerate Image
+        </Button>
+      </div>
+      <div className="max-w-64 sm:max-w-sm h-full">
+        <Image alt={imageDescription} src={imageUrl} />
+      </div>
+    </div>
   );
 }
