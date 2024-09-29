@@ -17,10 +17,7 @@ import {
   tryLockSessionUntilAcquire,
   unlockSession,
 } from "./database-actions/game-session-actions";
-import {
-  generateGameSessionData,
-  generateInitialSceneData,
-} from "./data-generation/generate-session-data";
+import { generateGameSessionData } from "./data-generation/generate-session-data";
 import {
   generateNextSceneData,
   GenerateNextSceneDataInProgressUpdate,
@@ -41,6 +38,8 @@ import {
   createGameTemplate,
   getGameTemplateMetadataAndStatistics,
 } from "@/app/lib/database-actions/game-template-actions";
+import { createImageUrl } from "@/app/lib/database-actions/utils";
+import { imageUrlExpireSeconds } from "@/app-config";
 
 const log = logger.child({ module: "server-actions" });
 
@@ -98,18 +97,6 @@ export async function createGameSessionFromTemplateAction(
 
   const templateDataRetrievalEnd = performance.now();
 
-  // no need for authorization; database constraints will enforce valid user ID automatically
-
-  const initialSceneGenerationResponse = await generateInitialSceneData(
-    templateMetadata.name,
-    templateMetadata.backstory,
-    templateMetadata.description,
-    templateMetadata.imageUrl,
-    templateMetadata.imageDescription,
-  );
-
-  const initialSceneDataGenerationEnd = performance.now();
-
   // TODO: optimize for concurrency
   const newSessionId = await createGameSession({
     userId: user.id,
@@ -120,11 +107,16 @@ export async function createGameSessionFromTemplateAction(
     imageDescription: templateMetadata.imageDescription,
     parentGameTemplateId: templateId,
     initialSceneData: {
-      event: initialSceneGenerationResponse.event,
-      imageDescription: initialSceneGenerationResponse.imageDescription,
-      imageUrl: initialSceneGenerationResponse.imageUrl,
-      narration: initialSceneGenerationResponse.narration,
-      proposedActions: initialSceneGenerationResponse.proposedActions,
+      event: templateMetadata.firstSceneData.event,
+      imageDescription: templateMetadata.firstSceneData.imageDescription,
+      imageUrl: (
+        await createImageUrl(
+          templateMetadata.firstSceneData.imagePath,
+          imageUrlExpireSeconds,
+        )
+      ).url,
+      narration: templateMetadata.firstSceneData.narration,
+      proposedActions: templateMetadata.firstSceneData.proposedActions,
     },
   });
 
@@ -133,8 +125,7 @@ export async function createGameSessionFromTemplateAction(
   log.debug(`Finished creating new session from template. Statistics:
 - Authorization: ${authorizationEnd - authorizationStart}ms
 - Template data retrieval: ${templateDataRetrievalEnd - authorizationEnd}ms
-- Initial scene data generation: ${initialSceneDataGenerationEnd - templateDataRetrievalEnd}ms
-- Database update: ${databaseUpdateEnd - initialSceneDataGenerationEnd}ms
+- Database update: ${databaseUpdateEnd - templateDataRetrievalEnd}ms
 - Total: ${databaseUpdateEnd - authorizationStart}ms`);
 
   // redirect to new session
