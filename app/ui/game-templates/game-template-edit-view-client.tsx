@@ -297,11 +297,14 @@ export default function GameTemplateEditViewClient({
                     <StyledTooltip
                       placement="right"
                       tooltipContent={
-                        <div className="w-full max-w-lg">
+                        <div className="w-full max-w-lg space-y-1">
                           <p>
                             Proposed actions are sample actions that the player
                             can choose from if they do not want to type an
                             action him/herself.
+                          </p>
+                          <p>
+                            It is recommended to have no more than 4 actions.
                           </p>
                         </div>
                       }
@@ -451,9 +454,7 @@ function ImageEditView({
         />
         {error && <p className="text-sm text-red-500">{error}</p>}
         <Button
-          color="primary"
           isLoading={inProgress}
-          variant="solid"
           onPress={async (e) => {
             await generateImage();
           }}
@@ -518,13 +519,7 @@ function StringListEditView({
           </Button>
         </div>
       ))}
-      <Button
-        isIconOnly
-        className="w-full"
-        color="primary"
-        variant="solid"
-        onPress={(e) => appendItem()}
-      >
+      <Button isIconOnly className="w-full" onPress={(e) => appendItem()}>
         <div className="w-full max-w-6">
           <PlusIcon />
         </div>
