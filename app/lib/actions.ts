@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "./database-actions/user-actions";
 import {
   createGameSession,
+  deleteGameSession,
   doesUserHaveGameSession,
   getGameSessionLength,
   getGameSessionMetadata,
@@ -317,7 +318,7 @@ export interface SceneViewInitialData {
   narration: string;
   action: string | null;
   proposedActions: string[];
-};
+}
 
 export async function getSceneViewInitialData(
   sessionId: number,
@@ -383,4 +384,25 @@ export async function postCommentAction(
   revalidatePath(getTemplateOverviewPath(gameTemplateId));
 
   return {};
+}
+
+export interface DeleteGameSessionActionResponse {
+  success: boolean;
+  error?: string;
+}
+
+export async function deleteGameSessionAction({
+  userId,
+  sessionId,
+}: {
+  userId: number;
+  sessionId: number;
+}) {
+  try {
+    await deleteGameSession({ userId, sessionId });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: `${error}` };
+  }
 }

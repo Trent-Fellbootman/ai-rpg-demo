@@ -5,6 +5,7 @@ import { Link } from "@nextui-org/link";
 
 import { getGameSessionMetadata } from "@/app/lib/database-actions/game-session-actions";
 import { getScenePlayPagePath, getSessionViewPath } from "@/app/lib/utils/path";
+import { GameSessionDeleteButton } from "@/app/ui/game/game-session-delete-button";
 
 export default async function GameSessionOverview({
   userId,
@@ -52,6 +53,7 @@ export default async function GameSessionOverview({
         >
           View
         </Button>
+        <GameSessionDeleteButton sessionId={sessionId} userId={userId} />
       </div>
     </div>
   );
