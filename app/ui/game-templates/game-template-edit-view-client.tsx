@@ -7,9 +7,10 @@ import { Button } from "@nextui-org/button";
 import { Spinner } from "@nextui-org/spinner";
 import { Tooltip } from "@nextui-org/tooltip";
 import { InfoIcon } from "@nextui-org/shared-icons";
-import { Textarea } from "@nextui-org/input";
+import { Input, Textarea } from "@nextui-org/input";
 import { Checkbox } from "@nextui-org/checkbox";
 import { Image } from "@nextui-org/image";
+import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 import {
   createNewGameSessionAction,
@@ -180,7 +181,7 @@ export default function GameTemplateEditViewClient({
                     onValueChange={(value) => setSessionDescription(value)}
                   />
                   <div className="flex flex-col space-y-2">
-                    <div className="flex flex-row justify-start">
+                    <div className="flex flex-row justify-start items-center">
                       <p className="text-large">Cover Image</p>
                       <StyledTooltip
                         placement="right"
@@ -274,7 +275,7 @@ export default function GameTemplateEditViewClient({
                   onValueChange={(value) => setFirstSceneNarration(value)}
                 />
                 <div className="flex flex-col space-y-2">
-                  <div className="flex flex-row justify-start">
+                  <div className="flex flex-row justify-start items-center">
                     <p className="text-large">Scene Image</p>
                     <StyledTooltip
                       placement="right"
@@ -290,6 +291,25 @@ export default function GameTemplateEditViewClient({
                     onSuccessfulGeneration={(imageUrl) =>
                       setFirstSceneImageUrl(imageUrl)
                     }
+                  />
+                  <div className="flex flex-row items-center justify-start">
+                    <p className="text-large">Proposed Actions</p>
+                    <StyledTooltip
+                      placement="right"
+                      tooltipContent={
+                        <div className="w-full max-w-lg">
+                          <p>
+                            Proposed actions are sample actions that the player
+                            can choose from if they do not want to type an
+                            action him/herself.
+                          </p>
+                        </div>
+                      }
+                    />
+                  </div>
+                  <StringListEditView
+                    list={firstSceneProposedActions}
+                    onListChange={setFirstSceneProposedActions}
                   />
                 </div>
               </>
@@ -444,6 +464,71 @@ function ImageEditView({
       <div className="max-w-64 sm:max-w-sm h-full">
         <Image alt={imageDescription} src={imageUrl} />
       </div>
+    </div>
+  );
+}
+
+function StringListEditView({
+  list,
+  onListChange,
+}: {
+  list: string[];
+  onListChange: (list: string[]) => void;
+}) {
+  function deleteItem(deleteIndex: number) {
+    const newList = list.filter((_, index) => index !== deleteIndex);
+
+    onListChange(newList);
+  }
+
+  function updateItem(updateIndex: number, value: string) {
+    const newList = [...list];
+
+    newList[updateIndex] = value;
+
+    onListChange(newList);
+  }
+
+  function appendItem() {
+    const newList = [...list, ""];
+
+    onListChange(newList);
+  }
+
+  return (
+    <div className="flex flex-col space-y-2">
+      {list.map((item, index) => (
+        <div key={index} className="flex flex-row justify-between items-center">
+          <Input
+            value={item}
+            onValueChange={(value) => updateItem(index, value)}
+          >
+            {item}
+          </Input>
+          <Button
+            isIconOnly
+            color="danger"
+            size="sm"
+            variant="light"
+            onClick={() => deleteItem(index)}
+          >
+            <div className="w-full max-w-6">
+              <TrashIcon />
+            </div>
+          </Button>
+        </div>
+      ))}
+      <Button
+        isIconOnly
+        className="w-full"
+        color="primary"
+        variant="solid"
+        onPress={(e) => appendItem()}
+      >
+        <div className="w-full max-w-6">
+          <PlusIcon />
+        </div>
+      </Button>
     </div>
   );
 }
