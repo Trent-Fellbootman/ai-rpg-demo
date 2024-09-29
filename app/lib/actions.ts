@@ -41,6 +41,7 @@ import {
 } from "@/app/lib/database-actions/game-template-actions";
 import { createImageUrl } from "@/app/lib/database-actions/utils";
 import { imageUrlExpireSeconds } from "@/app-config";
+import { generateImage } from "@/app/lib/services/generative-ai";
 
 const log = logger.child({ module: "server-actions" });
 
@@ -427,5 +428,28 @@ export async function deleteGameTemplateAction({
     return { success: true };
   } catch (error) {
     return { success: false, error: `${error}` };
+  }
+}
+
+export interface GenerateAiImageActionResponse {
+  imageUrl?: string;
+  error?: string;
+}
+export async function generateAiImageAction({
+  prompt,
+}: {
+  prompt: string;
+}): Promise<GenerateAiImageActionResponse> {
+  if (prompt === "") {
+    return {
+      error: "Prompt must not be empty!",
+    };
+  }
+  try {
+    const imageUrl = await generateImage(prompt);
+
+    return { imageUrl };
+  } catch (error) {
+    return { error: `${error}` };
   }
 }

@@ -6,6 +6,8 @@ import {
   PlayIcon,
 } from "@heroicons/react/24/outline";
 import { Card, CardBody } from "@nextui-org/card";
+import { Button } from "@nextui-org/button";
+import { Link } from "@nextui-org/link";
 
 import {
   getGameTemplateMetadataAndStatistics,
@@ -16,6 +18,7 @@ import { CommentsList } from "@/app/ui/game-templates/game-template-overview/com
 import { LikeButton } from "@/app/ui/game-templates/game-template-overview/like-button";
 import { CreateGameSessionButton } from "@/app/ui/game-templates/game-template-overview/create-game-session-button";
 import { GameTemplateDeleteButton } from "@/app/ui/game-templates/game-template-delete-button";
+import { getTemplateEditPath } from "@/app/lib/utils/path";
 
 export default async function GameTemplateOverview({
   userId,
@@ -112,10 +115,19 @@ export default async function GameTemplateOverview({
       {userOwnsTemplate && (
         <>
           <Spacer y={4} />
-          <div className="flex flex-row justify-end">
+          <div className="flex flex-row justify-end space-x-2">
             <GameTemplateDeleteButton templateId={templateId} userId={userId}>
               Delete game template
             </GameTemplateDeleteButton>
+            <Button
+              as={Link}
+              color="primary"
+              href={getTemplateEditPath(templateId)}
+              radius="full"
+              variant="bordered"
+            >
+              Edit
+            </Button>
           </div>
         </>
       )}

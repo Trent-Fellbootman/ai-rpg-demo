@@ -34,3 +34,7 @@ export function getSessionOverviewPath(sessionId: number) {
 export function getTemplateOverviewPath(templateId: number) {
   return `${constants.gameTemplatesPagesRootPath}/${templateId}`;
 }
+
+export function getTemplateEditPath(templateId: number) {
+  return `${constants.gameTemplatesPagesRootPath}/${templateId}/edit`;
+}
