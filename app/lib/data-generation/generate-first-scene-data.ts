@@ -12,34 +12,34 @@ import { logger } from "@/app/lib/logger";
 
 const log = logger.child({ module: "data-generation" });
 
-export type GameSessionDataGenerationResponse = {
-  name: string;
-  backstory: string;
-  description: string | null;
-  temporaryCoverImageUrl: string;
-  coverImageDescription: string;
-  firstSceneEvent: string;
-  temporaryFirstSceneImageUrl: string;
-  firstSceneImageDescription: string;
-  firstSceneNarration: string;
-  firstSceneProposedActions: string[];
-};
-
 const firstSceneAndCoverImagePromptAiDataSchema = z.object({
-  cover_image_prompt: z.string(),
   first_scene_oracle_event: z.string(),
   first_scene_image_prompt: z.string(),
   first_scene_narration: z.string(),
   proposed_actions: z.array(z.string()),
 });
 
-export async function generateGameSessionData(
-  sessionName: string,
-  sessionBackstory: string,
-  sessionDescription: string | null,
-): Promise<GameSessionDataGenerationResponse> {
+export interface FirstSceneData {
+  event: string;
+  imageUrl: string;
+  imageDescription: string;
+  narration: string;
+  proposedActions: string[];
+}
+
+export async function generateInitialSceneData({
+  name,
+  backstory,
+  description,
+}: {
+  name: string;
+  backstory: string;
+  description: string | null;
+}): Promise<FirstSceneData> {
   const generationStart = performance.now();
 
+  // TODO: parallelize the parallelizable
+  //  (image prompt, narration and proposed actions can be generated in parallel following oracle event)
   // generate initial scene
   const initialSceneGenerationResponse = await generateChatMessage(
     [
@@ -51,26 +51,20 @@ export async function generateGameSessionData(
         role: "user",
         content: `I'm creating a game.
 
-The game works in a turn-based way.
-There are an ordered list of scenes;
-at each turn, the player takes an action and a new scene is generated from that action,
-while looking at the previous scenes to determine what should happen next.
+${promptConstants.gameMechanicsDescription}
 
 Here's the backstory of the game:
 
 <backstory>
-${sessionBackstory}
+${backstory}
 </backstory>
         
-I want you to create a prompt for AI-generating the cover image of the game,
-as well as a prompt for the first scene image, and a short narration for the initial scene.
+I want you to create a prompt for the first scene image, and a short narration for the initial scene.
 
-For the latter two, you should keep in mind that the player plays from a FIRST-PERSON perspective.
+You should keep in mind that the player plays from a FIRST-PERSON perspective.
 
 Your response should be a JSON object with the following properties:
 
-- \`cover_image_prompt\` - An ENGLISH prompt for generating the cover image for the game.
-This should be as detailed as possible.
 - \`first_scene_oracle_event\` - ${promptConstants.firstSceneOracleEventFieldDescription}
 - \`first_scene_image_prompt\` - ${promptConstants.firstSceneImagePromptFieldDescription}
 he/she should NOT be able to see his/her body (unless looking in a mirror or something)
@@ -84,7 +78,7 @@ Use your wildest imaginations to make the game fun
 
 The \`first_scene_oracle_event\` and \`first_scene_narration\` field in your output should be IN THE (NATURAL) LANGUAGE OF THE BACKSTORY.
 However, regardless of the language of the user's action input,
-The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
+The image prompt MUST ALWAYS BE IN ENGLISH, as the image generation model cannot understand other natural languages.`,
       },
     ],
     firstSceneAndCoverImagePromptAiDataSchema,
@@ -95,8 +89,7 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
   const textContentGenerationEnd = performance.now();
 
   // generate images
-  const [coverImageUrl, firstSceneImageUrl] = await Promise.all([
-    generateImage(initialScene.cover_image_prompt),
+  const [firstSceneImageUrl] = await Promise.all([
     generateImage(initialScene.first_scene_image_prompt),
   ]);
 
@@ -109,15 +102,10 @@ The image prompts MUST ALWAYS BE IN ENGLISH, as the image generation model canno
 `);
 
   return {
-    name: sessionName,
-    backstory: sessionBackstory,
-    description: sessionDescription,
-    coverImageDescription: initialScene.cover_image_prompt,
-    temporaryCoverImageUrl: coverImageUrl,
-    firstSceneEvent: initialScene.first_scene_oracle_event,
-    temporaryFirstSceneImageUrl: firstSceneImageUrl,
-    firstSceneImageDescription: initialScene.first_scene_image_prompt,
-    firstSceneNarration: initialScene.first_scene_narration,
-    firstSceneProposedActions: initialScene.proposed_actions,
+    event: initialScene.first_scene_oracle_event,
+    imageUrl: firstSceneImageUrl,
+    imageDescription: initialScene.first_scene_image_prompt,
+    narration: initialScene.first_scene_narration,
+    proposedActions: initialScene.proposed_actions,
   };
 }

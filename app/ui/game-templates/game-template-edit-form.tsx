@@ -15,6 +15,8 @@ import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import {
   GameTemplateDataSubmitErrors,
   generateAiImageAction,
+  generateFirstSceneDataAction,
+  GenerateFirstSceneDataActionError,
 } from "@/app/lib/actions";
 import { GameTemplateData } from "@/app/lib/database-actions/game-template-actions";
 import { ErrorsDisplayView } from "@/app/ui/utils/errors-display-view";
@@ -46,7 +48,7 @@ export default function GameTemplateEditForm({
 }) {
   async function submitForm() {
     setSubmitInProgress(true);
-    setErrors(undefined);
+    setSubmissionError(undefined);
 
     const errors = await onSubmitForm?.({
       name: name,
@@ -64,14 +66,45 @@ export default function GameTemplateEditForm({
       publicTemplate: makeTemplatePublic,
     });
 
-    setErrors(errors);
+    setSubmissionError(errors);
     setSubmitInProgress(false);
   }
 
+  async function generateFirstSceneData() {
+    setFirstSceneDataGenerationInProgress(true);
+    setFirstSceneDataGenerationError(undefined);
+
+    const result = await generateFirstSceneDataAction({
+      name: name,
+      backstory: backstory,
+      description: description === "" ? null : description,
+    });
+
+    if (result.errors) {
+      setFirstSceneDataGenerationError(result.errors);
+    }
+
+    if (result.data) {
+      setFirstSceneEvent(result.data.event);
+      setFirstSceneImageUrl(result.data.imageUrl);
+      setFirstSceneImageDescription(result.data.imageDescription);
+      setFirstSceneNarration(result.data.narration);
+      setFirstSceneProposedActions(result.data.proposedActions);
+    }
+
+    setFirstSceneDataGenerationInProgress(false);
+  }
+
   const [submitInProgress, setSubmitInProgress] = useState<boolean>(false);
-  const [errors, setErrors] = useState<
+  const [
+    firstSceneDataGenerationInProgress,
+    setFirstSceneDataGenerationInProgress,
+  ] = useState<boolean>(false);
+  const [submissionError, setSubmissionError] = useState<
     GameTemplateDataSubmitErrors | undefined
   >();
+  const [firstSceneDataGenerationError, setFirstSceneDataGenerationError] =
+    useState<GenerateFirstSceneDataActionError | undefined>();
   const [name, setName] = React.useState<string>(prefilledFields.name ?? "");
   const [description, setDescription] = React.useState<string>(
     prefilledFields.description ?? "",
@@ -169,8 +202,15 @@ export default function GameTemplateEditForm({
                   value={name}
                   onValueChange={(value) => setName(value)}
                 />
-                {errors?.fieldErrors?.name && (
-                  <ErrorsDisplayView errors={errors.fieldErrors.name} />
+                {firstSceneDataGenerationError?.fieldErrors?.name && (
+                  <ErrorsDisplayView
+                    errors={firstSceneDataGenerationError.fieldErrors.name}
+                  />
+                )}
+                {submissionError?.fieldErrors?.name && (
+                  <ErrorsDisplayView
+                    errors={submissionError.fieldErrors.name}
+                  />
                 )}
                 {/* Description */}
                 <FormField
@@ -187,8 +227,17 @@ export default function GameTemplateEditForm({
                   value={description}
                   onValueChange={(value) => setDescription(value)}
                 />
-                {errors?.fieldErrors?.description && (
-                  <ErrorsDisplayView errors={errors.fieldErrors.description} />
+                {firstSceneDataGenerationError?.fieldErrors?.description && (
+                  <ErrorsDisplayView
+                    errors={
+                      firstSceneDataGenerationError.fieldErrors.description
+                    }
+                  />
+                )}
+                {submissionError?.fieldErrors?.description && (
+                  <ErrorsDisplayView
+                    errors={submissionError.fieldErrors.description}
+                  />
                 )}
                 {/* Cover Image */}
                 <div className="flex flex-col space-y-2">
@@ -218,14 +267,14 @@ export default function GameTemplateEditForm({
                     }}
                   />
                 </div>
-                {errors?.fieldErrors?.coverImageDescription && (
+                {submissionError?.fieldErrors?.coverImageDescription && (
                   <ErrorsDisplayView
-                    errors={errors.fieldErrors.coverImageDescription}
+                    errors={submissionError.fieldErrors.coverImageDescription}
                   />
                 )}
-                {errors?.fieldErrors?.coverImageUrl && (
+                {submissionError?.fieldErrors?.coverImageUrl && (
                   <ErrorsDisplayView
-                    errors={errors.fieldErrors.coverImageUrl}
+                    errors={submissionError.fieldErrors.coverImageUrl}
                   />
                 )}
               </div>
@@ -248,13 +297,31 @@ export default function GameTemplateEditForm({
                 value={backstory}
                 onValueChange={(value) => setBackstory(value)}
               />
-              {errors?.fieldErrors?.backstory && (
-                <ErrorsDisplayView errors={errors.fieldErrors.backstory} />
+              {firstSceneDataGenerationError?.fieldErrors?.backstory && (
+                <ErrorsDisplayView
+                  errors={firstSceneDataGenerationError.fieldErrors.backstory}
+                />
+              )}
+              {submissionError?.fieldErrors?.backstory && (
+                <ErrorsDisplayView
+                  errors={submissionError.fieldErrors.backstory}
+                />
               )}
             </>
             {/* Initial Scene */}
             <>
-              <p className="text-2xl">第一个场景</p>
+              <div className="flex flex-row justify-between items-center">
+                <p className="text-2xl">第一个场景</p>
+                <Button
+                  isLoading={firstSceneDataGenerationInProgress}
+                  size="md"
+                  onPress={async (e) => {
+                    await generateFirstSceneData();
+                  }}
+                >
+                  使用AI生成第一个场景
+                </Button>
+              </div>
               {/* Oracle Event */}
               <FormField
                 fieldDisplayName="世界事件"
@@ -273,9 +340,9 @@ export default function GameTemplateEditForm({
                 value={firstSceneEvent}
                 onValueChange={(value) => setFirstSceneEvent(value)}
               />
-              {errors?.fieldErrors?.firstSceneData?.event && (
+              {submissionError?.fieldErrors?.firstSceneData?.event && (
                 <ErrorsDisplayView
-                  errors={errors.fieldErrors.firstSceneData.event}
+                  errors={submissionError.fieldErrors.firstSceneData.event}
                 />
               )}
               {/* Narration */}
@@ -293,9 +360,9 @@ export default function GameTemplateEditForm({
                 value={firstSceneNarration}
                 onValueChange={(value) => setFirstSceneNarration(value)}
               />
-              {errors?.fieldErrors?.firstSceneData?.narration && (
+              {submissionError?.fieldErrors?.firstSceneData?.narration && (
                 <ErrorsDisplayView
-                  errors={errors.fieldErrors.firstSceneData.narration}
+                  errors={submissionError.fieldErrors.firstSceneData.narration}
                 />
               )}
               {/* Scene Image */}
@@ -325,14 +392,18 @@ export default function GameTemplateEditForm({
                     setFirstSceneImageUrl(imageUrl)
                   }
                 />
-                {errors?.fieldErrors?.firstSceneData?.imageDescription && (
+                {submissionError?.fieldErrors?.firstSceneData
+                  ?.imageDescription && (
                   <ErrorsDisplayView
-                    errors={errors.fieldErrors.firstSceneData.imageDescription}
+                    errors={
+                      submissionError.fieldErrors.firstSceneData
+                        .imageDescription
+                    }
                   />
                 )}
-                {errors?.fieldErrors?.firstSceneData?.imageUrl && (
+                {submissionError?.fieldErrors?.firstSceneData?.imageUrl && (
                   <ErrorsDisplayView
-                    errors={errors.fieldErrors.firstSceneData.imageUrl}
+                    errors={submissionError.fieldErrors.firstSceneData.imageUrl}
                   />
                 )}
               </div>
@@ -352,9 +423,12 @@ export default function GameTemplateEditForm({
                 list={firstSceneProposedActions}
                 onListChange={setFirstSceneProposedActions}
               />
-              {errors?.fieldErrors?.firstSceneData?.proposedActions && (
+              {submissionError?.fieldErrors?.firstSceneData
+                ?.proposedActions && (
                 <ErrorsDisplayView
-                  errors={errors.fieldErrors.firstSceneData.proposedActions}
+                  errors={
+                    submissionError.fieldErrors.firstSceneData.proposedActions
+                  }
                 />
               )}
             </>
@@ -382,8 +456,10 @@ export default function GameTemplateEditForm({
                 />
               </div>
             </Checkbox>
-            {errors?.fieldErrors?.publicTemplate && (
-              <ErrorsDisplayView errors={errors.fieldErrors.publicTemplate} />
+            {submissionError?.fieldErrors?.publicTemplate && (
+              <ErrorsDisplayView
+                errors={submissionError.fieldErrors.publicTemplate}
+              />
             )}
             <Button
               className="w-full"

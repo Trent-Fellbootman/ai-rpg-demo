@@ -5,7 +5,10 @@ at each turn, the player takes an action and a new scene is generated from that 
 while looking at the previous scenes to determine what should happen next.`,
   firstSceneOracleEventFieldDescription: `A description of what happened in the first scene.
 Such a description is written from an "oracle" perspective.
-Include both what the player can and cannot see.`,
+Include both what the player can and cannot see.
+Keep this succinct.
+Use the fewest words possible to describe what happens without any rhetoric.
+It's best to keep this within 50 words.`,
   firstSceneImagePromptFieldDescription: `An ENGLISH prompt for generating the first scene image of the game.
 Specify as many details as possible, ("describe like you've never described an image before"),
 such as lighting environment, object shape, style, etc.

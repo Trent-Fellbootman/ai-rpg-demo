@@ -17,17 +17,16 @@ import {
   tryLockSessionUntilAcquire,
   unlockSession,
 } from "./database-actions/game-session-actions";
-import { generateGameSessionData } from "./data-generation/generate-session-data";
+import {
+  FirstSceneData,
+  generateInitialSceneData,
+} from "./data-generation/generate-first-scene-data";
 import {
   generateNextSceneData,
   GenerateNextSceneDataInProgressUpdate,
   NextSceneGenerationResponse,
 } from "./data-generation/generate-next-scene-data";
-import {
-  getScenePlayPagePath,
-  getSessionOverviewPath,
-  getTemplateOverviewPath,
-} from "./utils/path";
+import { getSessionOverviewPath, getTemplateOverviewPath } from "./utils/path";
 
 import { addGeneratedSceneAndUnlockDatabaseActionEventName } from "@/inngest/functions";
 import { inngest } from "@/inngest/client";
@@ -65,21 +64,26 @@ export async function authenticate(
   }
 }
 
-const CreateNewSessionActionFormSchema = z.object({
+const GenerateFirstSceneDataInputSchema = z.object({
   name: z.string().min(1, "Name must be non-empty!"),
-  back_story: z.string().min(1, "Backstory must be non-empty!"),
+  backstory: z.string().min(1, "Backstory must be non-empty!"),
   description: z.string().nullable(),
-  save_as_template: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true"),
-  make_template_public: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true"),
 });
 
-export type CreateNewGameSessionActionError = {
-  fieldErrors: {
-    [Key in keyof z.infer<typeof CreateNewSessionActionFormSchema>]?: string[];
+export interface GenerateFirstSceneDataInput {
+  name: string;
+  backstory: string;
+  description: string | null;
+}
+
+export interface GenerateFirstSceneDataResult {
+  errors?: GenerateFirstSceneDataActionError;
+  data?: FirstSceneData;
+}
+export type GenerateFirstSceneDataActionError = {
+  message?: string;
+  fieldErrors?: {
+    [Key in keyof z.infer<typeof GenerateFirstSceneDataInputSchema>]?: string[];
   };
 };
 
@@ -136,88 +140,44 @@ export async function createGameSessionFromTemplateAction(
   redirect(getSessionOverviewPath(newSessionId));
 }
 
-export async function createNewGameSessionAction(
-  formData: FormData,
-): Promise<CreateNewGameSessionActionError | undefined> {
+export async function generateFirstSceneDataAction(
+  inputData: GenerateFirstSceneDataInput,
+): Promise<GenerateFirstSceneDataResult> {
   // no need for authorization; database constraints will enforce valid user ID automatically
   const authorizationStart = performance.now();
 
-  const user = await getCurrentUser();
+  // get the current user to validate that the user is logged in
+  await getCurrentUser();
 
   // Validate form fields using zod
-  const result = CreateNewSessionActionFormSchema.safeParse(
-    Object.fromEntries(formData.entries()),
-  );
+  const result = GenerateFirstSceneDataInputSchema.safeParse(inputData);
 
   if (!result.success) {
-    return { fieldErrors: result.error.flatten().fieldErrors };
+    return { errors: { fieldErrors: result.error.flatten().fieldErrors } };
   }
 
   const authorizationEnd = performance.now();
 
-  const initialSceneGenerationResponse = await generateGameSessionData(
-    result.data.name,
-    result.data.back_story,
-    result.data.description,
-  );
-
-  const sessionDataGenerationEnd = performance.now();
-
-  // TODO: optimize for concurrency
-  let templateId: number | null = null;
-
-  // first create game template
-  if (result.data.save_as_template) {
-    templateId = await createGameTemplate({
-      userId: user.id,
-      newGameTemplateData: {
-        name: initialSceneGenerationResponse.name,
-        imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
-        imageDescription: initialSceneGenerationResponse.coverImageDescription,
-        description: initialSceneGenerationResponse.description,
-        backstory: initialSceneGenerationResponse.backstory,
-        isPublic: result.data.make_template_public,
-        firstSceneData: {
-          event: initialSceneGenerationResponse.firstSceneEvent,
-          imageDescription:
-            initialSceneGenerationResponse.firstSceneImageDescription,
-          imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
-          narration: initialSceneGenerationResponse.firstSceneNarration,
-          proposedActions:
-            initialSceneGenerationResponse.firstSceneProposedActions,
-        },
-      },
+  try {
+    const firstSceneData = await generateInitialSceneData({
+      ...inputData,
     });
-  }
 
-  const newSessionId = await createGameSession({
-    userId: user.id,
-    name: initialSceneGenerationResponse.name,
-    backstory: initialSceneGenerationResponse.backstory,
-    description: initialSceneGenerationResponse.description,
-    imageUrl: initialSceneGenerationResponse.temporaryCoverImageUrl,
-    imageDescription: initialSceneGenerationResponse.coverImageDescription,
-    parentGameTemplateId: templateId,
-    initialSceneData: {
-      event: initialSceneGenerationResponse.firstSceneEvent,
-      imageDescription:
-        initialSceneGenerationResponse.firstSceneImageDescription,
-      imageUrl: initialSceneGenerationResponse.temporaryFirstSceneImageUrl,
-      narration: initialSceneGenerationResponse.firstSceneNarration,
-      proposedActions: initialSceneGenerationResponse.firstSceneProposedActions,
-    },
-  });
+    const dataGenerationEnd = performance.now();
 
-  const databaseUpdateEnd = performance.now();
-
-  log.debug(`Finished creating new session. Statistics:
+    log.debug(`Finished generating initial scene data. Statistics:
 - Authorization: ${authorizationEnd - authorizationStart}ms
-- Session data generation: ${sessionDataGenerationEnd - authorizationEnd}ms
-- Database update: ${databaseUpdateEnd - sessionDataGenerationEnd}ms
-- Total: ${databaseUpdateEnd - authorizationStart}ms`);
+- Session data generation: ${dataGenerationEnd - authorizationEnd}ms
+- Total: ${dataGenerationEnd - authorizationStart}ms`);
 
-  // redirect to new session
-  redirect(getScenePlayPagePath(newSessionId, null));
+    return { data: firstSceneData };
+  } catch (error) {
+    return {
+      errors: {
+        message: `${error}`,
+      },
+    };
+  }
 }
 
 export async function createNextSceneAction({
