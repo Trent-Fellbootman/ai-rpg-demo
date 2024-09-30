@@ -60,9 +60,6 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        <Button as={Link} color="primary" href={constants.newSessionPagePath}>
-          创建新的游戏
-        </Button>
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
         </NavbarItem>

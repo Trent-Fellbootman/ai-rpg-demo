@@ -5,7 +5,6 @@ export const constants = {
   gamePagesRootPath: "/games",
   gameSessionsPagesRootPath: "/games/sessions",
   gameSessionsDashboardPagePath: "/games/sessions",
-  newSessionPagePath: "/games/sessions/new",
   gameTemplatesPagesRootPath: "/games/templates",
   gameTemplatesDashboardPagePath: "/games/templates",
   newGameTemplatePagePath: "/games/templates/new",

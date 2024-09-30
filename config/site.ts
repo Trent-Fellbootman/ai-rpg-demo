@@ -32,10 +32,6 @@ export const siteConfig = {
       label: "我的游戏模板",
       href: constants.gameTemplatesDashboardPagePath,
     },
-    {
-      label: "创建新的游戏",
-      href: constants.newSessionPagePath,
-    },
   ],
   links: {},
 };
