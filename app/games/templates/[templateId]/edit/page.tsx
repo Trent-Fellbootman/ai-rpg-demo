@@ -1,5 +1,5 @@
-import GameTemplateEditView from "@/app/games/templates/[templateId]/edit/game-template-edit-view";
 import { getCurrentUser } from "@/app/lib/database-actions/user-actions";
+import GameTemplateEditView from "./game-template-edit-view";
 
 export default async function Page({
   params: { templateId },

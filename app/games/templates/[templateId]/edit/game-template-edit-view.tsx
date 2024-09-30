@@ -1,8 +1,8 @@
-import { getGameTemplateMetadataAndStatistics } from "@/app/lib/database-actions/game-template-actions";
-import GameTemplateEditViewClient from "@/app/ui/game-templates/game-template-edit-view-client";
 import { sampleSessionCreationTemplates } from "@/content/sample-session-setup";
+import { getGameTemplateMetadataAndStatistics } from "@/app/lib/database-actions/game-template-actions";
 import { createImageUrl } from "@/app/lib/database-actions/utils";
 import { imageUrlExpireSeconds } from "@/app-config";
+import GameTemplateEditViewClient from "@/app/games/templates/[templateId]/edit/game-template-edit-view-client";
 
 export default async function GameTemplateEditView({
   userId,
@@ -38,8 +38,9 @@ export default async function GameTemplateEditView({
           narration: gameTemplateMetadata.firstSceneData.narration,
           proposedActions: gameTemplateMetadata.firstSceneData.proposedActions,
         },
+        publicTemplate: gameTemplateMetadata.isPublic,
       }}
-      sampleSetups={sampleSetups}
+      sampleTemplatesData={sampleSetups}
       templateId={templateId}
       userId={userId}
     />

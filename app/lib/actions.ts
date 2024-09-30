@@ -38,6 +38,7 @@ import {
   createGameTemplate,
   deleteGameTemplate,
   getGameTemplateMetadataAndStatistics,
+  updateGameTemplateData,
 } from "@/app/lib/database-actions/game-template-actions";
 import { createImageUrl } from "@/app/lib/database-actions/utils";
 import { imageUrlExpireSeconds } from "@/app-config";
@@ -451,5 +452,93 @@ export async function generateAiImageAction({
     return { imageUrl };
   } catch (error) {
     return { error: `${error}` };
+  }
+}
+
+export interface GameTemplateData {
+  name: string;
+  description: string | null;
+  backstory: string;
+  coverImageUrl: string;
+  coverImageDescription: string;
+  firstSceneData: {
+    imageUrl: string;
+    imageDescription: string;
+    event: string;
+    narration: string;
+    proposedActions: string[];
+  };
+  publicTemplate: boolean;
+}
+
+const firstSceneSchema = z.object({
+  imageUrl: z.string().min(1, "First scene image URL must not be empty!"),
+  imageDescription: z
+    .string()
+    .min(1, "First scene image description must not be empty!"),
+  event: z.string().min(1, "First scene event must not be empty!"),
+  narration: z.string().min(1, "First scene narration must not be empty!"),
+  proposedActions: z
+    .array(z.string().min(1, "First scene proposed action must not be empty!"))
+    .min(1, "First scene proposed actions must not be empty!"),
+});
+
+const GameTemplateDataSchema = z.object({
+  name: z.string().min(1, "Name must not be empty!"),
+  description: z.string().min(1, "Description must not be empty!").nullable(),
+  backstory: z.string().min(1, "Backstory must not be empty!"),
+  coverImageUrl: z.string().min(1, "Cover image URL must not be empty!"),
+  coverImageDescription: z
+    .string()
+    .min(1, "Cover image description must not be empty!"),
+  firstSceneData: firstSceneSchema,
+  publicTemplate: z.boolean(),
+});
+
+type DeepPartialStringArrays<T> = {
+  [K in keyof T]?: T[K] extends (infer U)[]
+    ? U extends object
+      ? DeepPartialStringArrays<U>[]
+      : string[]
+    : T[K] extends object
+      ? DeepPartialStringArrays<T[K]>
+      : string[];
+};
+
+export type GameTemplateDataSubmitErrors = {
+  message?: string;
+  fieldErrors?: DeepPartialStringArrays<GameTemplateData>;
+};
+
+export async function updateGameTemplateAction({
+  userId,
+  templateId,
+  data,
+}: {
+  userId: number;
+  templateId: number;
+  data: GameTemplateData;
+}): Promise<GameTemplateDataSubmitErrors | undefined> {
+  const dataParseResult = GameTemplateDataSchema.safeParse(data);
+  const firstSceneParseResult = firstSceneSchema.safeParse(data.firstSceneData);
+
+  if (!dataParseResult.success || !firstSceneParseResult.success) {
+    const baseErrors = dataParseResult.error?.flatten().fieldErrors;
+    const firstSceneErrors = firstSceneParseResult.error?.flatten().fieldErrors;
+
+    return {
+      fieldErrors: {
+        ...baseErrors,
+        firstSceneData: firstSceneErrors,
+      },
+    };
+  }
+
+  try {
+    await updateGameTemplateData({ userId, templateId, newData: data });
+  } catch (error) {
+    return {
+      message: `${error}`,
+    };
   }
 }
