@@ -414,7 +414,10 @@ export async function getGameTemplateMetadataAndStatistics({
 }: {
   userId: number;
   gameTemplateId: number;
-}): Promise<GameTemplateMetadataWithFirstScene & GameTemplateStatistics & {isOwnedByUser: boolean}> {
+}): Promise<
+  GameTemplateMetadataWithFirstScene &
+    GameTemplateStatistics & { isOwnedByUser: boolean }
+> {
   const [gameTemplate, statistics] = await Promise.all([
     prisma.gameTemplate.findFirst({
       where: {
@@ -469,7 +472,12 @@ export async function getGameTemplateMetadataAndStatistics({
     gameTemplate.imageUrlExpiration &&
     gameTemplate.imageUrlExpiration! > new Date()
   ) {
-    const { likes, imageUrlExpiration, userId: ownerId, ...metadata } = gameTemplate;
+    const {
+      likes,
+      imageUrlExpiration,
+      userId: ownerId,
+      ...metadata
+    } = gameTemplate;
 
     const {
       firstSceneProposedActions,
@@ -515,7 +523,12 @@ export async function getGameTemplateMetadataAndStatistics({
       },
     });
 
-    const { likes, imageUrlExpiration, userId: ownerId, ...metadata } = gameTemplate;
+    const {
+      likes,
+      imageUrlExpiration,
+      userId: ownerId,
+      ...metadata
+    } = gameTemplate;
 
     const {
       firstSceneProposedActions,
@@ -914,4 +927,72 @@ export async function markGameTemplateAsRecommended({
     VALUES (${userId}, ${gameTemplateId})
     ON CONFLICT ("userId", "gameTemplateId") DO NOTHING;
   `;
+}
+
+export interface GameTemplateData {
+  name: string;
+  description: string | null;
+  backstory: string;
+  coverImageUrl: string;
+  coverImageDescription: string;
+  firstSceneData: {
+    imageUrl: string;
+    imageDescription: string;
+    event: string;
+    narration: string;
+    proposedActions: string[];
+  };
+  publicTemplate: boolean;
+}
+
+export async function updateGameTemplateData({
+  userId,
+  templateId,
+  newData,
+}: {
+  userId: number;
+  templateId: number;
+  newData: GameTemplateData;
+}) {
+  // first download the images
+  const [coverImagePath, firstSceneImagePath] = await Promise.all([
+    downloadImageToStorage(newData.coverImageUrl),
+    downloadImageToStorage(newData.firstSceneData.imageUrl),
+  ]);
+
+  // then update the database
+  try {
+    await prisma.gameTemplate.update({
+      where: {
+        id: templateId,
+        userId: userId,
+      },
+      data: {
+        name: newData.name,
+        backstory: newData.backstory,
+        description: newData.description,
+        imagePath: coverImagePath,
+        imageDescription: newData.coverImageDescription,
+        imageUrl: null,
+        imageUrlExpiration: null,
+        firstSceneEvent: newData.firstSceneData.event,
+        firstSceneImagePath: firstSceneImagePath,
+        firstSceneImageDescription: newData.firstSceneData.imageDescription,
+        firstSceneNarration: newData.firstSceneData.narration,
+        firstSceneProposedActions: newData.firstSceneData.proposedActions,
+        isPublic: newData.publicTemplate,
+      },
+    });
+  } catch (error) {
+    // check for not found error
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        throw new DatabaseError(
+          DatabaseErrorType.NotFound,
+          "Game template not found or not public",
+        );
+      }
+    }
+    throw error;
+  }
 }
