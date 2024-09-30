@@ -37,6 +37,7 @@ import {
   addComment,
   createGameTemplate,
   deleteGameTemplate,
+  GameTemplateData,
   getGameTemplateMetadataAndStatistics,
   updateGameTemplateData,
 } from "@/app/lib/database-actions/game-template-actions";
@@ -455,22 +456,6 @@ export async function generateAiImageAction({
   }
 }
 
-export interface GameTemplateData {
-  name: string;
-  description: string | null;
-  backstory: string;
-  coverImageUrl: string;
-  coverImageDescription: string;
-  firstSceneData: {
-    imageUrl: string;
-    imageDescription: string;
-    event: string;
-    narration: string;
-    proposedActions: string[];
-  };
-  publicTemplate: boolean;
-}
-
 const firstSceneSchema = z.object({
   imageUrl: z.string().min(1, "First scene image URL must not be empty!"),
   imageDescription: z
@@ -539,6 +524,56 @@ export async function updateGameTemplateAction({
   } catch (error) {
     return {
       message: `${error}`,
+    };
+  }
+}
+
+export interface CreateGameTemplateActionResult {
+  templateId?: number;
+  errors?: GameTemplateDataSubmitErrors;
+}
+
+export async function createGameTemplateAction({
+  userId,
+  data,
+}: {
+  userId: number;
+  data: GameTemplateData;
+}): Promise<CreateGameTemplateActionResult> {
+  const dataParseResult = GameTemplateDataSchema.safeParse(data);
+  const firstSceneParseResult = firstSceneSchema.safeParse(data.firstSceneData);
+
+  if (!dataParseResult.success || !firstSceneParseResult.success) {
+    const baseErrors = dataParseResult.error?.flatten().fieldErrors;
+    const firstSceneErrors = firstSceneParseResult.error?.flatten().fieldErrors;
+
+    return {
+      errors: {
+        fieldErrors: {
+          ...baseErrors,
+          firstSceneData: firstSceneErrors,
+        },
+      },
+    };
+  }
+
+  try {
+    const templateId = await createGameTemplate({
+      userId: userId,
+      newGameTemplateData: {
+        ...data,
+        imageUrl: data.coverImageUrl,
+        imageDescription: data.coverImageDescription,
+        isPublic: data.publicTemplate,
+      },
+    });
+
+    return { templateId };
+  } catch (error) {
+    return {
+      errors: {
+        message: `${error}`,
+      },
     };
   }
 }

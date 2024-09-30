@@ -7,13 +7,10 @@ export async function MyGameTemplatesView() {
 
   const templates = await getGameTemplatesByUser({ userId });
 
-  if (templates.length === 0) {
-    return (
-      <p className="text-center font-bold text-xl">
-        You haven&apos;t created any game templates currently.
-      </p>
-    );
-  }
-
-  return <GameTemplateCardsView gameTemplatesMetadata={templates} />;
+  return (
+    <GameTemplateCardsView
+      gameTemplatesMetadata={templates}
+      includeNewTemplateButton={true}
+    />
+  );
 }

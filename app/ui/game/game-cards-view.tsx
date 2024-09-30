@@ -12,11 +12,7 @@ export default async function GameCardsView() {
   const userSessions = await getGameSessionsByUser({ userId });
 
   if (userSessions.length === 0) {
-    return (
-      <p className="text-center font-bold text-xl">
-        You don&apos;t have any sessions currently.
-      </p>
-    );
+    return <p className="text-center font-bold text-xl">你还没有游戏。</p>;
   }
 
   return (

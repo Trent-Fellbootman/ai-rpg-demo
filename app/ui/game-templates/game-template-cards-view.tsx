@@ -6,9 +6,10 @@ import {
   EyeIcon,
   HeartIcon,
   PlayIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 
-import { getTemplateOverviewPath } from "@/app/lib/utils/path";
+import { constants, getTemplateOverviewPath } from "@/app/lib/utils/path";
 import {
   GameTemplateMetadata,
   GameTemplateStatistics,
@@ -16,8 +17,10 @@ import {
 
 export default async function GameTemplateCardsView({
   gameTemplatesMetadata,
+  includeNewTemplateButton = false,
 }: {
   gameTemplatesMetadata: (GameTemplateMetadata & GameTemplateStatistics)[];
+  includeNewTemplateButton?: boolean;
 }) {
   return (
     <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
@@ -63,6 +66,22 @@ export default async function GameTemplateCardsView({
           </CardFooter>
         </Card>
       ))}
+      {includeNewTemplateButton && (
+        <Card
+          key={gameTemplatesMetadata.length}
+          as={Link}
+          href={constants.newGameTemplatePagePath}
+          shadow="sm"
+        >
+          <CardBody className="overflow-visible p-0">
+            <div className="w-full h-full flex flex-row justify-center items-center">
+              <div className="w-full max-w-32">
+                <PlusIcon />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

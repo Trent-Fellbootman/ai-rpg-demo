@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React from "react";
+import { Spacer } from "@nextui-org/spacer";
 
 import GameTemplateEditForm, {
   OptionalGameTemplateData,
@@ -12,7 +13,6 @@ import {
   updateGameTemplateAction,
 } from "@/app/lib/actions";
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
-import { Spacer } from "@nextui-org/spacer";
 
 export default async function GameTemplateEditViewClient({
   userId,
