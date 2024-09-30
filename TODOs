@@ -1,3 +1,4 @@
+- Prevent image to be cloned each time a game template is updated
 - Add better handling for empty action input when generating next scene
 (currently it clears the view and throws an error, preventing the user from taking further actions)
 - Likes and comments are not updated correctly when user navigates away from the game template overview

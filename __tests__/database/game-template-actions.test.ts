@@ -32,6 +32,7 @@ import {
   getRecommendedGameTemplates,
   markGameTemplateAsVisited,
   markGameTemplateAsRecommended,
+  updateGameTemplateData,
 } from "@/app/lib/database-actions/game-template-actions";
 import {
   DatabaseError,
@@ -193,6 +194,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       await deleteGameTemplate({ userId, templateId });
@@ -256,6 +258,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       expect(
@@ -270,6 +273,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: false,
       });
 
       expect(
@@ -284,6 +288,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       await expect(
@@ -354,6 +359,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       expect(
@@ -368,6 +374,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: false,
       });
 
       expect(
@@ -382,6 +389,7 @@ describe("Game Template Actions", () => {
         undeletedCommentCount: 0,
         isLiked: false,
         undeletedLikeCount: 0,
+        isOwnedByUser: true,
       });
 
       // remove the templates
@@ -644,6 +652,7 @@ describe("Game Template Actions", () => {
       expect(template).toEqual({
         ...anyStatistics,
         ...testGameTemplateMetadataWithFirstSceneExpect,
+        isOwnedByUser: true,
         imageUrl: expect.any(String),
         undeletedCommentCount: 0,
         isLiked: false,
@@ -1539,6 +1548,167 @@ describe("Game Template Actions", () => {
 
       // The push count should not increase because it's the same user recommending the same template
       expect(finalPushCount).toBe(updatedPushCount);
+    },
+  );
+
+  test.concurrent(
+    "Users should be able to update their own game templates only",
+    async () => {
+      const userId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
+
+      const templateId = await createGameTemplate({
+        userId,
+        newGameTemplateData: {
+          ...testGameTemplateData,
+          isPublic: true,
+        },
+      });
+
+      const actualTemplate = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
+
+      console.log(`imageUrl: ${actualTemplate.imageUrl}`);
+
+      expect(
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: templateId,
+        }),
+      ).toEqual({
+        ...anyStatistics,
+        ...testGameTemplateData,
+        firstSceneData: (() => {
+          const { imageUrl, ...rest } = testGameTemplateData.firstSceneData;
+
+          return {
+            ...rest,
+            imagePath: expect.any(String),
+          };
+        })(),
+        id: expect.any(Number),
+        imagePath: expect.any(String),
+        imageUrl: expect.any(String),
+        isLiked: expect.any(Boolean),
+        isOwnedByUser: true,
+      });
+
+      // create entirely new data
+      const newGameTemplateData = {
+        name: "Updated Name",
+        backstory: "Updated Backstory",
+        description: "Updated Description",
+        coverImageDescription: "Updated Image Description",
+        coverImageUrl: getFakeImageUrl(1),
+        publicTemplate: false,
+        firstSceneData: {
+          event: "Updated Event",
+          imageUrl: getFakeImageUrl(2),
+          imageDescription: "Updated Image Description",
+          narration: "Updated Narration",
+          proposedActions: [
+            "Updated Action 1",
+            "Updated Action 2",
+            "Updated Action 3",
+          ],
+        },
+      };
+
+      await updateGameTemplateData({
+        userId,
+        templateId,
+        newData: newGameTemplateData,
+      });
+
+      const updatedTemplate = await getGameTemplateMetadataAndStatistics({
+        userId,
+        gameTemplateId: templateId,
+      });
+
+      const {
+        coverImageUrl,
+        coverImageDescription,
+        publicTemplate,
+        ...prunedNewGameTemplateData
+      } = newGameTemplateData;
+
+      expect(updatedTemplate).toEqual({
+        ...anyStatistics,
+        ...prunedNewGameTemplateData,
+        imageDescription: coverImageDescription,
+        isPublic: publicTemplate,
+        firstSceneData: (() => {
+          const { imageUrl, ...rest } = newGameTemplateData.firstSceneData;
+
+          return {
+            ...rest,
+            imagePath: expect.any(String),
+          };
+        })(),
+        id: expect.any(Number),
+        imagePath: expect.any(String),
+        imageUrl: expect.any(String),
+        isLiked: expect.any(Boolean),
+        isOwnedByUser: true,
+      });
+
+      const otherUserId = await createUser({
+        email: `testuser-${uuidv4()}@example.com`,
+        hashedPassword: "hashedpassword",
+        name: "Test User",
+      });
+
+      await expect(
+        updateGameTemplateData({
+          userId: otherUserId,
+          templateId,
+          newData: newGameTemplateData,
+        }),
+      ).rejects.toThrow(DatabaseError);
+
+      try {
+        await updateGameTemplateData({
+          userId: otherUserId,
+          templateId,
+          newData: newGameTemplateData,
+        });
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+        const dbError = error as DatabaseError;
+
+        expect(dbError.type).toBe(DatabaseErrorType.NotFound);
+        expect(dbError.message).toBe("Game template not found or not public");
+      }
+
+      expect(
+        await getGameTemplateMetadataAndStatistics({
+          userId,
+          gameTemplateId: templateId,
+        }),
+      ).toEqual({
+        ...anyStatistics,
+        ...prunedNewGameTemplateData,
+        imageDescription: coverImageDescription,
+        isPublic: publicTemplate,
+        firstSceneData: (() => {
+          const { imageUrl, ...rest } = newGameTemplateData.firstSceneData;
+
+          return {
+            ...rest,
+            imagePath: expect.any(String),
+          };
+        })(),
+        id: expect.any(Number),
+        imagePath: expect.any(String),
+        imageUrl: expect.any(String),
+        isLiked: expect.any(Boolean),
+        isOwnedByUser: true,
+      });
     },
   );
 });
