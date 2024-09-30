@@ -105,8 +105,6 @@ export default function GameTemplateEditForm({
 
   return (
     <div className="flex flex-col space-y-4 w-full">
-      {/* Title */}
-      <p className="text-center text-3xl">编辑模板</p>
       <div className="flex flex-col sm:flex-row space-x-4 w-full">
         {/* Sample setups */}
         <div className="flex flex-col rounded-xl bg-content1 p-4 w-full sm:max-w-sm">

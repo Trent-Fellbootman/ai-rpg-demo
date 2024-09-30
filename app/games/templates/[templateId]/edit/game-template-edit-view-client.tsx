@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import React from "react";
 
 import GameTemplateEditForm, {
   OptionalGameTemplateData,
@@ -11,6 +12,7 @@ import {
   updateGameTemplateAction,
 } from "@/app/lib/actions";
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
+import { Spacer } from "@nextui-org/spacer";
 
 export default async function GameTemplateEditViewClient({
   userId,
@@ -43,11 +45,16 @@ export default async function GameTemplateEditViewClient({
   }
 
   return (
-    <GameTemplateEditForm
-      prefilledFields={prefilledFields}
-      sampleTemplatesData={sampleTemplatesData}
-      submitButtonText="Save"
-      onSubmitForm={saveGameTemplate}
-    />
+    <div className="w-full">
+      {/* Title */}
+      <p className="text-center text-3xl">编辑模板</p>
+      <Spacer y={2} />
+      <GameTemplateEditForm
+        prefilledFields={prefilledFields}
+        sampleTemplatesData={sampleTemplatesData}
+        submitButtonText="Save"
+        onSubmitForm={saveGameTemplate}
+      />
+    </div>
   );
 }
