@@ -106,13 +106,11 @@ export default function GameTemplateEditForm({
   return (
     <div className="flex flex-col space-y-4 w-full">
       {/* Title */}
-      <p className="text-center text-3xl">Create a new session</p>
+      <p className="text-center text-3xl">编辑模板</p>
       <div className="flex flex-col sm:flex-row space-x-4 w-full">
         {/* Sample setups */}
         <div className="flex flex-col rounded-xl bg-content1 p-4 w-full sm:max-w-sm">
-          <p className="text-xl font-bold text-center">
-            Try these example setups!
-          </p>
+          <p className="text-xl font-bold text-center">试试这些默认内容！</p>
           <Spacer y={2} />
           <div className="max-h-32 sm:max-h-full overflow-scroll">
             <div className="flex flex-col space-y-2">
@@ -161,13 +159,13 @@ export default function GameTemplateEditForm({
           <div className="space-y-2 flex-col w-full">
             {/* Metadata */}
             <>
-              <p className="text-2xl">Template Metadata</p>
+              <p className="text-2xl">模板内容</p>
               <div className="flex flex-col flex-grow space-y-2">
                 {/* Name */}
                 <FormField
-                  fieldDisplayName="Name"
+                  fieldDisplayName="模板名称"
                   fieldSerializeName="name"
-                  fieldTooltipContent="The name of the game session."
+                  fieldTooltipContent="游戏模板的名称。"
                   maxRows={1}
                   minRows={1}
                   value={name}
@@ -178,15 +176,12 @@ export default function GameTemplateEditForm({
                 )}
                 {/* Description */}
                 <FormField
-                  fieldDisplayName="Description (Optional)"
+                  fieldDisplayName="简介 (非必须)"
                   fieldSerializeName="description"
                   fieldTooltipContent={
                     <div className="max-w-md flex flex-col space-y-1">
-                      <p>The &quot;trailer&quot; of the game.</p>
-                      <p>Does not affect how scenes are generated.</p>
-                      <p>
-                        Will be visible to the public if you publish your game.
-                      </p>
+                      <p>向玩家呈现的游戏简介。</p>
+                      <p>游戏简介不会影响玩游戏时剧情的发展。</p>
                     </div>
                   }
                   maxRows={8}
@@ -200,15 +195,15 @@ export default function GameTemplateEditForm({
                 {/* Cover Image */}
                 <div className="flex flex-col space-y-2">
                   <div className="flex flex-row justify-start items-center">
-                    <p className="text-large">Cover Image</p>
+                    <p className="text-large">封面</p>
                     <StyledTooltip
                       placement="right"
                       tooltipContent={
                         <div className="flex flex-col space-y-1">
-                          <p>The cover image.</p>
+                          <p>游戏封面</p>
                           <p>
-                            Currently, AI image generation only supports{" "}
-                            <strong>English</strong> image description.
+                            AI生图目前仅支持用
+                            <strong>英语</strong>描述图片内容。
                           </p>
                         </div>
                       }
@@ -238,24 +233,16 @@ export default function GameTemplateEditForm({
               </div>
               {/* Backstory */}
               <FormField
-                fieldDisplayName="Backstory"
+                fieldDisplayName="背景故事"
                 fieldSerializeName="back_story"
                 fieldTooltipContent={
                   <div className="max-w-md flex flex-col space-y-1">
-                    <p>The background story.</p>
+                    <p>背景故事可以包括游戏角色、世界观、剧情线等等。</p>
                     <p>
-                      May include character setup, world setup, storyline, plot,
-                      etc.
+                      背景故事引导AI生成剧情；
+                      有经验的玩家可以使用背景故事调整游戏体验和玩法。
                     </p>
-                    <p>
-                      The backstory guides the AI in generating scenes, and
-                      experienced users can use this to adjust gameplay
-                      experience and logic.
-                    </p>
-                    <p>
-                      Will not be visible by default, as viewing it may spoil
-                      the story.
-                    </p>
+                    <p>为了防止剧透，背景故事对玩家不可见。</p>
                   </div>
                 }
                 maxRows={8}
@@ -269,22 +256,18 @@ export default function GameTemplateEditForm({
             </>
             {/* Initial Scene */}
             <>
-              <p className="text-2xl">Initial Scene</p>
+              <p className="text-2xl">第一个场景</p>
               {/* Oracle Event */}
               <FormField
-                fieldDisplayName="Oracle Event"
+                fieldDisplayName="世界事件"
                 fieldSerializeName="oracleEvent"
                 fieldTooltipContent={
                   <div className="max-w-lg w-full flex flex-col space-y-1">
                     <p>
-                      The oracle event lists everything happening the game world
-                      in the initial scene, including both what the player can
-                      and cannot perceive.
+                      世界事件包括了在“上帝视角”下游戏世界中发生的所有事，
+                      既有玩家可见的，也有玩家不可见的。
                     </p>
-                    <p>
-                      Oracle events are invisible to the player but affect how
-                      later scenes are generated by AI.
-                    </p>
+                    <p>世界事件对玩家不可见，但影响AI如何生成剧情。</p>
                   </div>
                 }
                 maxRows={8}
@@ -300,13 +283,11 @@ export default function GameTemplateEditForm({
               {/* Narration */}
               {/* TODO: Handle HTML formatting */}
               <FormField
-                fieldDisplayName="Narration"
+                fieldDisplayName="旁白"
                 fieldSerializeName="narration"
                 fieldTooltipContent={
                   <div className="max-w-lg w-full flex flex-col space-y-1">
-                    <p>
-                      Narration is the text that the player sees in each scene.
-                    </p>
+                    <p>旁白是玩家在场景中看到的文字内容。</p>
                   </div>
                 }
                 maxRows={8}
@@ -322,18 +303,15 @@ export default function GameTemplateEditForm({
               {/* Scene Image */}
               <div className="flex flex-col space-y-2">
                 <div className="flex flex-row justify-start items-center">
-                  <p className="text-large">Scene Image</p>
+                  <p className="text-large">场景图片</p>
                   <StyledTooltip
                     placement="right"
                     tooltipContent={
                       <div className="flex flex-col space-y-1">
+                        <p>玩家在第一个场景中看到的图片。</p>
                         <p>
-                          A scene image is the image that the player sees in a
-                          scene.
-                        </p>
-                        <p>
-                          Currently, AI image generation only supports{" "}
-                          <strong>English</strong> image description.
+                          AI生图目前仅支持用
+                          <strong>英语</strong>描述图片内容。
                         </p>
                       </div>
                     }
@@ -361,17 +339,13 @@ export default function GameTemplateEditForm({
                 )}
               </div>
               <div className="flex flex-row items-center justify-start">
-                <p className="text-large">Proposed Actions</p>
+                <p className="text-large">默认动作</p>
                 <StyledTooltip
                   placement="right"
                   tooltipContent={
                     <div className="w-full max-w-lg space-y-1">
-                      <p>
-                        Proposed actions are sample actions that the player can
-                        choose from if they do not want to type an action
-                        him/herself.
-                      </p>
-                      <p>It is recommended to have no more than 4 actions.</p>
+                      <p>默认动作是玩家懒得自己打字时可以直接选的动作。</p>
+                      <p>默认动作一般不超过3个。</p>
                     </div>
                   }
                 />
@@ -392,18 +366,18 @@ export default function GameTemplateEditForm({
               onValueChange={setMakeTemplatePublic}
             >
               <div className="flex flex-row items-center">
-                <p>Public Template</p>
+                <p>公开这个模板</p>
                 <StyledTooltip
                   placement="top"
                   tooltipContent={
                     <div className="flex flex-col max-w-lg space-y-1">
                       <p>
-                        If selected, other people will be able to view and use
-                        this template to create their own game sessions.
+                        将模板公开后，其他人可以访问、点赞和评论这个模板，
+                        也可以使用这个模板创建他们自己的游戏。
                       </p>
                       <p>
-                        Still, they will <strong>not</strong> be able to view
-                        your game sessions.
+                        不管你是否公开游戏模板，你的游戏都是隐私的，对别人
+                        <strong>不可见</strong>。
                       </p>
                     </div>
                   }
@@ -522,7 +496,7 @@ function ImageEditView({
     <div className="flex flex-row space-x-2">
       <div className="flex flex-col space-y-2 flex-grow">
         <Textarea
-          label="Image Description"
+          label="图片描述"
           value={imageDescription}
           onValueChange={onImageDescriptionChange}
         />
@@ -533,7 +507,7 @@ function ImageEditView({
             await generateImage();
           }}
         >
-          Regenerate Image
+          使用AI生成图片
         </Button>
       </div>
       <div className="max-w-64 sm:max-w-sm h-full">

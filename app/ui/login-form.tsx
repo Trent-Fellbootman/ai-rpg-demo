@@ -38,19 +38,19 @@ export default function LoginForm() {
     <Card className="p-3 w-full">
       <CardBody>
         <form onSubmit={formAction}>
-          <h1 className="text-2xl text-center font-bold">Login</h1>
+          <h1 className="text-2xl text-center font-bold">登录</h1>
           <Spacer y={4} />
-          <p className="font-bold pl-1">Email</p>
+          <p className="font-bold pl-1">邮箱</p>
           <Spacer y={4} />
           <Input
             isClearable
             color="primary"
             name="email"
-            placeholder="Enter your email"
+            placeholder="输入您的邮箱"
             variant="bordered"
           />
           <Spacer y={4} />
-          <p className="font-bold pl-1">Password</p>
+          <p className="font-bold pl-1">密码</p>
           <Spacer y={4} />
           <Input
             color="primary"
@@ -69,7 +69,7 @@ export default function LoginForm() {
               </button>
             }
             name="password"
-            placeholder="Enter your password"
+            placeholder="输入您的密码"
             type={isPasswordVisible ? "text" : "password"}
             variant="bordered"
           />
@@ -80,12 +80,12 @@ export default function LoginForm() {
             isLoading={isPending}
             type="submit"
           >
-            Login
+            登录
           </Button>
           {errorState && <p className="text-red-500">{errorState}</p>}
           <div className="text-center">
-            Don&apos;t have an account? Sign up{" "}
-            <Link href={constants.signupPagePath}>here</Link>!
+            没有账号？从
+            <Link href={constants.signupPagePath}>这里</Link>注册!
           </div>
         </form>
       </CardBody>

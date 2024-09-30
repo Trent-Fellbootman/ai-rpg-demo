@@ -41,7 +41,7 @@ export default async function GameSessionOverview({
           size="md"
           variant="solid"
         >
-          Play
+          玩
         </Button>
         <Button
           as={Link}
@@ -51,7 +51,7 @@ export default async function GameSessionOverview({
           size="md"
           variant="solid"
         >
-          View
+          幻灯片放映模式
         </Button>
         <GameSessionDeleteButton sessionId={sessionId} userId={userId} />
       </div>

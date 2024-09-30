@@ -26,7 +26,7 @@ export async function RecommendedGameTemplatesView() {
 
   return (
     <div className="flex flex-col">
-      <p className="font-bold text-3xl">Recommended for You</p>
+      <p className="font-bold text-3xl">推荐</p>
       <Spacer y={8} />
       <GameTemplateCardsView gameTemplatesMetadata={recommendedGameTemplates} />
     </div>

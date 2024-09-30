@@ -18,7 +18,7 @@ export async function CommentsList({
           <CardBody>
             <div className="flex flex-col space-y-1">
               <p className="text-small">
-                {comment.username ?? "Anonymous user"} at{" "}
+                {comment.username ?? "匿名用户"}{" "}
                 {comment.createdAt.toLocaleString("zh-CN")}
               </p>
               <p>{comment.text}</p>

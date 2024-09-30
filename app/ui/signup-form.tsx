@@ -43,15 +43,15 @@ export default function SignupForm() {
     <Card className="p-3 w-full">
       <CardBody>
         <form onSubmit={formAction}>
-          <h1 className="text-2xl text-center font-bold">Signup</h1>
+          <h1 className="text-2xl text-center font-bold">注册</h1>
           <Spacer y={4} />
-          <p className="font-bold pl-1">Email</p>
+          <p className="font-bold pl-1">邮箱</p>
           <Spacer y={4} />
           <Input
             isClearable
             color="primary"
             name="email"
-            placeholder="Enter your email"
+            placeholder="输入您的邮箱"
             variant="bordered"
           />
           {responseState?.fieldErrors?.email &&
@@ -61,7 +61,7 @@ export default function SignupForm() {
               </p>
             ))}
           <Spacer y={4} />
-          <p className="font-bold pl-1">Password</p>
+          <p className="font-bold pl-1">密码</p>
           <Spacer y={4} />
           <Input
             color="primary"
@@ -80,7 +80,7 @@ export default function SignupForm() {
               </button>
             }
             name="password"
-            placeholder="Enter your password"
+            placeholder="输入您的密码"
             type={isFirstPasswordVisible ? "text" : "password"}
             variant="bordered"
           />
@@ -91,7 +91,7 @@ export default function SignupForm() {
               </p>
             ))}
           <Spacer y={4} />
-          <p className="font-bold pl-1">Enter password again</p>
+          <p className="font-bold pl-1">确认密码</p>
           <Spacer y={4} />
           <Input
             color="primary"
@@ -110,7 +110,7 @@ export default function SignupForm() {
               </button>
             }
             name="confirmPassword"
-            placeholder="re-enter your password"
+            placeholder="再次输入您的密码"
             type={isSecondPasswordVisible ? "text" : "password"}
             variant="bordered"
           />
@@ -132,7 +132,7 @@ export default function SignupForm() {
             isLoading={inProgress}
             type="submit"
           >
-            Signup
+            注册
           </Button>
         </form>
       </CardBody>

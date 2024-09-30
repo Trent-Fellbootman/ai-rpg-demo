@@ -7,33 +7,33 @@ export const siteConfig = {
   description: "Make beautiful websites regardless of your design experience.",
   navItems: [
     {
-      label: "Home",
+      label: "主页",
       href: constants.homePagePath,
     },
     {
-      label: "My Game Sessions",
+      label: "我的游戏",
       href: constants.gameSessionsDashboardPagePath,
     },
     {
-      label: "My Game Templates",
+      label: "我的游戏模板",
       href: constants.gameTemplatesDashboardPagePath,
     },
   ],
   navMenuItems: [
     {
-      label: "Home",
+      label: "主页",
       href: constants.homePagePath,
     },
     {
-      label: "My Game Sessions",
+      label: "我的游戏",
       href: constants.gameSessionsDashboardPagePath,
     },
     {
-      label: "My Game Templates",
+      label: "我的游戏模板",
       href: constants.gameTemplatesDashboardPagePath,
     },
     {
-      label: "New Session",
+      label: "创建新的游戏",
       href: constants.newSessionPagePath,
     },
   ],

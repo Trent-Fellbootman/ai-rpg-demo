@@ -85,7 +85,7 @@ export default async function GameTemplateOverview({
                     <div className="w-8">
                       <PlayIcon />
                     </div>
-                    <p className="text-xl">Play</p>
+                    <p className="text-xl">玩这个游戏</p>
                   </div>
                 </CreateGameSessionButton>
               </div>
@@ -107,7 +107,7 @@ export default async function GameTemplateOverview({
               <div className="w-8">
                 <PlayIcon />
               </div>
-              <p className="text-xl">Create New Game</p>
+              <p className="text-xl">玩这个游戏</p>
             </div>
           </CreateGameSessionButton>
         </div>
@@ -117,7 +117,7 @@ export default async function GameTemplateOverview({
           <Spacer y={4} />
           <div className="flex flex-row justify-end space-x-2">
             <GameTemplateDeleteButton templateId={templateId} userId={userId}>
-              Delete game template
+              刪除游戏模板
             </GameTemplateDeleteButton>
             <Button
               as={Link}
@@ -126,7 +126,7 @@ export default async function GameTemplateOverview({
               radius="full"
               variant="bordered"
             >
-              Edit
+              编辑
             </Button>
           </div>
         </>
@@ -134,7 +134,7 @@ export default async function GameTemplateOverview({
       {gameTemplateMetadata.isPublic && (
         <div className="flex flex-col">
           <Spacer y={8} />
-          <p className="text-2xl">Comments</p>
+          <p className="text-2xl">评论</p>
           <Spacer y={4} />
           <CommentInputForm gameTemplateId={templateId} userId={userId} />
           <Spacer y={4} />

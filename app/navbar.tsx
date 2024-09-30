@@ -61,7 +61,7 @@ export const Navbar = () => {
         justify="end"
       >
         <Button as={Link} color="primary" href={constants.newSessionPagePath}>
-          New Game Session
+          创建新的游戏
         </Button>
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />

@@ -43,9 +43,9 @@ export function CommentInputForm({
     <form onSubmit={formAction}>
       <div className="flex flex-col">
         <Textarea
-          label="Post a comment"
+          label="评论内容"
           name="text"
-          placeholder="Input comment..."
+          placeholder="输入评论..."
           value={commentText}
           onValueChange={(newValue) => setCommentText(newValue)}
         />
@@ -63,7 +63,7 @@ export function CommentInputForm({
             type="submit"
             variant="solid"
           >
-            Post comment
+            发布评论
           </Button>
         </div>
       </div>
