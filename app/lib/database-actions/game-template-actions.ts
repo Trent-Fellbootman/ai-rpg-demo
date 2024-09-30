@@ -3,7 +3,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { DatabaseError, DatabaseErrorType } from "./error-types";
-import { createImageUrl, downloadImageToStorage } from "./utils";
+import { createImageUrl, downloadImageToStorage, removeImage } from "./utils";
 
 import { imageUrlExpireSeconds } from "@/app-config";
 import { logger } from "@/app/lib/logger";
@@ -962,27 +962,56 @@ export async function updateGameTemplateData({
 
   // then update the database
   try {
-    await prisma.gameTemplate.update({
-      where: {
-        id: templateId,
-        userId: userId,
-      },
-      data: {
-        name: newData.name,
-        backstory: newData.backstory,
-        description: newData.description,
-        imagePath: coverImagePath,
-        imageDescription: newData.coverImageDescription,
-        imageUrl: null,
-        imageUrlExpiration: null,
-        firstSceneEvent: newData.firstSceneData.event,
-        firstSceneImagePath: firstSceneImagePath,
-        firstSceneImageDescription: newData.firstSceneData.imageDescription,
-        firstSceneNarration: newData.firstSceneData.narration,
-        firstSceneProposedActions: newData.firstSceneData.proposedActions,
-        isPublic: newData.publicTemplate,
-      },
+    const {
+      imagePath: oldCoverImagePath,
+      firstSceneImagePath: oldFirstSceneImagePath,
+    } = await prisma.$transaction(async (prisma) => {
+      const oldPaths = await prisma.gameTemplate.findFirst({
+        where: {
+          id: templateId,
+          userId,
+        },
+        select: {
+          imagePath: true,
+          firstSceneImagePath: true,
+        },
+      });
+
+      await prisma.gameTemplate.update({
+        where: {
+          id: templateId,
+          userId: userId,
+        },
+        data: {
+          name: newData.name,
+          backstory: newData.backstory,
+          description: newData.description,
+          imagePath: coverImagePath,
+          imageDescription: newData.coverImageDescription,
+          imageUrl: null,
+          imageUrlExpiration: null,
+          firstSceneEvent: newData.firstSceneData.event,
+          firstSceneImagePath: firstSceneImagePath,
+          firstSceneImageDescription: newData.firstSceneData.imageDescription,
+          firstSceneNarration: newData.firstSceneData.narration,
+          firstSceneProposedActions: newData.firstSceneData.proposedActions,
+          isPublic: newData.publicTemplate,
+        },
+        select: {
+          imagePath: true,
+          firstSceneImagePath: true,
+        },
+      });
+
+      return oldPaths!;
     });
+
+    // remove the old images
+    // TODO: run this in the background
+    await Promise.all([
+      removeImage({ filepath: oldCoverImagePath }),
+      removeImage({ filepath: oldFirstSceneImagePath }),
+    ]);
   } catch (error) {
     // check for not found error
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

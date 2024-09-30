@@ -101,3 +101,15 @@ export async function downloadImageToStorage(
 
   return filepath;
 }
+
+export async function removeImage({ filepath }: { filepath: string }) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.storage
+    .from(imagesStorageBucketName)
+    .remove([filepath]);
+
+  if (error) {
+    throw new Error(`Error removing image ${filepath}: ${error.message}`);
+  }
+}
