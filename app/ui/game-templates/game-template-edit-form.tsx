@@ -203,7 +203,15 @@ export default function GameTemplateEditForm({
                     <p className="text-large">Cover Image</p>
                     <StyledTooltip
                       placement="right"
-                      tooltipContent="The cover image."
+                      tooltipContent={
+                        <div className="flex flex-col space-y-1">
+                          <p>The cover image.</p>
+                          <p>
+                            Currently, AI image generation only supports{" "}
+                            <strong>English</strong> image description.
+                          </p>
+                        </div>
+                      }
                     />
                   </div>
                   <ImageEditView
@@ -317,7 +325,18 @@ export default function GameTemplateEditForm({
                   <p className="text-large">Scene Image</p>
                   <StyledTooltip
                     placement="right"
-                    tooltipContent="A scene image is the image that the player sees in a scene."
+                    tooltipContent={
+                      <div className="flex flex-col space-y-1">
+                        <p>
+                          A scene image is the image that the player sees in a
+                          scene.
+                        </p>
+                        <p>
+                          Currently, AI image generation only supports{" "}
+                          <strong>English</strong> image description.
+                        </p>
+                      </div>
+                    }
                   />
                 </div>
                 <ImageEditView
