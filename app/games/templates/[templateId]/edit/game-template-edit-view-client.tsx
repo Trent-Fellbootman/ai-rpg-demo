@@ -52,7 +52,7 @@ export default async function GameTemplateEditViewClient({
       <GameTemplateEditForm
         prefilledFields={prefilledFields}
         sampleTemplatesData={sampleTemplatesData}
-        submitButtonText="Save"
+        submitButtonText="保存更改"
         onSubmitForm={saveGameTemplate}
       />
     </div>
