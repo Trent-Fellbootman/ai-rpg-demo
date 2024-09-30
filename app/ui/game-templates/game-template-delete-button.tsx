@@ -59,9 +59,9 @@ export function GameTemplateDeleteButton({
             <>
               <ModalBody>
                 <p>
-                  Are you sure to delete this game template?{" "}
+                  你确定要删除这个游戏模板吗？{" "}
                   <text className="text-red-500 font-bold">
-                    This cannot be undone!
+                    删了可就回不来了！你的点赞、评论和其他可以炫耀的东西也回不来了！
                   </text>
                 </p>
               </ModalBody>
@@ -76,10 +76,10 @@ export function GameTemplateDeleteButton({
                         await onDelete();
                       }}
                     >
-                      Delete
+                      删
                     </Button>
                     <Button color="primary" onPress={onClose}>
-                      Cancel
+                      不删
                     </Button>
                   </div>
                   {error && (

@@ -195,11 +195,11 @@ export default function SceneViewClient({
                   <div className="flex flex-col flex-1">
                     <Textarea
                       isReadOnly={isProcessingAction}
-                      label="Action"
+                      label="动作"
                       maxRows={6}
                       minRows={3}
                       name="action"
-                      placeholder="Describe what you would like to do"
+                      placeholder="描述你想做什么"
                       value={action}
                       onChange={(e) => setAction(e.target.value)}
                       onKeyDown={handleKeyDown} // Attach the handler here
@@ -213,7 +213,7 @@ export default function SceneViewClient({
                       isLoading={isProcessingAction}
                       type="submit"
                     >
-                      Take Action
+                      执行动作
                     </Button>
                     <Button
                       as={Link}
@@ -221,7 +221,7 @@ export default function SceneViewClient({
                       href={getScenePlayPagePath(sessionId, sceneIndex - 1)}
                       isDisabled={sceneIndex === 0}
                     >
-                      Previous Scene
+                      上一个场景
                     </Button>
                   </div>
                 </div>

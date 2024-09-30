@@ -22,7 +22,7 @@ export default function ActionDisplayView({
       <Textarea
         isReadOnly
         defaultValue={action}
-        label="Action"
+        label="动作"
         maxRows={6}
         minRows={3}
         name="action"
@@ -35,7 +35,7 @@ export default function ActionDisplayView({
           color="primary"
           href={getScenePlayPagePath(sessionId, sceneIndex + 1)}
         >
-          Next Scene
+          下一个场景
         </Button>
         <Button
           as={Link}
@@ -43,7 +43,7 @@ export default function ActionDisplayView({
           href={getScenePlayPagePath(sessionId, sceneIndex - 1)}
           isDisabled={isFirstScene}
         >
-          Previous Scene
+          上一个场景
         </Button>
       </div>
     </div>

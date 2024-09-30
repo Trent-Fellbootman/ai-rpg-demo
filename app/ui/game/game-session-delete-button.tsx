@@ -49,7 +49,7 @@ export function GameSessionDeleteButton({
   return (
     <>
       <Button color="danger" radius="full" variant="bordered" onPress={onOpen}>
-        Delete
+        删除
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
@@ -57,9 +57,9 @@ export function GameSessionDeleteButton({
             <>
               <ModalBody>
                 <p>
-                  Are you sure to delete this game session?{" "}
+                  你确定要删除这个游戏吗?{" "}
                   <text className="text-red-500 font-bold">
-                    This cannot be undone!
+                    删了可就回不来了！
                   </text>
                 </p>
               </ModalBody>
@@ -74,10 +74,10 @@ export function GameSessionDeleteButton({
                         await onDelete();
                       }}
                     >
-                      Delete
+                      删
                     </Button>
                     <Button color="primary" onPress={onClose}>
-                      Cancel
+                      不删
                     </Button>
                   </div>
                   {error && (
