@@ -1,7 +1,7 @@
-import { Image } from "@nextui-org/image";
-import { Spacer } from "@nextui-org/spacer";
-import { Button } from "@nextui-org/button";
-import { Link } from "@nextui-org/link";
+import { Image } from "@heroui/image";
+import { Spacer } from "@heroui/spacer";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 
 import { getGameSessionMetadata } from "@/app/lib/database-actions/game-session-actions";
 import { getScenePlayPagePath, getSessionViewPath } from "@/app/lib/utils/path";

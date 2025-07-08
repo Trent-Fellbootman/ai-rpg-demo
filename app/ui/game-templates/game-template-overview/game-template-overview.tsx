@@ -1,13 +1,13 @@
-import { Image } from "@nextui-org/image";
-import { Spacer } from "@nextui-org/spacer";
+import { Image } from "@heroui/image";
+import { Spacer } from "@heroui/spacer";
 import {
   ChatBubbleBottomCenterIcon,
   EyeIcon,
   PlayIcon,
 } from "@heroicons/react/24/outline";
-import { Card, CardBody } from "@nextui-org/card";
-import { Button } from "@nextui-org/button";
-import { Link } from "@nextui-org/link";
+import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 
 import {
   getGameTemplateMetadataAndStatistics,

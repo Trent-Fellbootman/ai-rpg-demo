@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import React, { useState } from "react";
 
 import { createGameSessionFromTemplateAction } from "@/app/lib/actions";

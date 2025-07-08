@@ -2,11 +2,11 @@
 
 import { FC } from "react";
 import { VisuallyHidden } from "@react-aria/visually-hidden";
-import { SwitchProps, useSwitch } from "@nextui-org/switch";
+import { SwitchProps, useSwitch } from "@heroui/switch";
 import { useTheme } from "next-themes";
 import { useIsSSR } from "@react-aria/ssr";
 import clsx from "clsx";
-import { SunFilledIcon, MoonFilledIcon } from "@nextui-org/shared-icons";
+import { SunFilledIcon, MoonFilledIcon } from "@heroui/shared-icons";
 
 export interface ThemeSwitchProps {
   className?: string;

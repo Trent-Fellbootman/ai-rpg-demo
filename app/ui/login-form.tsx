@@ -1,12 +1,12 @@
 "use client";
 
-import { Card, CardBody } from "@nextui-org/card";
-import { Input } from "@nextui-org/input";
-import { EyeSlashFilledIcon, EyeFilledIcon } from "@nextui-org/shared-icons";
+import { Card, CardBody } from "@heroui/card";
+import { Input } from "@heroui/input";
+import { EyeSlashFilledIcon, EyeFilledIcon } from "@heroui/shared-icons";
 import React from "react";
-import { Spacer } from "@nextui-org/spacer";
-import { Button } from "@nextui-org/button";
-import { Link } from "@nextui-org/link";
+import { Spacer } from "@heroui/spacer";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 
 import { authenticate } from "@/app/lib/actions";
 import { constants } from "@/app/lib/utils/path";

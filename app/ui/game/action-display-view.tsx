@@ -1,8 +1,8 @@
-import { Textarea } from "@nextui-org/input";
-import { Spacer } from "@nextui-org/spacer";
-import { Button } from "@nextui-org/button";
+import { Textarea } from "@heroui/input";
+import { Spacer } from "@heroui/spacer";
+import { Button } from "@heroui/button";
 import React from "react";
-import { Link } from "@nextui-org/link";
+import { Link } from "@heroui/link";
 
 import { getScenePlayPagePath } from "@/app/lib/utils/path";
 

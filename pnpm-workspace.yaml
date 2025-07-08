@@ -1,0 +1,10 @@
+onlyBuiltDependencies:
+  - '@heroui/shared-utils'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - esbuild
+  - prisma
+  - protobufjs
+  - sharp
+  - unrs-resolver

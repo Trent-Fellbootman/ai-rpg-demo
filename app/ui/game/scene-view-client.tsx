@@ -1,14 +1,14 @@
 "use client";
 
-import { Image } from "@nextui-org/image";
-import { Spacer } from "@nextui-org/spacer";
-import { Card, CardBody } from "@nextui-org/card";
+import { Image } from "@heroui/image";
+import { Spacer } from "@heroui/spacer";
+import { Card, CardBody } from "@heroui/card";
 import parse from "html-react-parser";
 import React, { useRef, useState } from "react";
-import { Skeleton } from "@nextui-org/skeleton";
-import { Textarea } from "@nextui-org/input";
-import { Button } from "@nextui-org/button";
-import { Link } from "@nextui-org/link";
+import { Skeleton } from "@heroui/skeleton";
+import { Textarea } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 
 import { SceneViewInitialData } from "@/app/lib/actions";
 import ActionDisplayView from "@/app/ui/game/action-display-view";

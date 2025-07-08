@@ -1,15 +1,15 @@
 "use client";
 
-import { Card, CardBody } from "@nextui-org/card";
-import { Spacer } from "@nextui-org/spacer";
+import { Card, CardBody } from "@heroui/card";
+import { Spacer } from "@heroui/spacer";
 import React, { ReactNode, useState } from "react";
-import { Button } from "@nextui-org/button";
-import { Spinner } from "@nextui-org/spinner";
-import { Tooltip } from "@nextui-org/tooltip";
-import { InfoIcon } from "@nextui-org/shared-icons";
-import { Input, Textarea } from "@nextui-org/input";
-import { Checkbox } from "@nextui-org/checkbox";
-import { Image } from "@nextui-org/image";
+import { Button } from "@heroui/button";
+import { Spinner } from "@heroui/spinner";
+import { Tooltip } from "@heroui/tooltip";
+import { InfoIcon } from "@heroui/shared-icons";
+import { Input, Textarea } from "@heroui/input";
+import { Checkbox } from "@heroui/checkbox";
+import { Image } from "@heroui/image";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 import {

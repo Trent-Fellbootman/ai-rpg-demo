@@ -1,6 +1,6 @@
-import { Card, CardBody, CardFooter } from "@nextui-org/card";
-import { Image } from "@nextui-org/image";
-import { Link } from "@nextui-org/link";
+import { Card, CardBody, CardFooter } from "@heroui/card";
+import { Image } from "@heroui/image";
+import { Link } from "@heroui/link";
 import {
   ChatBubbleBottomCenterIcon,
   EyeIcon,

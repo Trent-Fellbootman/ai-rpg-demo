@@ -2,7 +2,7 @@
 
 import { HeartIcon } from "@heroicons/react/24/solid";
 import React, { useState } from "react";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 
 import {
   addLike,

@@ -1,8 +1,8 @@
 "use client";
 
-import { Textarea } from "@nextui-org/input";
-import { Button } from "@nextui-org/button";
-import { Spacer } from "@nextui-org/spacer";
+import { Textarea } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Spacer } from "@heroui/spacer";
 import React, { useState } from "react";
 
 import {

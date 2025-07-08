@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import { useRouter } from "next/navigation";
 import {
   Modal,
@@ -8,7 +8,7 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-} from "@nextui-org/modal";
+} from "@heroui/modal";
 import { ReactNode, useState } from "react";
 
 import { deleteGameTemplateAction } from "@/app/lib/actions";

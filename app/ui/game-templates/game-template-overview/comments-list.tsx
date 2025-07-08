@@ -1,4 +1,4 @@
-import { Card, CardBody } from "@nextui-org/card";
+import { Card, CardBody } from "@heroui/card";
 
 import { getComments } from "@/app/lib/database-actions/game-template-actions";
 
