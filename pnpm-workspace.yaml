@@ -4,6 +4,7 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - bcrypt
   - esbuild
+  - lzo
   - prisma
   - protobufjs
   - sharp

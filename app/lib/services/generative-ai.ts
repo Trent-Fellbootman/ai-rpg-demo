@@ -3,16 +3,19 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { ZodObject, infer as ZodInfer } from "zod";
 import dotenv from "dotenv";
 import { performance } from "next/dist/compiled/@edge-runtime/primitives";
+import { Together } from "together-ai";
 
 dotenv.config();
 
 import { logger } from "@/app/lib/logger";
+import { ImageDataURL } from "together-ai/resources/images";
 
 const log = logger.child({ module: "generative-ai" });
 
 const defaultModelName = "gpt-4o-mini";
 
 const openai = new OpenAI();
+const together = new Together();
 
 export interface ChatMessage<ContentType> {
   role: "user" | "assistant" | "system";
@@ -103,28 +106,16 @@ export async function generateImage(description: string): Promise<string> {
 
   const start = performance.now();
 
-  const response = await fetch("https://api.aimlapi.com/images/generations", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.AIMLAPI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "flux/schnell",
-      prompt: description,
-      image_size: "landscape_4_3",
-      num_inference_steps: 28,
-      guidance_scale: 3.5,
-      num_images: 1,
-      safety_tolerance: "2",
-    }),
+  const response = await together.images.create({
+    model: "black-forest-labs/FLUX.1-schnell-Free",
+    prompt: description,
+    steps: 4,
+    n: 4,
   });
-
-  const data = await response.json();
 
   const end = performance.now();
 
-  const imageUrl = data.images[0].url;
+  const imageUrl = (response.data[0] as ImageDataURL).url;
 
   log.debug(`Received image from AIML API; it took ${end - start}ms`);
 
