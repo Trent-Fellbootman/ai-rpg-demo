@@ -12,9 +12,11 @@ import { ImageDataURL } from "together-ai/resources/images";
 
 const log = logger.child({ module: "generative-ai" });
 
-const defaultModelName = "gpt-4o-mini";
+const defaultModelName = process.env.LLM_MODEL_NAME || "gpt-4o-mini";
 
-const openai = new OpenAI();
+const openai = new OpenAI({
+  baseURL: process.env.OPENAI_API_BASE_URL,
+});
 const together = new Together();
 
 export interface ChatMessage<ContentType> {
