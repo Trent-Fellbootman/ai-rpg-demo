@@ -108,16 +108,36 @@ export async function generateImage(description: string): Promise<string> {
 
   const start = performance.now();
 
-  const response = await together.images.create({
-    model: "black-forest-labs/FLUX.1-schnell",
-    prompt: description,
-    steps: 4,
-    n: 4,
-  });
+  const response = await fetch(
+    `${process.env.IMAGE_GENERATION_ENDPOINT_URL!}/generate`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: description }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate image: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  // const response = await together.images.create({
+  //   model: "black-forest-labs/FLUX.1-schnell",
+  //   prompt: description,
+  //   steps: 4,
+  //   n: 4,
+  // });
 
   const end = performance.now();
 
-  const imageUrl = (response.data[0] as ImageDataURL).url;
+  // const imageUrl = (response.data[0] as ImageDataURL).url;
+
+  const imageUrl = data.image_url!;
 
   log.debug(`Received image from AIML API; it took ${end - start}ms`);
 
