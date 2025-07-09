@@ -1,5 +1,13 @@
 # Next.js & NextUI Template
 
+## NOTICE
+
+There are two things that needs to be configured manually
+in supabase dashboard:
+
+1. Create a storage bucket for images
+2. Create policies for that bucket to allow all access to anon users
+
 This is a template for creating applications using Next.js 14 (app directory) and NextUI (v2).
 
 [Try it on CodeSandbox](https://githubbox.com/nextui-org/next-app-template)
