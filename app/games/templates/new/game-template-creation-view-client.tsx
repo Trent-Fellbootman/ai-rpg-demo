@@ -12,7 +12,7 @@ import {
 } from "@/app/lib/actions";
 import { getTemplateOverviewPath } from "@/app/lib/utils/path";
 
-export default async function GameTemplateCreationViewClient({
+export default function GameTemplateCreationViewClient({
   userId,
   sampleTemplatesData,
 }: {
