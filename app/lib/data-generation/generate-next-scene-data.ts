@@ -233,6 +233,7 @@ NOT what he/she sees as the action is being taken.
 The image prompt MUST be in English regardless of the language of the player's action input or scene description,
 because the image generation model does not understand other languages.
 
+KEEP THE IMAGE PROMPT SUCCINCT, WITHIN 50 WORDS.
 Output the image prompt ONLY and NOTHING ELSE.`;
 
   const narrationGenerationPrompt = `I want you to generate short narration for a game.
@@ -275,6 +276,8 @@ Also, notice common pitfalls like forgetting to use br tags which will collapse 
 
 The narration MUST be in the natural language as the player's action.
 
+AVOID MAKING THE NARRATION TOO LONG.
+KEEP IT WITHIN 100 WORDS.
 Output the narration ONLY and NOTHING ELSE.`;
 
   const proposedActionsGenerationPrompt = `I want you to propose actions for a player playing a game.
@@ -337,7 +340,8 @@ Threat the teacher to disclose the exam problems with an RPG
 
 As you may have seen in the example, you're encouraged to propose creative, fun and even absurd actions.
 You may make one of the actions "ordinary, reasonable (and dumb)";
-for the rest, use your imagination to make them as insteresting and fun as possible.`;
+for the rest, use your imagination to make them as insteresting and fun as possible.
+Remember, you must generate EXACTLY FOUR ACTIONS.`;
 
   const generateImageUrl = async () => {
     log.debug("Started generating image prompt");
@@ -424,12 +428,24 @@ for the rest, use your imagination to make them as insteresting and fun as possi
 
     log.debug("Received all chunks of proposed actions");
 
-    const splitResult = splitString(buffer, startDelimiter, endDelimiter);
+    let splitResult = splitString(buffer, startDelimiter, endDelimiter);
 
     log.debug("Split proposed actions into segments");
 
     if (splitResult.length !== 4) {
-      throw new Error("Incorrect number of proposed actions!");
+      log.warn(
+        `Incorrect number of proposed actions! Expected 4, got ${splitResult.length}. Truncating or filling to 4.`,
+      );
+
+      if (splitResult.length > 4) {
+        splitResult = splitResult.slice(0, 4);
+      } else {
+        splitResult = splitResult.concat(
+          Array(4 - splitResult.length).fill({ type: "incomplete" }),
+        );
+      }
+
+      // throw new Error("Incorrect number of proposed actions!");
     }
 
     for (const segment of splitResult) {

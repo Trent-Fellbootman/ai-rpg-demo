@@ -109,7 +109,7 @@ export async function generateImage(description: string): Promise<string> {
   const start = performance.now();
 
   const response = await together.images.create({
-    model: "black-forest-labs/FLUX.1-schnell-Free",
+    model: "black-forest-labs/FLUX.1-schnell",
     prompt: description,
     steps: 4,
     n: 4,
